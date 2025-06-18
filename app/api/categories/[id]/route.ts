@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase/server"
+import { supabase } from "@/lib/supabase/client"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
