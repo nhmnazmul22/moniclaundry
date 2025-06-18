@@ -32,7 +32,7 @@ export default function ServicesPage() {
 
   const fetchServices = () => {
     setIsLoading(true)
-    getServices(searchTerm)
+    getServices()
       .then((data) => {
         if (data) setServices(data)
       })
