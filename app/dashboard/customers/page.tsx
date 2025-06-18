@@ -1,92 +1,138 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useTransition } from "react"
-import { formatCurrency } from "@/lib/utils"
-import { getCustomers } from "@/lib/data"
-import type { Customer } from "@/types/database"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Plus, Search, Eye, Edit, Trash2, Phone, Mail, MapPin, Loader2 } from "lucide-react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { addCustomer, updateCustomer, deleteCustomer } from "./actions"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { getCustomers } from "@/lib/data";
+import { formatCurrency } from "@/lib/utils";
+import type { Customer } from "@/types/database";
+import {
+  Edit,
+  Eye,
+  Loader2,
+  Mail,
+  MapPin,
+  Phone,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { addCustomer, deleteCustomer, updateCustomer } from "./actions";
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isPending, startTransition] = useTransition()
-  const { toast } = useToast()
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
 
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
 
   const fetchCustomers = () => {
-    setIsLoading(true)
-    getCustomers(searchTerm)
+    setIsLoading(true);
+    getCustomers()
       .then((data) => {
-        if (data) setCustomers(data)
+        if (data) setCustomers(data);
       })
-      .finally(() => setIsLoading(false))
-  }
+      .finally(() => setIsLoading(false));
+  };
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      fetchCustomers()
-    }, 300) // Debounce search
-    return () => clearTimeout(handler)
-  }, [searchTerm])
+      fetchCustomers();
+    }, 300); // Debounce search
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   const handleAddSubmit = async (formData: FormData) => {
     startTransition(async () => {
-      const result = await addCustomer(formData)
+      const result = await addCustomer(formData);
       if (result.success) {
-        toast({ title: "Success", description: "Customer added successfully." })
-        setIsAddDialogOpen(false)
-        fetchCustomers() // Refresh data
+        toast({
+          title: "Success",
+          description: "Customer added successfully.",
+        });
+        setIsAddDialogOpen(false);
+        fetchCustomers(); // Refresh data
       } else {
-        toast({ title: "Error", description: result.message, variant: "destructive" })
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
       }
-    })
-  }
+    });
+  };
 
   const handleEditSubmit = async (formData: FormData) => {
-    if (!selectedCustomer) return
+    if (!selectedCustomer) return;
     startTransition(async () => {
-      const result = await updateCustomer(selectedCustomer.id, formData)
+      const result = await updateCustomer(selectedCustomer.id, formData);
       if (result.success) {
-        toast({ title: "Success", description: "Customer updated successfully." })
-        setIsEditDialogOpen(false)
-        setSelectedCustomer(null)
-        fetchCustomers() // Refresh data
+        toast({
+          title: "Success",
+          description: "Customer updated successfully.",
+        });
+        setIsEditDialogOpen(false);
+        setSelectedCustomer(null);
+        fetchCustomers(); // Refresh data
       } else {
-        toast({ title: "Error", description: result.message, variant: "destructive" })
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
       }
-    })
-  }
+    });
+  };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this customer?")) return
+    if (!confirm("Are you sure you want to delete this customer?")) return;
     startTransition(async () => {
-      const result = await deleteCustomer(id)
+      const result = await deleteCustomer(id);
       if (result.success) {
-        toast({ title: "Success", description: "Customer deleted successfully." })
-        fetchCustomers() // Refresh data
+        toast({
+          title: "Success",
+          description: "Customer deleted successfully.",
+        });
+        fetchCustomers(); // Refresh data
       } else {
-        toast({ title: "Error", description: result.message, variant: "destructive" })
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
       }
-    })
-  }
+    });
+  };
 
   const handleViewCustomer = (customer: Customer) => {
-    setSelectedCustomer(customer)
-    setIsViewDialogOpen(true)
-  }
+    setSelectedCustomer(customer);
+    setIsViewDialogOpen(true);
+  };
 
   const stats = {
     total: customers.length,
@@ -94,13 +140,15 @@ export default function CustomersPage() {
     active: customers.length, // Placeholder
     vip: 0, // Placeholder
     totalRevenue: customers.reduce((sum, c) => sum + (c.total_spent || 0), 0),
-  }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Customers Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Customers Management
+          </h1>
           <p className="text-muted-foreground">Kelola data pelanggan laundry</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -132,11 +180,17 @@ export default function CustomersPage() {
                 <Input id="address" name="address" />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(false)}
+                >
                   Batal
                 </Button>
                 <Button type="submit" disabled={isPending}>
-                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Simpan
                 </Button>
               </div>
@@ -149,11 +203,17 @@ export default function CustomersPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Customers
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.total}
+              {isLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                stats.total
+              )}
             </div>
           </CardContent>
         </Card>
@@ -164,7 +224,11 @@ export default function CustomersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : formatCurrency(stats.totalRevenue)}
+              {isLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                formatCurrency(stats.totalRevenue)
+              )}
             </div>
           </CardContent>
         </Card>
@@ -207,7 +271,9 @@ export default function CustomersPage() {
                     <TableCell>
                       <div>
                         <div className="font-medium">{customer.name}</div>
-                        <div className="text-sm text-gray-500">ID: {customer.id.substring(0, 8)}...</div>
+                        <div className="text-sm text-gray-500">
+                          ID: {customer.id.substring(0, 8)}...
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -232,20 +298,30 @@ export default function CustomersPage() {
                         <span className="line-clamp-2">{customer.address}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-center">{customer.total_orders}</TableCell>
-                    <TableCell>{formatCurrency(customer.total_spent)}</TableCell>
-                    <TableCell className="text-center">{customer.loyalty_points}</TableCell>
+                    <TableCell className="text-center">
+                      {customer.total_orders}
+                    </TableCell>
+                    <TableCell>
+                      {formatCurrency(customer.total_spent)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {customer.loyalty_points}
+                    </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleViewCustomer(customer)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewCustomer(customer)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            setSelectedCustomer(customer)
-                            setIsEditDialogOpen(true)
+                            setSelectedCustomer(customer);
+                            setIsEditDialogOpen(true);
                           }}
                         >
                           <Edit className="h-4 w-4" />
@@ -279,40 +355,70 @@ export default function CustomersPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Nama</Label>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Nama
+                  </Label>
                   <p className="text-sm">{selectedCustomer.name}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">ID Customer</Label>
+                  <Label className="text-sm font-medium text-gray-500">
+                    ID Customer
+                  </Label>
                   <p className="text-sm font-mono">{selectedCustomer.id}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Telepon</Label>
-                  <p className="text-sm">{selectedCustomer.phone || "Tidak ada"}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Telepon
+                  </Label>
+                  <p className="text-sm">
+                    {selectedCustomer.phone || "Tidak ada"}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Email</Label>
-                  <p className="text-sm">{selectedCustomer.email || "Tidak ada"}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Email
+                  </Label>
+                  <p className="text-sm">
+                    {selectedCustomer.email || "Tidak ada"}
+                  </p>
                 </div>
                 <div className="col-span-2">
-                  <Label className="text-sm font-medium text-gray-500">Alamat</Label>
-                  <p className="text-sm">{selectedCustomer.address || "Tidak ada"}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Alamat
+                  </Label>
+                  <p className="text-sm">
+                    {selectedCustomer.address || "Tidak ada"}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Total Orders</Label>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Total Orders
+                  </Label>
                   <p className="text-sm">{selectedCustomer.total_orders}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Total Spent</Label>
-                  <p className="text-sm">{formatCurrency(selectedCustomer.total_spent)}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Total Spent
+                  </Label>
+                  <p className="text-sm">
+                    {formatCurrency(selectedCustomer.total_spent)}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Loyalty Points</Label>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Loyalty Points
+                  </Label>
                   <p className="text-sm">{selectedCustomer.loyalty_points}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Member Since</Label>
-                  <p className="text-sm">{new Date(selectedCustomer.created_at).toLocaleDateString("id-ID")}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Member Since
+                  </Label>
+                  <p className="text-sm">
+                    {new Date(selectedCustomer.created_at).toLocaleDateString(
+                      "id-ID"
+                    )}
+                  </p>
                 </div>
               </div>
             </div>
@@ -330,26 +436,50 @@ export default function CustomersPage() {
             <form action={handleEditSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="edit-name">Nama</Label>
-                <Input id="edit-name" name="name" defaultValue={selectedCustomer.name} required />
+                <Input
+                  id="edit-name"
+                  name="name"
+                  defaultValue={selectedCustomer.name}
+                  required
+                />
               </div>
               <div>
                 <Label htmlFor="edit-phone">Telepon</Label>
-                <Input id="edit-phone" name="phone" defaultValue={selectedCustomer.phone || ""} />
+                <Input
+                  id="edit-phone"
+                  name="phone"
+                  defaultValue={selectedCustomer.phone || ""}
+                />
               </div>
               <div>
                 <Label htmlFor="edit-email">Email</Label>
-                <Input id="edit-email" name="email" type="email" defaultValue={selectedCustomer.email || ""} />
+                <Input
+                  id="edit-email"
+                  name="email"
+                  type="email"
+                  defaultValue={selectedCustomer.email || ""}
+                />
               </div>
               <div>
                 <Label htmlFor="edit-address">Alamat</Label>
-                <Input id="edit-address" name="address" defaultValue={selectedCustomer.address || ""} />
+                <Input
+                  id="edit-address"
+                  name="address"
+                  defaultValue={selectedCustomer.address || ""}
+                />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
                   Batal
                 </Button>
                 <Button type="submit" disabled={isPending}>
-                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Update
                 </Button>
               </div>
@@ -358,5 +488,5 @@ export default function CustomersPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
