@@ -53,7 +53,7 @@ export default function CustomersPage() {
 
   const fetchCustomers = () => {
     setIsLoading(true);
-    getCustomers()
+    getCustomers(searchTerm)
       .then((data) => {
         if (data) setCustomers(data);
       })

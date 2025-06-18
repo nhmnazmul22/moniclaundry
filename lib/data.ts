@@ -1,19 +1,19 @@
-import { supabase } from "./supabase/client"
-import type { Database } from "@/types/database"
+import type { Database } from "@/types/database";
+import { supabase } from "./supabase/client";
 
 type Order = Database["public"]["Tables"]["orders"]["Row"] & {
-  customer: Database["public"]["Tables"]["customers"]["Row"]
+  customer: Database["public"]["Tables"]["customers"]["Row"];
   order_items: (Database["public"]["Tables"]["order_items"]["Row"] & {
-    service: Database["public"]["Tables"]["services"]["Row"]
-  })[]
-}
+    service: Database["public"]["Tables"]["services"]["Row"];
+  })[];
+};
 
-type Customer = Database["public"]["Tables"]["customers"]["Row"]
-type Service = Database["public"]["Tables"]["services"]["Row"]
-type InventoryItem = Database["public"]["Tables"]["inventory"]["Row"]
-type Delivery = Database["public"]["Tables"]["deliveries"]["Row"]
-type Payment = Database["public"]["Tables"]["payments"]["Row"]
-type Staff = Database["public"]["Tables"]["users"]["Row"]
+type Customer = Database["public"]["Tables"]["customers"]["Row"];
+type Service = Database["public"]["Tables"]["services"]["Row"];
+type InventoryItem = Database["public"]["Tables"]["inventory"]["Row"];
+type Delivery = Database["public"]["Tables"]["deliveries"]["Row"];
+type Payment = Database["public"]["Tables"]["payments"]["Row"];
+type Staff = Database["public"]["Tables"]["users"]["Row"];
 
 export async function getDashboardStats() {
   try {
@@ -21,25 +21,27 @@ export async function getDashboardStats() {
       supabase.from("orders").select("*"),
       supabase.from("customers").select("*"),
       supabase.from("payments").select("*"),
-    ])
+    ]);
 
-    if (ordersResult.error) throw ordersResult.error
-    if (customersResult.error) throw customersResult.error
-    if (paymentsResult.error) throw paymentsResult.error
+    if (ordersResult.error) throw ordersResult.error;
+    if (customersResult.error) throw customersResult.error;
+    if (paymentsResult.error) throw paymentsResult.error;
 
-    const orders = ordersResult.data || []
-    const customers = customersResult.data || []
-    const payments = paymentsResult.data || []
+    const orders = ordersResult.data || [];
+    const customers = customersResult.data || [];
+    const payments = paymentsResult.data || [];
 
-    const totalRevenue = payments.filter((p) => p.status === "completed").reduce((sum, p) => sum + (p.amount || 0), 0)
+    const totalRevenue = payments
+      .filter((p) => p.status === "completed")
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    const pendingOrders = orders.filter((o) => o.status === "pending").length
+    const pendingOrders = orders.filter((o) => o.status === "pending").length;
     const todayRevenue = payments
       .filter((p) => {
-        const today = new Date().toISOString().split("T")[0]
-        return p.created_at?.startsWith(today) && p.status === "completed"
+        const today = new Date().toISOString().split("T")[0];
+        return p.created_at?.startsWith(today) && p.status === "completed";
       })
-      .reduce((sum, p) => sum + (p.amount || 0), 0)
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
 
     return {
       totalRevenue,
@@ -48,90 +50,107 @@ export async function getDashboardStats() {
       totalCustomers: customers.length,
       todayRevenue,
       recentOrders: orders.slice(0, 5),
-    }
+    };
   } catch (error) {
-    console.error("Error fetching dashboard stats:", error)
-    throw error
+    console.error("Error fetching dashboard stats:", error);
+    throw error;
   }
 }
 
-export async function getOrders() {
+export async function getOrders(searchTerm: string, status: string) {
   try {
     const { data, error } = await supabase
       .from("orders")
-      .select(`
+      .select(
+        `
         *,
         customer:customers(*),
         order_items(
           *,
           service:services(*)
         )
-      `)
-      .order("created_at", { ascending: false })
+      `
+      )
+      .order("created_at", { ascending: false });
 
-    if (error) throw error
-    return data as Order[]
+    if (error) throw error;
+    return data as Order[];
   } catch (error) {
-    console.error("Error fetching orders:", error)
-    throw error
+    console.error("Error fetching orders:", error);
+    throw error;
   }
 }
 
-export async function getCustomers() {
+export async function getCustomers(searchTerm: string) {
   try {
-    const { data, error } = await supabase.from("customers").select("*").order("created_at", { ascending: false })
+    const { data, error } = await supabase
+      .from("customers")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    if (error) throw error
-    return data as Customer[]
+    if (error) throw error;
+    return data as Customer[];
   } catch (error) {
-    console.error("Error fetching customers:", error)
-    throw error
+    console.error("Error fetching customers:", error);
+    throw error;
   }
 }
 
 export async function getServices() {
   try {
-    const { data, error } = await supabase.from("services").select("*").order("name", { ascending: true })
+    const { data, error } = await supabase
+      .from("services")
+      .select("*")
+      .order("name", { ascending: true });
 
-    if (error) throw error
-    return data as Service[]
+    if (error) throw error;
+    return data as Service[];
   } catch (error) {
-    console.error("Error fetching services:", error)
-    throw error
+    console.error("Error fetching services:", error);
+    throw error;
   }
 }
 
 export async function getInventory() {
   try {
-    const { data, error } = await supabase.from("inventory").select("*").order("name", { ascending: true })
+    const { data, error } = await supabase
+      .from("inventory")
+      .select("*")
+      .order("name", { ascending: true });
 
-    if (error) throw error
-    return data as InventoryItem[]
+    if (error) throw error;
+    return data as InventoryItem[];
   } catch (error) {
-    console.error("Error fetching inventory:", error)
-    throw error
+    console.error("Error fetching inventory:", error);
+    throw error;
   }
 }
 
-export async function getDeliveries(searchTerm?: string, statusFilter?: string) {
+export async function getDeliveries(
+  searchTerm?: string,
+  statusFilter?: string
+) {
   try {
-    console.log("Fetching deliveries...")
+    console.log("Fetching deliveries...");
 
     // Simple query first to test if table exists
-    const { data, error } = await supabase.from("deliveries").select("*").order("created_at", { ascending: false })
+    const { data, error } = await supabase
+      .from("deliveries")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Supabase error:", error)
+      console.error("Supabase error:", error);
       // Return empty array instead of throwing to prevent page crash
-      return []
+      return [];
     }
 
-    console.log("Deliveries data:", data)
-    return data || []
+    console.log("Deliveries data:", data);
+    return data || [];
   } catch (error) {
-    console.error("Error fetching deliveries:", error)
+    console.error("Error fetching deliveries:", error);
     // Return empty array instead of throwing to prevent page crash
-    return []
+    return [];
   }
 }
 
@@ -139,149 +158,182 @@ export async function getPayments() {
   try {
     const { data, error } = await supabase
       .from("payments")
-      .select(`
+      .select(
+        `
         *,
         order:orders(
           *,
           customer:customers(*)
         )
-      `)
-      .order("created_at", { ascending: false })
+      `
+      )
+      .order("created_at", { ascending: false });
 
-    if (error) throw error
-    return data
+    if (error) throw error;
+    return data;
   } catch (error) {
-    console.error("Error fetching payments:", error)
-    throw error
+    console.error("Error fetching payments:", error);
+    throw error;
   }
 }
 
 export async function getStaff(searchTerm?: string, roleFilter?: string) {
   try {
-    let query = supabase.from("users").select("*")
+    let query = supabase.from("users").select("*");
 
     // Apply search filter
     if (searchTerm && searchTerm.trim()) {
-      query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
+      query = query.or(
+        `full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`
+      );
     }
 
     // Apply role filter
     if (roleFilter && roleFilter !== "all") {
-      query = query.eq("role", roleFilter)
+      query = query.eq("role", roleFilter);
     }
 
-    const { data, error } = await query.order("created_at", { ascending: false })
+    const { data, error } = await query.order("created_at", {
+      ascending: false,
+    });
 
-    if (error) throw error
-    return data as Staff[]
+    if (error) throw error;
+    return data as Staff[];
   } catch (error) {
-    console.error("Error fetching staff:", error)
-    throw error
+    console.error("Error fetching staff:", error);
+    throw error;
   }
 }
 
 // CRUD Operations
 export async function createOrder(orderData: any) {
   try {
-    const { data, error } = await supabase.from("orders").insert(orderData).select().single()
+    const { data, error } = await supabase
+      .from("orders")
+      .insert(orderData)
+      .select()
+      .single();
 
-    if (error) throw error
-    return data
+    if (error) throw error;
+    return data;
   } catch (error) {
-    console.error("Error creating order:", error)
-    throw error
+    console.error("Error creating order:", error);
+    throw error;
   }
 }
 
 export async function updateOrder(id: string, orderData: any) {
   try {
-    const { data, error } = await supabase.from("orders").update(orderData).eq("id", id).select().single()
+    const { data, error } = await supabase
+      .from("orders")
+      .update(orderData)
+      .eq("id", id)
+      .select()
+      .single();
 
-    if (error) throw error
-    return data
+    if (error) throw error;
+    return data;
   } catch (error) {
-    console.error("Error updating order:", error)
-    throw error
+    console.error("Error updating order:", error);
+    throw error;
   }
 }
 
 export async function deleteOrder(id: string) {
   try {
-    const { error } = await supabase.from("orders").delete().eq("id", id)
+    const { error } = await supabase.from("orders").delete().eq("id", id);
 
-    if (error) throw error
+    if (error) throw error;
   } catch (error) {
-    console.error("Error deleting order:", error)
-    throw error
+    console.error("Error deleting order:", error);
+    throw error;
   }
 }
 
 export async function createCustomer(customerData: any) {
   try {
-    const { data, error } = await supabase.from("customers").insert(customerData).select().single()
+    const { data, error } = await supabase
+      .from("customers")
+      .insert(customerData)
+      .select()
+      .single();
 
-    if (error) throw error
-    return data
+    if (error) throw error;
+    return data;
   } catch (error) {
-    console.error("Error creating customer:", error)
-    throw error
+    console.error("Error creating customer:", error);
+    throw error;
   }
 }
 
 export async function updateCustomer(id: string, customerData: any) {
   try {
-    const { data, error } = await supabase.from("customers").update(customerData).eq("id", id).select().single()
+    const { data, error } = await supabase
+      .from("customers")
+      .update(customerData)
+      .eq("id", id)
+      .select()
+      .single();
 
-    if (error) throw error
-    return data
+    if (error) throw error;
+    return data;
   } catch (error) {
-    console.error("Error updating customer:", error)
-    throw error
+    console.error("Error updating customer:", error);
+    throw error;
   }
 }
 
 export async function deleteCustomer(id: string) {
   try {
-    const { error } = await supabase.from("customers").delete().eq("id", id)
+    const { error } = await supabase.from("customers").delete().eq("id", id);
 
-    if (error) throw error
+    if (error) throw error;
   } catch (error) {
-    console.error("Error deleting customer:", error)
-    throw error
+    console.error("Error deleting customer:", error);
+    throw error;
   }
 }
 
 export async function createDelivery(deliveryData: any) {
   try {
-    const { data, error } = await supabase.from("deliveries").insert(deliveryData).select().single()
+    const { data, error } = await supabase
+      .from("deliveries")
+      .insert(deliveryData)
+      .select()
+      .single();
 
-    if (error) throw error
-    return data
+    if (error) throw error;
+    return data;
   } catch (error) {
-    console.error("Error creating delivery:", error)
-    throw error
+    console.error("Error creating delivery:", error);
+    throw error;
   }
 }
 
 export async function updateDelivery(id: string, deliveryData: any) {
   try {
-    const { data, error } = await supabase.from("deliveries").update(deliveryData).eq("id", id).select().single()
+    const { data, error } = await supabase
+      .from("deliveries")
+      .update(deliveryData)
+      .eq("id", id)
+      .select()
+      .single();
 
-    if (error) throw error
-    return data
+    if (error) throw error;
+    return data;
   } catch (error) {
-    console.error("Error updating delivery:", error)
-    throw error
+    console.error("Error updating delivery:", error);
+    throw error;
   }
 }
 
 export async function deleteDelivery(id: string) {
   try {
-    const { error } = await supabase.from("deliveries").delete().eq("id", id)
+    const { error } = await supabase.from("deliveries").delete().eq("id", id);
 
-    if (error) throw error
+    if (error) throw error;
   } catch (error) {
-    console.error("Error deleting delivery:", error)
-    throw error
+    console.error("Error deleting delivery:", error);
+    throw error;
   }
 }
