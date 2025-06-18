@@ -1,0 +1,97 @@
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+export function getOrderStatusColor(status: string) {
+  const colors: { [key: string]: string } = {
+    received: "bg-blue-100 text-blue-800",
+    washing: "bg-yellow-100 text-yellow-800",
+    ready: "bg-green-100 text-green-800",
+    delivered: "bg-gray-100 text-gray-800",
+    cancelled: "bg-red-100 text-red-800",
+  }
+  return colors[status] || "bg-gray-100 text-gray-800"
+}
+
+export function formatCurrency(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(0)
+  }
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
+
+export function formatDate(dateString?: string | Date | null): string {
+  if (!dateString) return "-"
+  return new Intl.DateTimeFormat("id-ID", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(dateString))
+}
+
+export function formatDateTime(dateString?: string | Date | null): string {
+  if (!dateString) return "-"
+  return new Intl.DateTimeFormat("id-ID", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(dateString))
+}
+
+export function generateOrderNumber(): string {
+  const now = new Date()
+  const year = now.getFullYear().toString().slice(-2)
+  const month = (now.getMonth() + 1).toString().padStart(2, "0")
+  const day = now.getDate().toString().padStart(2, "0")
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, "0")
+
+  return `ML${year}${month}${day}${random}`
+}
+
+export function calculateEstimatedCompletion(hours: number): Date {
+  const now = new Date()
+  return new Date(now.getTime() + hours * 60 * 60 * 1000)
+}
+
+export function getPaymentStatusColor(status: string): string {
+  const colors: { [key: string]: string } = {
+    pending: "bg-yellow-100 text-yellow-800",
+    paid: "bg-green-100 text-green-800",
+    partial: "bg-orange-100 text-orange-800",
+    refunded: "bg-red-100 text-red-800",
+  }
+  return colors[status] || "bg-gray-100 text-gray-800"
+}
+
+export function validatePhone(phone: string): boolean {
+  const phoneRegex = /^(\+62|62|0)8[1-9][0-9]{6,9}$/
+  return phoneRegex.test(phone.replace(/\s/g, ""))
+}
+
+export function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+export function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => func(...args), wait)
+  }
+}
