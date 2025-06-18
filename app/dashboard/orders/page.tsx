@@ -26,7 +26,7 @@ export default function OrdersPage() {
   const fetchOrdersData = async () => {
     setLoading(true)
     setError(null)
-    const data = await getOrders(searchTerm, statusFilter)
+    const data = await getOrders()
     if (data) {
       setOrders(data)
     } else {

@@ -57,7 +57,7 @@ export async function getDashboardStats() {
   }
 }
 
-export async function getOrders(searchTerm: string, status: string) {
+export async function getOrders() {
   try {
     const { data, error } = await supabase
       .from("orders")
@@ -81,7 +81,7 @@ export async function getOrders(searchTerm: string, status: string) {
   }
 }
 
-export async function getCustomers(searchTerm: string) {
+export async function getCustomers() {
   try {
     const { data, error } = await supabase
       .from("customers")
