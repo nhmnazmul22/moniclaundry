@@ -114,16 +114,6 @@ export default function LoginPage() {
               {loading ? "Masuk..." : "Masuk"}
             </Button>
           </form>
-
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-700">
-              <strong>Test Account:</strong>
-              <br />
-              Email: kyodaistudio56@gmail.com
-              <br />
-              Password: [masukkan password Anda]
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

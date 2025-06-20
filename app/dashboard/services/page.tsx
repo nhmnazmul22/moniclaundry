@@ -310,10 +310,14 @@ function ServiceForm({
   setBranchId?: Dispatch<SetStateAction<string>>;
   branches?: Branches[];
 }) {
-  const selectedBranch = branches?.find(
-    (branch) => branch.id === service?.current_branch_id
-  );
+  const [selectedBranch, setSelectedBranch] = useState<Branches>();
 
+  useEffect(() => {
+    const selectedBranch = branches?.find(
+      (branch) => branch.id === service?.current_branch_id
+    );
+    setSelectedBranch(selectedBranch);
+  }, [service]);
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -381,7 +385,7 @@ function ServiceForm({
         {branchId ||
           (service?.current_branch_id && (
             <Input
-              className=""
+              className="hidden"
               name="current_branch_id"
               defaultValue={branchId || service.current_branch_id}
             ></Input>
@@ -392,14 +396,11 @@ function ServiceForm({
           onValueChange={setBranchId}
         >
           <SelectTrigger className="w-full">
-            <SelectValue
-              placeholder="Select Branch"
-              children={
-                selectedBranch
-                  ? `${selectedBranch.name} (${selectedBranch.type})`
-                  : ""
-              }
-            />
+            <SelectValue placeholder="Select Branch">
+              {selectedBranch
+                ? `${selectedBranch.name} (${selectedBranch.type})`
+                : ""}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {branches &&
