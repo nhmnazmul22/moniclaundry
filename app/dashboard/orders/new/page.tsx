@@ -61,7 +61,7 @@ export default function NewOrderPage() {
     try {
       const [customersData, servicesData] = await Promise.all([
         getCustomers(currentBranchId, ""),
-        getServices(),
+        getServices(""),
       ]);
       if (customersData) setCustomers(customersData);
       if (servicesData) setServices(servicesData.filter((s) => s.is_active)); // Only active services
