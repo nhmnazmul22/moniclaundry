@@ -12,6 +12,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -19,10 +26,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useBranch } from "@/contexts/branch-context";
 import { useToast } from "@/hooks/use-toast";
+import { getBranchList } from "@/lib/branch-data";
 import { getCustomers } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
-import type { Customer } from "@/types/database";
+import type { Branches, Customer } from "@/types/database";
 import {
   Edit,
   Eye,
@@ -38,10 +47,13 @@ import { useEffect, useState, useTransition } from "react";
 import { addCustomer, deleteCustomer, updateCustomer } from "./actions";
 
 export default function CustomersPage() {
+  const { currentBranchId } = useBranch();
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [branches, setBranches] = useState<Branches[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [branchId, setBranchId] = useState<string>("");
   const { toast } = useToast();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -53,11 +65,17 @@ export default function CustomersPage() {
 
   const fetchCustomers = () => {
     setIsLoading(true);
-    getCustomers()
+    getCustomers(currentBranchId, searchTerm)
       .then((data) => {
         if (data) setCustomers(data);
       })
       .finally(() => setIsLoading(false));
+  };
+
+  const fetchBranches = () => {
+    getBranchList().then((data) => {
+      if (data) setBranches(data);
+    });
   };
 
   useEffect(() => {
@@ -65,11 +83,16 @@ export default function CustomersPage() {
       fetchCustomers();
     }, 300); // Debounce search
     return () => clearTimeout(handler);
-  }, [searchTerm]);
+  }, [searchTerm, currentBranchId]);
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
 
   const handleAddSubmit = async (formData: FormData) => {
+    console.log(formData);
     startTransition(async () => {
-      const result = await addCustomer(formData);
+      const result = await addCustomer(formData, branchId);
       if (result.success) {
         toast({
           title: "Success",
@@ -178,6 +201,25 @@ export default function CustomersPage() {
               <div>
                 <Label htmlFor="address">Alamat</Label>
                 <Input id="address" name="address" />
+              </div>
+              <div>
+                <Select
+                  name="current_branch_id"
+                  value={branchId}
+                  onValueChange={setBranchId}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.length > 0 &&
+                      branches.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name} - {`(${branch.type})`}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button

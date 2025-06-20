@@ -81,12 +81,26 @@ export async function getOrders() {
   }
 }
 
-export async function getCustomers() {
+export async function getCustomers(branchId: string, searchTerm: string) {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("customers")
       .select("*")
       .order("created_at", { ascending: false });
+
+    // Apply Branch id
+    if (branchId) {
+      query = query.eq("current_branch_id", branchId);
+    }
+
+    // Apply search filter
+    if (searchTerm && searchTerm.trim()) {
+      query = query.or(
+        `name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`
+      );
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data as Customer[];
@@ -96,12 +110,19 @@ export async function getCustomers() {
   }
 }
 
-export async function getServices() {
+export async function getServices(branchId: string) {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("services")
       .select("*")
       .order("name", { ascending: true });
+
+    // Apply Branch id
+    if (branchId) {
+      query = query.eq("current_branch_id", branchId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data as Service[];

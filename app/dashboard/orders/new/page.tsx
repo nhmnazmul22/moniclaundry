@@ -1,142 +1,204 @@
-"use client"
+"use client";
 
-import Link from "next/link"
+import Link from "next/link";
 
-import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/components/ui/use-toast"
-import { getCustomers, getServices } from "@/lib/data"
-import type { Customer, Service } from "@/types/database"
-import { supabase } from "@/lib/supabase/client"
-import { PlusCircle, Trash2, Loader2 } from "lucide-react"
-import { formatCurrency } from "@/lib/utils"
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
+import { useBranch } from "@/contexts/branch-context";
+import { getCustomers, getServices } from "@/lib/data";
+import { supabase } from "@/lib/supabase/client";
+import { formatCurrency } from "@/lib/utils";
+import type { Customer, Service } from "@/types/database";
+import { Loader2, PlusCircle, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 interface OrderItemForm {
-  service_id: string
-  quantity: number // This will be weight (kg) or pieces depending on service
-  unit_price: number
-  subtotal: number
-  service_name?: string // For display
+  service_id: string;
+  quantity: number; // This will be weight (kg) or pieces depending on service
+  unit_price: number;
+  subtotal: number;
+  service_name?: string; // For display
 }
 
 export default function NewOrderPage() {
-  const router = useRouter()
-  const { toast } = useToast()
+  const { currentBranchId } = useBranch();
+  const router = useRouter();
+  const { toast } = useToast();
 
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [services, setServices] = useState<Service[]>([])
-  const [loadingDependencies, setLoadingDependencies] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loadingDependencies, setLoadingDependencies] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
-  const [customerId, setCustomerId] = useState<string>("")
-  const [orderItems, setOrderItems] = useState<OrderItemForm[]>([])
-  const [notes, setNotes] = useState<string>("")
-  const [paymentMethod, setPaymentMethod] = useState<string>("cash")
-  const [paymentStatus, setPaymentStatus] = useState<string>("pending") // Default to pending
+  const [customerId, setCustomerId] = useState<string>("");
+  const [orderItems, setOrderItems] = useState<OrderItemForm[]>([]);
+  const [notes, setNotes] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("cash");
+  const [paymentStatus, setPaymentStatus] = useState<string>("pending"); // Default to pending
 
   const fetchDependencies = useCallback(async () => {
-    setLoadingDependencies(true)
+    setLoadingDependencies(true);
     try {
-      const [customersData, servicesData] = await Promise.all([getCustomers(), getServices()])
-      if (customersData) setCustomers(customersData)
-      if (servicesData) setServices(servicesData.filter((s) => s.is_active)) // Only active services
+      const [customersData, servicesData] = await Promise.all([
+        getCustomers(currentBranchId, ""),
+        getServices(),
+      ]);
+      if (customersData) setCustomers(customersData);
+      if (servicesData) setServices(servicesData.filter((s) => s.is_active)); // Only active services
     } catch (error) {
-      toast({ title: "Error", description: "Gagal memuat data customer atau layanan.", variant: "destructive" })
+      toast({
+        title: "Error",
+        description: "Gagal memuat data customer atau layanan.",
+        variant: "destructive",
+      });
     } finally {
-      setLoadingDependencies(false)
+      setLoadingDependencies(false);
     }
-  }, [toast])
+  }, [toast]);
 
   useEffect(() => {
-    fetchDependencies()
-  }, [fetchDependencies])
+    fetchDependencies();
+  }, [fetchDependencies, currentBranchId]);
 
   const handleAddOrderItem = () => {
-    const defaultService = services[0]
+    const defaultService = services[0];
     if (!defaultService) {
-      toast({ title: "Info", description: "Tidak ada layanan yang tersedia untuk ditambahkan.", variant: "default" })
-      return
+      toast({
+        title: "Info",
+        description: "Tidak ada layanan yang tersedia untuk ditambahkan.",
+        variant: "default",
+      });
+      return;
     }
-    setOrderItems([...orderItems, { service_id: "", quantity: 1, unit_price: 0, subtotal: 0, service_name: "" }])
-  }
+    setOrderItems([
+      ...orderItems,
+      {
+        service_id: "",
+        quantity: 1,
+        unit_price: 0,
+        subtotal: 0,
+        service_name: "",
+      },
+    ]);
+  };
 
   const handleRemoveOrderItem = (index: number) => {
-    const newItems = orderItems.filter((_, i) => i !== index)
-    setOrderItems(newItems)
-  }
+    const newItems = orderItems.filter((_, i) => i !== index);
+    setOrderItems(newItems);
+  };
 
-  const handleOrderItemChange = (index: number, field: keyof OrderItemForm, value: any) => {
-    const newItems = [...orderItems]
-    const item = newItems[index] as any
-    item[field] = value
+  const handleOrderItemChange = (
+    index: number,
+    field: keyof OrderItemForm,
+    value: any
+  ) => {
+    const newItems = [...orderItems];
+    const item = newItems[index] as any;
+    item[field] = value;
 
     if (field === "service_id") {
-      const selectedService = services.find((s) => s.id === value)
+      const selectedService = services.find((s) => s.id === value);
       if (selectedService) {
-        item.unit_price = selectedService.price_per_kg // Assuming price_per_kg for now
-        item.service_name = selectedService.name
+        item.unit_price = selectedService.price_per_kg; // Assuming price_per_kg for now
+        item.service_name = selectedService.name;
       } else {
-        item.unit_price = 0
-        item.service_name = ""
+        item.unit_price = 0;
+        item.service_name = "";
       }
     }
 
     // Recalculate subtotal
     if (field === "service_id" || field === "quantity") {
-      item.subtotal = item.quantity * item.unit_price
+      item.subtotal = item.quantity * item.unit_price;
     }
 
-    newItems[index] = item
-    setOrderItems(newItems)
-  }
+    newItems[index] = item;
+    setOrderItems(newItems);
+  };
 
   const calculateTotals = () => {
-    const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0)
+    const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
     // Add logic for discount and tax if needed
-    const discount = 0
-    const taxRate = 0 // Example 10% tax
-    const tax = subtotal * taxRate
-    const totalAmount = subtotal - discount + tax
+    const discount = 0;
+    const taxRate = 0; // Example 10% tax
+    const tax = subtotal * taxRate;
+    const totalAmount = subtotal - discount + tax;
     return {
       subtotal,
       discount,
       tax,
       totalAmount,
-      totalWeight: orderItems.reduce((sum, item) => sum + Number(item.quantity), 0),
-    }
-  }
+      totalWeight: orderItems.reduce(
+        (sum, item) => sum + Number(item.quantity),
+        0
+      ),
+    };
+  };
 
-  const { subtotal, discount, tax, totalAmount, totalWeight } = calculateTotals()
+  const { subtotal, discount, tax, totalAmount, totalWeight } =
+    calculateTotals();
 
   const handleSubmitOrder = async () => {
     if (!customerId) {
-      toast({ title: "Error", description: "Pelanggan harus dipilih.", variant: "destructive" })
-      return
+      toast({
+        title: "Error",
+        description: "Pelanggan harus dipilih.",
+        variant: "destructive",
+      });
+      return;
     }
     if (orderItems.length === 0) {
-      toast({ title: "Error", description: "Minimal harus ada satu item layanan.", variant: "destructive" })
-      return
+      toast({
+        title: "Error",
+        description: "Minimal harus ada satu item layanan.",
+        variant: "destructive",
+      });
+      return;
     }
     if (orderItems.some((item) => !item.service_id || item.quantity <= 0)) {
       toast({
         title: "Error",
-        description: "Setiap item harus memiliki layanan dan kuantitas yang valid.",
+        description:
+          "Setiap item harus memiliki layanan dan kuantitas yang valid.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     // Generate order number (simple example, consider a more robust solution)
-    const orderNumber = `ML${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, "0")}${new Date().getDate().toString().padStart(2, "0")}${Math.random().toString().substring(2, 6).toUpperCase()}`
+    const orderNumber = `ML${new Date().getFullYear()}${(
+      new Date().getMonth() + 1
+    )
+      .toString()
+      .padStart(2, "0")}${new Date()
+      .getDate()
+      .toString()
+      .padStart(2, "0")}${Math.random()
+      .toString()
+      .substring(2, 6)
+      .toUpperCase()}`;
 
     const orderData = {
       order_number: orderNumber,
@@ -151,18 +213,24 @@ export default function NewOrderPage() {
       order_status: "received", // Initial status
       notes: notes,
       // created_by: get from auth context
-    }
+    };
 
-    const { data: newOrder, error: orderError } = await supabase.from("orders").insert(orderData).select().single()
+    const { data: newOrder, error: orderError } = await supabase
+      .from("orders")
+      .insert(orderData)
+      .select()
+      .single();
 
     if (orderError || !newOrder) {
       toast({
         title: "Error",
-        description: `Gagal membuat order: ${orderError?.message || "Unknown error"}`,
+        description: `Gagal membuat order: ${
+          orderError?.message || "Unknown error"
+        }`,
         variant: "destructive",
-      })
-      setIsSubmitting(false)
-      return
+      });
+      setIsSubmitting(false);
+      return;
     }
 
     // Insert order items
@@ -172,20 +240,22 @@ export default function NewOrderPage() {
       quantity: item.quantity,
       unit_price: item.unit_price,
       subtotal: item.subtotal,
-    }))
+    }));
 
-    const { error: itemsError } = await supabase.from("order_items").insert(orderItemsData)
+    const { error: itemsError } = await supabase
+      .from("order_items")
+      .insert(orderItemsData);
 
     if (itemsError) {
       // Optionally, delete the created order if items fail to insert (rollback logic)
-      await supabase.from("orders").delete().eq("id", newOrder.id)
+      await supabase.from("orders").delete().eq("id", newOrder.id);
       toast({
         title: "Error",
         description: `Gagal menyimpan item order: ${itemsError.message}. Order dibatalkan.`,
         variant: "destructive",
-      })
-      setIsSubmitting(false)
-      return
+      });
+      setIsSubmitting(false);
+      return;
     }
 
     // If payment is made directly (e.g. cash and paid)
@@ -197,21 +267,24 @@ export default function NewOrderPage() {
         payment_date: new Date().toISOString(),
         status: "completed",
         // created_by
-      }
-      await supabase.from("payments").insert(paymentData)
+      };
+      await supabase.from("payments").insert(paymentData);
     }
 
-    toast({ title: "Sukses", description: `Order ${newOrder.order_number} berhasil dibuat.` })
-    setIsSubmitting(false)
-    router.push("/dashboard/orders") // Redirect to orders list
-  }
+    toast({
+      title: "Sukses",
+      description: `Order ${newOrder.order_number} berhasil dibuat.`,
+    });
+    setIsSubmitting(false);
+    router.push("/dashboard/orders"); // Redirect to orders list
+  };
 
   if (loadingDependencies) {
     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin" />
       </div>
-    )
+    );
   }
 
   return (
@@ -271,7 +344,9 @@ export default function NewOrderPage() {
                     <Label htmlFor={`service-${index}`}>Layanan</Label>
                     <Select
                       value={item.service_id}
-                      onValueChange={(value) => handleOrderItemChange(index, "service_id", value)}
+                      onValueChange={(value) =>
+                        handleOrderItemChange(index, "service_id", value)
+                      }
                     >
                       <SelectTrigger id={`service-${index}`}>
                         <SelectValue placeholder="Pilih Layanan" />
@@ -279,32 +354,47 @@ export default function NewOrderPage() {
                       <SelectContent>
                         {services.map((service) => (
                           <SelectItem key={service.id} value={service.id}>
-                            {service.name} ({formatCurrency(service.price_per_kg)}/kg)
+                            {service.name} (
+                            {formatCurrency(service.price_per_kg)}/kg)
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor={`quantity-${index}`}>Kuantitas (kg/pcs)</Label>
+                    <Label htmlFor={`quantity-${index}`}>
+                      Kuantitas (kg/pcs)
+                    </Label>
                     <Input
                       id={`quantity-${index}`}
                       type="number"
                       value={item.quantity}
-                      onChange={(e) => handleOrderItemChange(index, "quantity", Number.parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        handleOrderItemChange(
+                          index,
+                          "quantity",
+                          Number.parseFloat(e.target.value) || 0
+                        )
+                      }
                       min="0.1"
                       step="0.1"
                     />
                   </div>
                   <div className="space-y-1">
                     <Label>Subtotal</Label>
-                    <Input value={formatCurrency(item.subtotal)} readOnly className="bg-gray-100" />
+                    <Input
+                      value={formatCurrency(item.subtotal)}
+                      readOnly
+                      className="bg-gray-100"
+                    />
                   </div>
                 </div>
               </Card>
             ))}
             {orderItems.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">Belum ada item layanan.</p>
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Belum ada item layanan.
+              </p>
             )}
           </div>
 
@@ -314,7 +404,8 @@ export default function NewOrderPage() {
               <CardTitle className="text-md mb-2">Ringkasan Biaya</CardTitle>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span>Total Berat/Item:</span> <span>{totalWeight.toFixed(1)} kg/pcs</span>
+                  <span>Total Berat/Item:</span>{" "}
+                  <span>{totalWeight.toFixed(1)} kg/pcs</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Subtotal:</span> <span>{formatCurrency(subtotal)}</span>
@@ -322,7 +413,8 @@ export default function NewOrderPage() {
                 {/* <div className="flex justify-between"><span>Diskon:</span> <span>{formatCurrency(discount)}</span></div> */}
                 {/* <div className="flex justify-between"><span>Pajak:</span> <span>{formatCurrency(tax)}</span></div> */}
                 <div className="flex justify-between font-bold text-md pt-1 border-t mt-1">
-                  <span>Total Tagihan:</span> <span>{formatCurrency(totalAmount)}</span>
+                  <span>Total Tagihan:</span>{" "}
+                  <span>{formatCurrency(totalAmount)}</span>
                 </div>
               </div>
             </Card>
@@ -371,15 +463,22 @@ export default function NewOrderPage() {
           </div>
         </CardContent>
         <CardFooter className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={() => router.back()}
+            disabled={isSubmitting}
+          >
             Batal
           </Button>
-          <Button onClick={handleSubmitOrder} disabled={isSubmitting || orderItems.length === 0 || !customerId}>
+          <Button
+            onClick={handleSubmitOrder}
+            disabled={isSubmitting || orderItems.length === 0 || !customerId}
+          >
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Simpan Order
           </Button>
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }

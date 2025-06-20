@@ -1,158 +1,203 @@
-"use client"
+"use client";
 
-import { Label } from "@/components/ui/label"
-
-import { useEffect, useState, useCallback } from "react"
-import { formatCurrency } from "@/lib/utils"
-import { getOrders, getPayments } from "@/lib/data" // Assuming these fetch necessary data
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { DatePickerWithRange } from "@/components/ui/date-range-picker" // Assuming this component exists
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Loader2, AlertTriangle, Download } from "lucide-react"
-import type { DateRange } from "react-day-picker"
-import { addDays, format } from "date-fns"
-
-interface ReportData {
-  totalRevenue: number
-  totalOrders: number
-  avgOrderValue: number
-  growthRate?: number // Optional, if comparison period is available
-  dailyBreakdown: Array<{ date: string; revenue: number; orders: number; avgPerOrder: number }>
-  topServices?: Array<{ name: string; count: number; revenue: number }> // Example
-  paymentMethods?: { [key: string]: number } // Example
-}
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { getOrders, getPayments } from "@/lib/data";
+import { generateLaundryReport, type ReportData } from "@/lib/pdf-generator";
+import { ReportDataProcessor } from "@/lib/report-data-processor";
+import { formatCurrency } from "@/lib/utils";
+import { addDays, format } from "date-fns";
+import { AlertTriangle, Download, FileText, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import type { DateRange } from "react-day-picker";
 
 export default function ReportsPage() {
-  const [reportData, setReportData] = useState<ReportData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date(),
-  })
-  const [reportType, setReportType] = useState<string>("revenue_summary") // e.g., revenue_summary, order_details, customer_insights
+  });
+  const [reportType, setReportType] = useState<string>("revenue_summary");
 
   const generateReport = useCallback(async () => {
     if (!dateRange?.from || !dateRange?.to) {
-      setError("Silakan pilih rentang tanggal.")
-      return
+      setError("Silakan pilih rentang tanggal.");
+      return;
     }
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      // Fetch raw data - adjust based on actual needs for different report types
       const [ordersData, paymentsData] = await Promise.all([
-        getOrders(), // Potentially filter by dateRange on backend if possible
-        getPayments(), // Potentially filter by dateRange on backend
-      ])
+        getOrders(),
+        getPayments(),
+      ]);
 
       if (!ordersData || !paymentsData) {
-        throw new Error("Gagal mengambil data untuk laporan.")
+        throw new Error("Gagal mengambil data untuk laporan.");
       }
 
-      // Filter data by dateRange client-side if not done on backend
-      const filteredOrders = ordersData.filter((o) => {
-        const orderDate = new Date(o.created_at)
-        return orderDate >= dateRange.from! && orderDate <= dateRange.to!
-      })
-      const filteredPayments = paymentsData.filter((p) => {
-        const paymentDate = new Date(p.payment_date)
-        return p.status === "completed" && paymentDate >= dateRange.from! && paymentDate <= dateRange.to!
-      })
+      // Use the flexible processor that works with your actual data structure
+      const processedData = ReportDataProcessor.createMockDataFromActual(
+        ordersData,
+        paymentsData,
+        dateRange
+      );
 
-      // Process data based on reportType
-      let processedData: ReportData
-
-      if (reportType === "revenue_summary") {
-        const totalRevenue = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0)
-        const totalOrders = filteredOrders.length
-        const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
-
-        const dailyBreakdownMap: { [key: string]: { revenue: number; orders: number } } = {}
-
-        filteredPayments.forEach((p) => {
-          const dateStr = format(new Date(p.payment_date), "yyyy-MM-dd")
-          if (!dailyBreakdownMap[dateStr]) dailyBreakdownMap[dateStr] = { revenue: 0, orders: 0 }
-          dailyBreakdownMap[dateStr].revenue += p.amount || 0
-        })
-        filteredOrders.forEach((o) => {
-          const dateStr = format(new Date(o.created_at), "yyyy-MM-dd")
-          if (!dailyBreakdownMap[dateStr]) dailyBreakdownMap[dateStr] = { revenue: 0, orders: 0 } // Ensure date exists
-          dailyBreakdownMap[dateStr].orders++
-        })
-
-        const dailyBreakdown = Object.entries(dailyBreakdownMap)
-          .map(([date, data]) => ({
-            date,
-            ...data,
-            avgPerOrder: data.orders > 0 ? data.revenue / data.orders : 0,
-          }))
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-
-        processedData = { totalRevenue, totalOrders, avgOrderValue, dailyBreakdown }
-      } else {
-        // Placeholder for other report types
-        processedData = { totalRevenue: 0, totalOrders: 0, avgOrderValue: 0, dailyBreakdown: [] }
-      }
-
-      setReportData(processedData)
+      setReportData(processedData);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Terjadi kesalahan saat membuat laporan.")
-      console.error(e)
-      setReportData(null)
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Terjadi kesalahan saat membuat laporan."
+      );
+      console.error(e);
+      setReportData(null);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [dateRange, reportType])
+  }, [dateRange, reportType]);
+
+  const handleGeneratePDF = async () => {
+    if (!reportData) {
+      alert("Tidak ada data untuk dibuat PDF.");
+      return;
+    }
+
+    setGeneratingPDF(true);
+
+    try {
+      console.log("Starting PDF generation with data:", reportData);
+
+      // Check if required dependencies are available
+      if (typeof window === "undefined") {
+        throw new Error("PDF generation must run in browser environment");
+      }
+
+      // Use the separated PDF generator with better error handling
+      await generateLaundryReport(reportData, dateRange);
+
+      console.log("PDF generated successfully");
+    } catch (error) {
+      console.error("Detailed PDF generation error:", error);
+
+      // More specific error messages
+      let errorMessage = "Terjadi kesalahan saat membuat PDF";
+
+      if (error instanceof Error) {
+        if (error.message.includes("jsPDF")) {
+          errorMessage =
+            "Error dengan library PDF. Pastikan jsPDF terinstall dengan benar.";
+        } else if (error.message.includes("autoTable")) {
+          errorMessage =
+            "Error dengan tabel PDF. Pastikan jspdf-autotable terinstall dengan benar.";
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+
+      alert(errorMessage);
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
 
   useEffect(() => {
-    generateReport()
-  }, [generateReport]) // Auto-generate on initial load or when params change
+    generateReport();
+  }, [generateReport]);
 
-  const handleExport = () => {
-    // Basic CSV export example
+  const handleExportCSV = () => {
     if (!reportData || reportData.dailyBreakdown.length === 0) {
-      alert("Tidak ada data untuk diekspor.")
-      return
+      alert("Tidak ada data untuk diekspor.");
+      return;
     }
-    const headers = ["Date", "Revenue", "Orders", "Avg Per Order"]
+    const headers = ["Date", "Revenue", "Orders", "Avg Per Order"];
     const csvRows = [
       headers.join(","),
       ...reportData.dailyBreakdown.map((row) =>
-        [row.date, row.revenue, row.orders, row.avgPerOrder.toFixed(2)].join(","),
+        [row.date, row.revenue, row.orders, row.avgPerOrder.toFixed(2)].join(
+          ","
+        )
       ),
-    ]
-    const csvString = csvRows.join("\n")
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
+    ];
+    const csvString = csvRows.join("\n");
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
     if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob)
-      link.setAttribute("href", url)
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
       link.setAttribute(
         "download",
-        `report_${reportType}_${format(dateRange?.from || new Date(), "yyyyMMdd")}-${format(dateRange?.to || new Date(), "yyyyMMdd")}.csv`,
-      )
-      link.style.visibility = "hidden"
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+        `report_${reportType}_${format(
+          dateRange?.from || new Date(),
+          "yyyyMMdd"
+        )}-${format(dateRange?.to || new Date(), "yyyyMMdd")}.csv`
+      );
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
-          <p className="text-muted-foreground">Analisis performa bisnis dan laporan keuangan</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Reports & Analytics
+          </h1>
+          <p className="text-muted-foreground">
+            Analisis performa bisnis dan laporan keuangan
+          </p>
         </div>
-        <Button onClick={handleExport} disabled={!reportData || loading}>
-          <Download className="mr-2 h-4 w-4" />
-          Export Report
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleGeneratePDF}
+            disabled={!reportData || loading || generatingPDF}
+          >
+            {generatingPDF ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="mr-2 h-4 w-4" />
+            )}
+            Generate PDF
+          </Button>
+          <Button
+            onClick={handleExportCSV}
+            disabled={!reportData || loading}
+            variant="outline"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -167,8 +212,9 @@ export default function ReportsPage() {
                 <SelectValue placeholder="Pilih Tipe Laporan" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="revenue_summary">Ringkasan Pendapatan</SelectItem>
-                {/* Add more report types here */}
+                <SelectItem value="revenue_summary">
+                  Ringkasan Pendapatan
+                </SelectItem>
                 <SelectItem value="order_details" disabled>
                   Detail Pesanan (Segera Hadir)
                 </SelectItem>
@@ -180,9 +226,17 @@ export default function ReportsPage() {
           </div>
           <div className="grid gap-2">
             <Label>Rentang Tanggal</Label>
-            <DatePickerWithRange date={dateRange} setDate={setDateRange} className="w-full md:w-auto" />
+            <DatePickerWithRange
+              date={dateRange}
+              setDate={setDateRange}
+              className="w-full md:w-auto"
+            />
           </div>
-          <Button onClick={generateReport} disabled={loading} className="self-end">
+          <Button
+            onClick={generateReport}
+            disabled={loading}
+            className="self-end"
+          >
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Generate Report
           </Button>
@@ -218,25 +272,109 @@ export default function ReportsPage() {
             <CardHeader>
               <CardTitle>Ringkasan Laporan</CardTitle>
               <CardDescription>
-                Untuk periode {dateRange?.from ? format(dateRange.from, "dd MMM yyyy") : ""} -{" "}
+                Untuk periode{" "}
+                {dateRange?.from ? format(dateRange.from, "dd MMM yyyy") : ""} -{" "}
                 {dateRange?.to ? format(dateRange.to, "dd MMM yyyy") : ""}
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-3">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold">{formatCurrency(reportData.totalRevenue)}</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Total Revenue
+                </p>
+                <p className="text-2xl font-bold">
+                  {formatCurrency(reportData.totalRevenue)}
+                </p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Orders</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Total Orders
+                </p>
                 <p className="text-2xl font-bold">{reportData.totalOrders}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg Order Value</p>
-                <p className="text-2xl font-bold">{formatCurrency(reportData.avgOrderValue)}</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Avg Order Value
+                </p>
+                <p className="text-2xl font-bold">
+                  {formatCurrency(reportData.avgOrderValue)}
+                </p>
               </div>
             </CardContent>
           </Card>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Penjualan</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between">
+                  <span>Rupiah:</span>
+                  <span className="font-semibold">
+                    {formatCurrency(reportData.salesData.rupiah)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Jumlah Kilo:</span>
+                  <span className="font-semibold">
+                    {reportData.salesData.kilo.toFixed(1)} kg
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Jumlah Satuan:</span>
+                  <span className="font-semibold">
+                    {reportData.salesData.satuan} pcs
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Cara Bayar</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Cash:</span>
+                  <span>
+                    {formatCurrency(reportData.paymentBreakdown.cash.amount)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Transfer:</span>
+                  <span>
+                    {formatCurrency(
+                      reportData.paymentBreakdown.transfer.amount
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>QRIS:</span>
+                  <span>
+                    {formatCurrency(reportData.paymentBreakdown.qris.amount)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Deposit:</span>
+                  <span>
+                    {formatCurrency(reportData.paymentBreakdown.deposit.amount)}
+                  </span>
+                </div>
+                <hr />
+                <div className="flex justify-between text-sm">
+                  <span>Pengeluaran:</span>
+                  <span className="text-red-600">
+                    {formatCurrency(reportData.expenses)}
+                  </span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>Nett Cash:</span>
+                  <span>{formatCurrency(reportData.netCash)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           <Card>
             <CardHeader>
@@ -254,16 +392,26 @@ export default function ReportsPage() {
                       <TableHead>Tanggal</TableHead>
                       <TableHead className="text-right">Revenue</TableHead>
                       <TableHead className="text-right">Orders</TableHead>
-                      <TableHead className="text-right">Avg per Order</TableHead>
+                      <TableHead className="text-right">
+                        Avg per Order
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {reportData.dailyBreakdown.map((item) => (
                       <TableRow key={item.date}>
-                        <TableCell>{format(new Date(item.date), "dd MMM yyyy")}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.revenue)}</TableCell>
-                        <TableCell className="text-right">{item.orders}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.avgPerOrder)}</TableCell>
+                        <TableCell>
+                          {format(new Date(item.date), "dd MMM yyyy")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(item.revenue)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.orders}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(item.avgPerOrder)}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -276,10 +424,12 @@ export default function ReportsPage() {
       {!loading && !error && !reportData && (
         <Card>
           <CardContent className="py-10 text-center">
-            <p className="text-muted-foreground">Silakan konfigurasikan dan buat laporan untuk melihat data.</p>
+            <p className="text-muted-foreground">
+              Silakan konfigurasikan dan buat laporan untuk melihat data.
+            </p>
           </CardContent>
         </Card>
       )}
     </div>
-  )
+  );
 }

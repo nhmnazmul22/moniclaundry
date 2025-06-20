@@ -11,6 +11,7 @@ const parseServiceFormData = (formData: FormData) => ({
   estimated_hours: Number(formData.get("estimated_hours")),
   category: formData.get("category") as string,
   is_active: formData.get("is_active") === "on",
+  current_branch_id: formData.get("current_branch_id") as string,
 });
 
 export async function addService(formData: FormData) {

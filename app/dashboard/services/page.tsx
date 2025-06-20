@@ -1,83 +1,146 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect, useTransition } from "react"
-import { formatCurrency } from "@/lib/utils"
-import { getServices } from "@/lib/data"
-import type { Service } from "@/types/database"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Plus, Search, Edit, Trash2, Clock, Weight, Loader2 } from "lucide-react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { addService, updateService, deleteService } from "./actions"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { useBranch } from "@/contexts/branch-context";
+import { useToast } from "@/hooks/use-toast";
+import { getBranchList } from "@/lib/branch-data";
+import { getServices } from "@/lib/data";
+import { formatCurrency } from "@/lib/utils";
+import type { Branches, Service } from "@/types/database";
+import {
+  Clock,
+  Edit,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+  Weight,
+} from "lucide-react";
+import {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useState,
+  useTransition,
+} from "react";
+import { addService, deleteService, updateService } from "./actions";
 
 export default function ServicesPage() {
-  const [services, setServices] = useState<Service[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isPending, startTransition] = useTransition()
-  const { toast } = useToast()
+  const { currentBranchId } = useBranch();
+  const [branches, setBranches] = useState<Branches[]>([]);
+  const [branchId, setBranchId] = useState<string>("");
 
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [services, setServices] = useState<Service[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
+
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
 
   const fetchServices = () => {
-    setIsLoading(true)
-    getServices()
+    setIsLoading(true);
+    getServices(currentBranchId)
       .then((data) => {
-        if (data) setServices(data)
+        if (data) setServices(data);
       })
-      .finally(() => setIsLoading(false))
-  }
+      .finally(() => setIsLoading(false));
+  };
+
+  const fetchBranches = () => {
+    getBranchList().then((data) => {
+      if (data) setBranches(data);
+    });
+  };
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      fetchServices()
-    }, 300)
-    return () => clearTimeout(handler)
-  }, [searchTerm])
+      fetchServices();
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchTerm, currentBranchId]);
 
-  const handleSubmit = async (action: (formData: FormData) => Promise<any>, formData: FormData) => {
+  useEffect(() => {
+    fetchBranches();
+  }, []);
+
+  const handleSubmit = async (
+    action: (formData: FormData) => Promise<any>,
+    formData: FormData
+  ) => {
     startTransition(async () => {
-      const result = await action(formData)
+      const result = await action(formData);
       if (result.success) {
-        toast({ title: "Success", description: result.message })
-        setIsAddDialogOpen(false)
-        setIsEditDialogOpen(false)
-        setSelectedService(null)
-        fetchServices()
+        toast({ title: "Success", description: result.message });
+        setIsAddDialogOpen(false);
+        setIsEditDialogOpen(false);
+        setSelectedService(null);
+        fetchServices();
       } else {
-        toast({ title: "Error", description: result.message, variant: "destructive" })
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
       }
-    })
-  }
+    });
+  };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this service?")) return
+    if (!confirm("Are you sure you want to delete this service?")) return;
     startTransition(async () => {
-      const result = await deleteService(id)
+      const result = await deleteService(id);
       if (result.success) {
-        toast({ title: "Success", description: result.message })
-        fetchServices()
+        toast({ title: "Success", description: result.message });
+        fetchServices();
       } else {
-        toast({ title: "Error", description: result.message, variant: "destructive" })
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
       }
-    })
-  }
+    });
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Services Management</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Services Management
+        </h1>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
@@ -91,11 +154,14 @@ export default function ServicesPage() {
             </DialogHeader>
             <ServiceForm
               onSubmit={(e) => {
-                e.preventDefault()
-                handleSubmit(addService, new FormData(e.currentTarget))
+                e.preventDefault();
+                handleSubmit(addService, new FormData(e.currentTarget));
               }}
               isPending={isPending}
               onClose={() => setIsAddDialogOpen(false)}
+              branchId={branchId}
+              setBranchId={setBranchId}
+              branches={branches}
             />
           </DialogContent>
         </Dialog>
@@ -137,12 +203,16 @@ export default function ServicesPage() {
                   <TableRow key={service.id}>
                     <TableCell>
                       <div className="font-medium">{service.name}</div>
-                      <div className="text-sm text-gray-500 line-clamp-2">{service.description}</div>
+                      <div className="text-sm text-gray-500 line-clamp-2">
+                        {service.description}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{service.category}</Badge>
                     </TableCell>
-                    <TableCell>{formatCurrency(service.price_per_kg)}</TableCell>
+                    <TableCell>
+                      {formatCurrency(service.price_per_kg)}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center text-sm">
                         <Weight className="mr-1 h-3 w-3" />
@@ -156,7 +226,13 @@ export default function ServicesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={service.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                      <Badge
+                        className={
+                          service.is_active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }
+                      >
                         {service.is_active ? "ACTIVE" : "INACTIVE"}
                       </Badge>
                     </TableCell>
@@ -166,8 +242,8 @@ export default function ServicesPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            setSelectedService(service)
-                            setIsEditDialogOpen(true)
+                            setSelectedService(service);
+                            setIsEditDialogOpen(true);
                           }}
                         >
                           <Edit className="h-4 w-4" />
@@ -201,18 +277,19 @@ export default function ServicesPage() {
               key={selectedService.id}
               service={selectedService}
               onSubmit={(e) => {
-                e.preventDefault()
-                const action = updateService.bind(null, selectedService.id)
-                handleSubmit(action, new FormData(e.currentTarget))
+                e.preventDefault();
+                const action = updateService.bind(null, selectedService.id);
+                handleSubmit(action, new FormData(e.currentTarget));
               }}
               isPending={isPending}
               onClose={() => setIsEditDialogOpen(false)}
+              branches={branches}
             />
           )}
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
 
 // Reusable Service Form Component
@@ -221,12 +298,22 @@ function ServiceForm({
   onSubmit,
   isPending,
   onClose,
+  branchId,
+  setBranchId,
+  branches,
 }: {
-  service?: Service
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void
-  isPending: boolean
-  onClose: () => void
+  service?: Service;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  isPending: boolean;
+  onClose: () => void;
+  branchId?: string;
+  setBranchId?: Dispatch<SetStateAction<string>>;
+  branches?: Branches[];
 }) {
+  const selectedBranch = branches?.find(
+    (branch) => branch.id === service?.current_branch_id
+  );
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -236,11 +323,21 @@ function ServiceForm({
         </div>
         <div className="col-span-2">
           <Label htmlFor="description">Deskripsi</Label>
-          <Textarea id="description" name="description" defaultValue={service?.description || ""} />
+          <Textarea
+            id="description"
+            name="description"
+            defaultValue={service?.description || ""}
+          />
         </div>
         <div>
           <Label htmlFor="price_per_kg">Harga per Kg</Label>
-          <Input id="price_per_kg" name="price_per_kg" type="number" defaultValue={service?.price_per_kg} required />
+          <Input
+            id="price_per_kg"
+            name="price_per_kg"
+            type="number"
+            defaultValue={service?.price_per_kg}
+            required
+          />
         </div>
         <div>
           <Label htmlFor="min_weight">Berat Minimum (kg)</Label>
@@ -265,12 +362,55 @@ function ServiceForm({
         </div>
         <div>
           <Label htmlFor="category">Kategori</Label>
-          <Input id="category" name="category" defaultValue={service?.category || ""} />
+          <Input
+            id="category"
+            name="category"
+            defaultValue={service?.category || ""}
+          />
         </div>
         <div className="col-span-2 flex items-center space-x-2">
-          <Switch id="is_active" name="is_active" defaultChecked={service?.is_active ?? true} />
+          <Switch
+            id="is_active"
+            name="is_active"
+            defaultChecked={service?.is_active ?? true}
+          />
           <Label htmlFor="is_active">Service Aktif</Label>
         </div>
+      </div>
+      <div>
+        {branchId ||
+          (service?.current_branch_id && (
+            <Input
+              className=""
+              name="current_branch_id"
+              defaultValue={branchId || service.current_branch_id}
+            ></Input>
+          ))}
+        <Select
+          name="current_branch_id"
+          value={branchId}
+          onValueChange={setBranchId}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue
+              placeholder="Select Branch"
+              children={
+                selectedBranch
+                  ? `${selectedBranch.name} (${selectedBranch.type})`
+                  : ""
+              }
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {branches &&
+              branches.length > 0 &&
+              branches.map((branch) => (
+                <SelectItem key={branch.id} value={branch.id}>
+                  {branch.name} - {`(${branch.type})`}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onClose}>
@@ -282,5 +422,5 @@ function ServiceForm({
         </Button>
       </div>
     </form>
-  )
+  );
 }

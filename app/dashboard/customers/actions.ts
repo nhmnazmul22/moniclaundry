@@ -1,9 +1,12 @@
-"use server"
+"use server";
 
-import { supabase } from "@/lib/supabase/client"
-import { revalidatePath } from "next/cache"
+import { supabase } from "@/lib/supabase/client";
+import { revalidatePath } from "next/cache";
 
-export async function addCustomer(formData: FormData) {
+export async function addCustomer(
+  formData: FormData,
+  current_branch_id: string
+) {
   const { data, error } = await supabase
     .from("customers")
     .insert([
@@ -12,16 +15,17 @@ export async function addCustomer(formData: FormData) {
         phone: formData.get("phone") as string,
         email: formData.get("email") as string,
         address: formData.get("address") as string,
+        current_branch_id: current_branch_id as string,
       },
     ])
-    .single()
+    .single();
 
   if (error) {
-    return { success: false, message: error.message }
+    return { success: false, message: error.message };
   }
 
-  revalidatePath("/dashboard/customers")
-  return { success: true, message: "Customer added successfully", data }
+  revalidatePath("/dashboard/customers");
+  return { success: true, message: "Customer added successfully", data };
 }
 
 export async function updateCustomer(id: string, formData: FormData) {
@@ -33,23 +37,23 @@ export async function updateCustomer(id: string, formData: FormData) {
       email: formData.get("email") as string,
       address: formData.get("address") as string,
     })
-    .eq("id", id)
+    .eq("id", id);
 
   if (error) {
-    return { success: false, message: error.message }
+    return { success: false, message: error.message };
   }
 
-  revalidatePath("/dashboard/customers")
-  return { success: true, message: "Customer updated successfully" }
+  revalidatePath("/dashboard/customers");
+  return { success: true, message: "Customer updated successfully" };
 }
 
 export async function deleteCustomer(id: string) {
-  const { error } = await supabase.from("customers").delete().eq("id", id)
+  const { error } = await supabase.from("customers").delete().eq("id", id);
 
   if (error) {
-    return { success: false, message: error.message }
+    return { success: false, message: error.message };
   }
 
-  revalidatePath("/dashboard/customers")
-  return { success: true, message: "Customer deleted successfully" }
+  revalidatePath("/dashboard/customers");
+  return { success: true, message: "Customer deleted successfully" };
 }

@@ -1,12 +1,7 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,26 +9,41 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
-  LayoutDashboard,
-  ShoppingCart,
-  Users,
-  Package,
-  Truck,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/contexts/auth-context";
+import { useBranch } from "@/contexts/branch-context";
+import { getBranchList } from "@/lib/branch-data";
+import { cn } from "@/lib/utils";
+import { Branches } from "@/types/database";
+import {
   BarChart3,
+  Bell,
+  CreditCard,
+  LayoutDashboard,
+  Loader2,
+  LogOut,
+  Menu,
+  Package,
   Settings,
   Shirt,
-  Menu,
-  X,
-  CreditCard,
-  UserCheck,
-  Bell,
-  LogOut,
+  ShoppingCart,
+  Truck,
   User,
-  Loader2,
-} from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
+  UserCheck,
+  Users,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type React from "react";
+import { useEffect, useState } from "react";
 
 const navigation = (userProfile: any) => [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -45,18 +55,41 @@ const navigation = (userProfile: any) => [
   { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
   { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
   // Only show Staff menu for Owner role
-  ...(userProfile?.role === "owner" ? [{ name: "Staff", href: "/dashboard/staff", icon: UserCheck }] : []),
+  ...(userProfile?.role === "owner"
+    ? [{ name: "Staff", href: "/dashboard/staff", icon: UserCheck }]
+    : []),
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
-]
+];
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const pathname = usePathname()
-  const { userProfile, loading: authLoading, signOut } = useAuth()
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [branches, setBranches] = useState<Branches[]>([]);
+  const pathname = usePathname();
+  const { userProfile, loading: authLoading, signOut } = useAuth();
+  const { currentBranchId, setCurrentBranchId } = useBranch();
+  const fetchBranches = () => {
+    getBranchList().then((data) => {
+      if (data) setBranches(data);
+    });
+  };
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
+
+  useEffect(() => {
+    if (
+      branches.length > 0 &&
+      !currentBranchId &&
+      userProfile?.role === "admin"
+    ) {
+      setCurrentBranchId(branches[0].id);
+    }
+  }, [branches, currentBranchId, setCurrentBranchId]);
 
   // Tampilkan loading jika data auth belum siap
   if (authLoading) {
@@ -64,7 +97,7 @@ export default function DashboardLayout({
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
-    )
+    );
   }
 
   // Jika tidak ada userProfile (belum login), bisa redirect atau tampilkan pesan
@@ -72,28 +105,42 @@ export default function DashboardLayout({
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>Sesi Anda telah berakhir. Silakan login kembali.</p>
-        <Button onClick={() => (window.location.href = "/login")} className="ml-4">
+        <Button
+          onClick={() => (window.location.href = "/login")}
+          className="ml-4"
+        >
           Login
         </Button>
       </div>
-    )
+    );
   }
 
   const getInitials = (name: string | undefined) => {
-    if (!name) return "??"
+    if (!name) return "??";
     return name
       .split(" ")
       .map((n) => n[0])
       .join("")
-      .toUpperCase()
-  }
+      .toUpperCase();
+  };
+
+  const selectedBranch = branches.find(
+    (branch) => branch.id === currentBranchId
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar */}
       <div className="lg:hidden">
-        <div className={`fixed inset-0 z-50 flex ${sidebarOpen ? "block" : "hidden"}`}>
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div
+          className={`fixed inset-0 z-50 flex ${
+            sidebarOpen ? "block" : "hidden"
+          }`}
+        >
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-75"
+            onClick={() => setSidebarOpen(false)}
+          />
           <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white">
             <div className="absolute top-0 right-0 -mr-12 pt-2">
               <Button
@@ -105,7 +152,11 @@ export default function DashboardLayout({
                 <X className="h-6 w-6" />
               </Button>
             </div>
-            <SidebarContent navItems={navigation(userProfile)} pathname={pathname} userProfile={userProfile} />
+            <SidebarContent
+              navItems={navigation(userProfile)}
+              pathname={pathname}
+              userProfile={userProfile}
+            />
           </div>
         </div>
       </div>
@@ -113,7 +164,11 @@ export default function DashboardLayout({
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white border-r border-gray-200 px-6">
-          <SidebarContent navItems={navigation(userProfile)} pathname={pathname} userProfile={userProfile} />
+          <SidebarContent
+            navItems={navigation(userProfile)}
+            pathname={pathname}
+            userProfile={userProfile}
+          />
         </div>
       </div>
 
@@ -124,7 +179,11 @@ export default function DashboardLayout({
           <div className="flex items-center justify-between">
             {/* Mobile menu button */}
             <div className="lg:hidden">
-              <Button variant="outline" size="icon" onClick={() => setSidebarOpen(true)}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setSidebarOpen(true)}
+              >
                 <Menu className="h-6 w-6" />
               </Button>
             </div>
@@ -132,12 +191,39 @@ export default function DashboardLayout({
             {/* Page title */}
             <div className="flex-1 lg:flex-none">
               <h1 className="text-xl font-semibold text-gray-900">
-                {navigation(userProfile).find((item) => item.href === pathname)?.name || "Dashboard"}
+                {navigation(userProfile).find((item) => item.href === pathname)
+                  ?.name || "Dashboard"}
               </h1>
             </div>
 
             {/* Right side */}
             <div className="flex items-center space-x-4">
+              <div>
+                <Select
+                  name="current_branch_id"
+                  value={currentBranchId}
+                  onValueChange={setCurrentBranchId}
+                >
+                  <SelectTrigger className="w-[170px]">
+                    <SelectValue
+                      placeholder="Select Branch"
+                      children={
+                        selectedBranch
+                          ? `${selectedBranch.name} (${selectedBranch.type})`
+                          : ""
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.length > 0 &&
+                      branches.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name} - {`(${branch.type})`}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
               {/* Notifications */}
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
@@ -149,23 +235,36 @@ export default function DashboardLayout({
               {/* User menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Button
+                    variant="ghost"
+                    className="relative h-10 w-10 rounded-full"
+                  >
                     <Avatar className="h-10 w-10">
                       <AvatarImage
-                        src={userProfile?.avatar_url || "/placeholder.svg?width=40&height=40&query=avatar"}
+                        src={
+                          userProfile?.avatar_url ||
+                          "/placeholder.svg?width=40&height=40&query=avatar"
+                        }
                         alt={userProfile?.full_name || "User"}
                       />
-                      <AvatarFallback>{getInitials(userProfile?.full_name)}</AvatarFallback>
+                      <AvatarFallback>
+                        {getInitials(userProfile?.full_name)}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{userProfile?.full_name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{userProfile?.email}</p>
+                      <p className="text-sm font-medium leading-none">
+                        {userProfile?.full_name}
+                      </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {userProfile?.role.charAt(0).toUpperCase() + userProfile?.role.slice(1)}
+                        {userProfile?.email}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {userProfile?.role.charAt(0).toUpperCase() +
+                          userProfile?.role.slice(1)}
                       </p>
                     </div>
                   </DropdownMenuLabel>
@@ -197,10 +296,18 @@ export default function DashboardLayout({
         <main className="p-6">{children}</main>
       </div>
     </div>
-  )
+  );
 }
 
-function SidebarContent({ navItems, pathname, userProfile }: { navItems: any[]; pathname: string; userProfile: any }) {
+function SidebarContent({
+  navItems,
+  pathname,
+  userProfile,
+}: {
+  navItems: any[];
+  pathname: string;
+  userProfile: any;
+}) {
   return (
     <>
       {/* Logo */}
@@ -229,13 +336,15 @@ function SidebarContent({ navItems, pathname, userProfile }: { navItems: any[]; 
                       pathname === item.href
                         ? "bg-blue-50 text-blue-700"
                         : "text-gray-700 hover:text-blue-700 hover:bg-blue-50",
-                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold",
+                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
                     )}
                   >
                     <item.icon
                       className={cn(
-                        pathname === item.href ? "text-blue-700" : "text-gray-400 group-hover:text-blue-700",
-                        "h-6 w-6 shrink-0",
+                        pathname === item.href
+                          ? "text-blue-700"
+                          : "text-gray-400 group-hover:text-blue-700",
+                        "h-6 w-6 shrink-0"
                       )}
                     />
                     {item.name}
@@ -247,5 +356,5 @@ function SidebarContent({ navItems, pathname, userProfile }: { navItems: any[]; 
         </ul>
       </nav>
     </>
-  )
+  );
 }

@@ -1,149 +1,197 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { formatCurrency, formatDate } from "@/lib/utils"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Plus, Search, Eye, Edit, Trash2, Package, AlertTriangle, TrendingUp, Settings } from "lucide-react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "@/hooks/use-toast"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useBranch } from "@/contexts/branch-context";
+import { toast } from "@/hooks/use-toast";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { Branches } from "@/types/database";
+import {
+  AlertTriangle,
+  Edit,
+  Eye,
+  Package,
+  Plus,
+  Search,
+  Settings,
+  Trash2,
+  TrendingUp,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+
 
 interface Category {
-  id: string
-  name: string
-  description?: string
+  id: string;
+  name: string;
+  description?: string;
 }
 
 interface InventoryItem {
-  id: string
-  item_name: string
-  category: string
-  current_stock: number
-  min_stock: number
-  max_stock: number
-  unit: string
-  cost_per_unit: number
-  selling_price: number
-  supplier: string
-  last_restock: string
-  expiry_date?: string
-  created_at: string
+  id: string;
+  item_name: string;
+  category: string;
+  current_stock: number;
+  min_stock: number;
+  max_stock: number;
+  unit: string;
+  cost_per_unit: number;
+  selling_price: number;
+  supplier: string;
+  last_restock: string;
+  expiry_date?: string;
+  created_at: string;
 }
 
 export default function InventoryPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
-  const [inventory, setInventory] = useState<InventoryItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const { currentBranchId } = useBranch();
+  const [branches, setBranches] = useState<Branches[]>([]);
+  const [branchId, setBranchId] = useState<string>("");
 
-  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
-  const [isAddCategoryDialogOpen, setIsAddCategoryDialogOpen] = useState(false)
-  const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
-  const [categories, setCategories] = useState<Category[]>([])
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isAddCategoryDialogOpen, setIsAddCategoryDialogOpen] = useState(false);
+  const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] =
+    useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
+  const [categories, setCategories] = useState<Category[]>([]);
 
   // Fetch data on component mount
   useEffect(() => {
-    fetchInventory()
-    fetchCategories()
-  }, [])
+    fetchInventory();
+    fetchCategories();
+  }, []);
 
   const fetchInventory = async (search?: string) => {
     try {
-      const params = new URLSearchParams()
-      if (search) params.append("search", search)
+      const params = new URLSearchParams();
+      if (search) params.append("search", search);
 
-      const response = await fetch(`/api/inventory?${params}`)
-      const result = await response.json()
+      const response = await fetch(`/api/inventory?${params}`);
+      const result = await response.json();
 
       if (response.ok) {
-        setInventory(result.data || [])
+        setInventory(result.data || []);
       } else {
-        console.error("Error fetching inventory:", result.error)
+        console.error("Error fetching inventory:", result.error);
         toast({
           title: "Error",
           description: "Failed to fetch inventory data",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
-      console.error("Error fetching inventory:", error)
+      console.error("Error fetching inventory:", error);
       toast({
         title: "Error",
         description: "Failed to fetch inventory data",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch("/api/categories")
-      const result = await response.json()
+      const response = await fetch("/api/categories");
+      const result = await response.json();
 
       if (response.ok) {
-        setCategories(result.data || [])
+        setCategories(result.data || []);
         if (result.message) {
-          console.log(result.message)
+          console.log(result.message);
         }
       } else {
-        console.error("Error fetching categories:", result.error)
+        console.error("Error fetching categories:", result.error);
         // Don't show error toast if it's just that the table doesn't exist
         if (!result.error?.includes("table not found")) {
           toast({
             title: "Warning",
-            description: "Categories table not found. Please run database migration.",
+            description:
+              "Categories table not found. Please run database migration.",
             variant: "destructive",
-          })
+          });
         }
       }
     } catch (error) {
-      console.error("Error fetching categories:", error)
+      console.error("Error fetching categories:", error);
     }
-  }
+  };
 
   // Search with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      fetchInventory(searchTerm)
-    }, 500)
+      fetchInventory(searchTerm);
+    }, 500);
 
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm])
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
-  const lowStockItems = inventory.filter((item) => item.current_stock <= item.min_stock)
-  const totalValue = inventory.reduce((sum, item) => sum + item.current_stock * item.cost_per_unit, 0)
-  const totalItems = inventory.reduce((sum, item) => sum + item.current_stock, 0)
+  const lowStockItems = inventory.filter(
+    (item) => item.current_stock <= item.min_stock
+  );
+  const totalValue = inventory.reduce(
+    (sum, item) => sum + item.current_stock * item.cost_per_unit,
+    0
+  );
+  const totalItems = inventory.reduce(
+    (sum, item) => sum + item.current_stock,
+    0
+  );
 
   const getStockStatus = (item: InventoryItem) => {
-    if (item.current_stock <= item.min_stock) return "low"
-    if (item.current_stock >= item.max_stock * 0.8) return "high"
-    return "normal"
-  }
+    if (item.current_stock <= item.min_stock) return "low";
+    if (item.current_stock >= item.max_stock * 0.8) return "high";
+    return "normal";
+  };
 
   const getStockStatusColor = (status: string) => {
     const colors = {
       low: "bg-red-100 text-red-800",
       normal: "bg-green-100 text-green-800",
       high: "bg-blue-100 text-blue-800",
-    }
-    return colors[status as keyof typeof colors]
-  }
+    };
+    return colors[status as keyof typeof colors];
+  };
 
   const handleViewItem = (item: InventoryItem) => {
-    setSelectedItem(item)
-    setIsViewDialogOpen(true)
-  }
+    setSelectedItem(item);
+    setIsViewDialogOpen(true);
+  };
 
   const handleAddItem = async (formData: FormData) => {
     try {
@@ -158,42 +206,42 @@ export default function InventoryPage() {
         selling_price: Number(formData.get("sellingPrice")),
         supplier: formData.get("supplier") as string,
         expiry_date: (formData.get("expiryDate") as string) || null,
-      }
+      };
 
       const response = await fetch("/api/inventory", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(itemData),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (response.ok) {
-        setInventory([result.data, ...inventory])
-        setIsAddDialogOpen(false)
+        setInventory([result.data, ...inventory]);
+        setIsAddDialogOpen(false);
         toast({
           title: "Success",
           description: "Item added successfully",
-        })
+        });
       } else {
         toast({
           title: "Error",
           description: result.error || "Failed to add item",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
-      console.error("Error adding item:", error)
+      console.error("Error adding item:", error);
       toast({
         title: "Error",
         description: "Failed to add item",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleEditItem = async (formData: FormData) => {
-    if (!selectedItem) return
+    if (!selectedItem) return;
 
     try {
       const itemData = {
@@ -207,193 +255,201 @@ export default function InventoryPage() {
         selling_price: Number(formData.get("sellingPrice")),
         supplier: formData.get("supplier") as string,
         expiry_date: (formData.get("expiryDate") as string) || null,
-      }
+      };
 
       const response = await fetch(`/api/inventory/${selectedItem.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(itemData),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (response.ok) {
-        setInventory(inventory.map((item) => (item.id === selectedItem.id ? result.data : item)))
-        setIsEditDialogOpen(false)
-        setSelectedItem(null)
+        setInventory(
+          inventory.map((item) =>
+            item.id === selectedItem.id ? result.data : item
+          )
+        );
+        setIsEditDialogOpen(false);
+        setSelectedItem(null);
         toast({
           title: "Success",
           description: "Item updated successfully",
-        })
+        });
       } else {
         toast({
           title: "Error",
           description: result.error || "Failed to update item",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
-      console.error("Error updating item:", error)
+      console.error("Error updating item:", error);
       toast({
         title: "Error",
         description: "Failed to update item",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleDeleteItem = async (id: string) => {
-    if (!confirm("Yakin ingin menghapus item ini?")) return
+    if (!confirm("Yakin ingin menghapus item ini?")) return;
 
     try {
       const response = await fetch(`/api/inventory/${id}`, {
         method: "DELETE",
-      })
+      });
 
       if (response.ok) {
-        setInventory(inventory.filter((item) => item.id !== id))
+        setInventory(inventory.filter((item) => item.id !== id));
         toast({
           title: "Success",
           description: "Item deleted successfully",
-        })
+        });
       } else {
-        const result = await response.json()
+        const result = await response.json();
         toast({
           title: "Error",
           description: result.error || "Failed to delete item",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
-      console.error("Error deleting item:", error)
+      console.error("Error deleting item:", error);
       toast({
         title: "Error",
         description: "Failed to delete item",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleAddCategory = async (formData: FormData) => {
     try {
       const categoryData = {
         name: formData.get("categoryName") as string,
         description: (formData.get("categoryDescription") as string) || "",
-      }
+      };
 
       const response = await fetch("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(categoryData),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (response.ok) {
-        setCategories([...categories, result.data])
-        setIsAddCategoryDialogOpen(false)
+        setCategories([...categories, result.data]);
+        setIsAddCategoryDialogOpen(false);
         toast({
           title: "Success",
           description: "Category added successfully",
-        })
+        });
       } else {
         toast({
           title: "Error",
           description: result.error || "Failed to add category",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
-      console.error("Error adding category:", error)
+      console.error("Error adding category:", error);
       toast({
         title: "Error",
         description: "Failed to add category",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleEditCategory = async (formData: FormData) => {
-    if (!selectedCategory) return
+    if (!selectedCategory) return;
 
     try {
       const categoryData = {
         name: formData.get("categoryName") as string,
         description: (formData.get("categoryDescription") as string) || "",
         oldName: selectedCategory.name, // For updating inventory items
-      }
+      };
 
       const response = await fetch(`/api/categories/${selectedCategory.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(categoryData),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (response.ok) {
-        setCategories(categories.map((cat) => (cat.id === selectedCategory.id ? result.data : cat)))
-        setIsEditCategoryDialogOpen(false)
-        setSelectedCategory(null)
+        setCategories(
+          categories.map((cat) =>
+            cat.id === selectedCategory.id ? result.data : cat
+          )
+        );
+        setIsEditCategoryDialogOpen(false);
+        setSelectedCategory(null);
         toast({
           title: "Success",
           description: "Category updated successfully",
-        })
+        });
         // Refresh inventory to update category names
-        fetchInventory()
+        fetchInventory();
       } else {
         toast({
           title: "Error",
           description: result.error || "Failed to update category",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
-      console.error("Error updating category:", error)
+      console.error("Error updating category:", error);
       toast({
         title: "Error",
         description: "Failed to update category",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm("Yakin ingin menghapus kategori ini?")) return
+    if (!confirm("Yakin ingin menghapus kategori ini?")) return;
 
     try {
       const response = await fetch(`/api/categories/${id}`, {
         method: "DELETE",
-      })
+      });
 
       if (response.ok) {
-        setCategories(categories.filter((cat) => cat.id !== id))
+        setCategories(categories.filter((cat) => cat.id !== id));
         toast({
           title: "Success",
           description: "Category deleted successfully",
-        })
+        });
         // Refresh inventory to handle items with deleted categories
-        fetchInventory()
+        fetchInventory();
       } else {
-        const result = await response.json()
+        const result = await response.json();
         toast({
           title: "Error",
           description: result.error || "Failed to delete category",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
-      console.error("Error deleting category:", error)
+      console.error("Error deleting category:", error);
       toast({
         title: "Error",
         description: "Failed to delete category",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   if (loading) {
-    return <div className="p-6">Loading...</div>
+    return <div className="p-6">Loading...</div>;
   }
 
   return (
@@ -401,8 +457,12 @@ export default function InventoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
-          <p className="text-muted-foreground">Kelola stok barang dan supplies laundry</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Inventory Management
+          </h1>
+          <p className="text-muted-foreground">
+            Kelola stok barang dan supplies laundry
+          </p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -438,7 +498,12 @@ export default function InventoryPage() {
                 </div>
                 <div>
                   <Label htmlFor="currentStock">Stok Saat Ini</Label>
-                  <Input id="currentStock" name="currentStock" type="number" required />
+                  <Input
+                    id="currentStock"
+                    name="currentStock"
+                    type="number"
+                    required
+                  />
                 </div>
                 <div>
                   <Label htmlFor="minStock">Stok Minimum</Label>
@@ -450,15 +515,30 @@ export default function InventoryPage() {
                 </div>
                 <div>
                   <Label htmlFor="unit">Unit</Label>
-                  <Input id="unit" name="unit" placeholder="pcs, kg, liter" required />
+                  <Input
+                    id="unit"
+                    name="unit"
+                    placeholder="pcs, kg, liter"
+                    required
+                  />
                 </div>
                 <div>
                   <Label htmlFor="costPerUnit">Harga Beli</Label>
-                  <Input id="costPerUnit" name="costPerUnit" type="number" required />
+                  <Input
+                    id="costPerUnit"
+                    name="costPerUnit"
+                    type="number"
+                    required
+                  />
                 </div>
                 <div>
                   <Label htmlFor="sellingPrice">Harga Jual</Label>
-                  <Input id="sellingPrice" name="sellingPrice" type="number" required />
+                  <Input
+                    id="sellingPrice"
+                    name="sellingPrice"
+                    type="number"
+                    required
+                  />
                 </div>
                 <div>
                   <Label htmlFor="supplier">Supplier</Label>
@@ -468,9 +548,32 @@ export default function InventoryPage() {
                   <Label htmlFor="expiryDate">Tanggal Kadaluarsa</Label>
                   <Input id="expiryDate" name="expiryDate" type="date" />
                 </div>
+                <div>
+                  <Select
+                    name="current_branch_id"
+                    value={branchId}
+                    onValueChange={setBranchId}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches.length > 0 &&
+                        branches.map((branch) => (
+                          <SelectItem key={branch.id} value={branch.id}>
+                            {branch.name} - {`(${branch.type})`}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(false)}
+                >
                   Batal
                 </Button>
                 <Button type="submit">Simpan</Button>
@@ -489,7 +592,9 @@ export default function InventoryPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalItems}</div>
-            <p className="text-xs text-muted-foreground">{inventory.length} jenis item</p>
+            <p className="text-xs text-muted-foreground">
+              {inventory.length} jenis item
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -498,17 +603,23 @@ export default function InventoryPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalValue)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(totalValue)}
+            </div>
             <p className="text-xs text-muted-foreground">Nilai inventory</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Low Stock Items
+            </CardTitle>
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{lowStockItems.length}</div>
+            <div className="text-2xl font-bold text-red-600">
+              {lowStockItems.length}
+            </div>
             <p className="text-xs text-muted-foreground">Perlu restock</p>
           </CardContent>
         </Card>
@@ -539,7 +650,10 @@ export default function InventoryPage() {
           <CardContent>
             <div className="space-y-2">
               {lowStockItems.map((item) => (
-                <div key={item.id} className="flex justify-between items-center">
+                <div
+                  key={item.id}
+                  className="flex justify-between items-center"
+                >
                   <span className="text-red-700">
                     {item.item_name} - Stok: {item.current_stock} {item.unit}
                   </span>
@@ -593,7 +707,7 @@ export default function InventoryPage() {
             </TableHeader>
             <TableBody>
               {inventory.map((item) => {
-                const status = getStockStatus(item)
+                const status = getStockStatus(item);
                 return (
                   <TableRow key={item.id}>
                     <TableCell>
@@ -605,7 +719,9 @@ export default function InventoryPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{item.category || "Uncategorized"}</Badge>
+                      <Badge variant="outline">
+                        {item.category || "Uncategorized"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="text-center">
@@ -616,29 +732,43 @@ export default function InventoryPage() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <div className="text-sm">Beli: {formatCurrency(item.cost_per_unit)}</div>
-                        <div className="text-sm">Jual: {formatCurrency(item.selling_price)}</div>
+                        <div className="text-sm">
+                          Beli: {formatCurrency(item.cost_per_unit)}
+                        </div>
+                        <div className="text-sm">
+                          Jual: {formatCurrency(item.selling_price)}
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>{formatCurrency(item.current_stock * item.cost_per_unit)}</TableCell>
+                    <TableCell>
+                      {formatCurrency(item.current_stock * item.cost_per_unit)}
+                    </TableCell>
                     <TableCell>{item.supplier}</TableCell>
                     <TableCell>{formatDate(item.last_restock)}</TableCell>
                     <TableCell>
                       <Badge className={getStockStatusColor(status)}>
-                        {status === "low" ? "LOW STOCK" : status === "high" ? "HIGH STOCK" : "NORMAL"}
+                        {status === "low"
+                          ? "LOW STOCK"
+                          : status === "high"
+                          ? "HIGH STOCK"
+                          : "NORMAL"}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleViewItem(item)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewItem(item)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            setSelectedItem(item)
-                            setIsEditDialogOpen(true)
+                            setSelectedItem(item);
+                            setIsEditDialogOpen(true);
                           }}
                         >
                           <Edit className="h-4 w-4" />
@@ -654,7 +784,7 @@ export default function InventoryPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                )
+                );
               })}
             </TableBody>
           </Table>
@@ -671,57 +801,100 @@ export default function InventoryPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Nama Item</Label>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Nama Item
+                  </Label>
                   <p className="text-sm">{selectedItem.item_name}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Kategori</Label>
-                  <p className="text-sm">{selectedItem.category || "Uncategorized"}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Kategori
+                  </Label>
+                  <p className="text-sm">
+                    {selectedItem.category || "Uncategorized"}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Stok Saat Ini</Label>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Stok Saat Ini
+                  </Label>
                   <p className="text-sm">
                     {selectedItem.current_stock} {selectedItem.unit}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Stok Min/Max</Label>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Stok Min/Max
+                  </Label>
                   <p className="text-sm">
-                    {selectedItem.min_stock} / {selectedItem.max_stock} {selectedItem.unit}
+                    {selectedItem.min_stock} / {selectedItem.max_stock}{" "}
+                    {selectedItem.unit}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Harga Beli</Label>
-                  <p className="text-sm">{formatCurrency(selectedItem.cost_per_unit)}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Harga Beli
+                  </Label>
+                  <p className="text-sm">
+                    {formatCurrency(selectedItem.cost_per_unit)}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Harga Jual</Label>
-                  <p className="text-sm">{formatCurrency(selectedItem.selling_price)}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Harga Jual
+                  </Label>
+                  <p className="text-sm">
+                    {formatCurrency(selectedItem.selling_price)}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Total Value</Label>
-                  <p className="text-sm">{formatCurrency(selectedItem.current_stock * selectedItem.cost_per_unit)}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Total Value
+                  </Label>
+                  <p className="text-sm">
+                    {formatCurrency(
+                      selectedItem.current_stock * selectedItem.cost_per_unit
+                    )}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Supplier</Label>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Supplier
+                  </Label>
                   <p className="text-sm">{selectedItem.supplier}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Last Restock</Label>
-                  <p className="text-sm">{formatDate(selectedItem.last_restock)}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Last Restock
+                  </Label>
+                  <p className="text-sm">
+                    {formatDate(selectedItem.last_restock)}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Expiry Date</Label>
-                  <p className="text-sm">{selectedItem.expiry_date ? formatDate(selectedItem.expiry_date) : "N/A"}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Expiry Date
+                  </Label>
+                  <p className="text-sm">
+                    {selectedItem.expiry_date
+                      ? formatDate(selectedItem.expiry_date)
+                      : "N/A"}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Status</Label>
-                  <Badge className={getStockStatusColor(getStockStatus(selectedItem))}>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Status
+                  </Label>
+                  <Badge
+                    className={getStockStatusColor(
+                      getStockStatus(selectedItem)
+                    )}
+                  >
                     {getStockStatus(selectedItem) === "low"
                       ? "LOW STOCK"
                       : getStockStatus(selectedItem) === "high"
-                        ? "HIGH STOCK"
-                        : "NORMAL"}
+                      ? "HIGH STOCK"
+                      : "NORMAL"}
                   </Badge>
                 </div>
               </div>
@@ -741,11 +914,20 @@ export default function InventoryPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-itemName">Nama Item</Label>
-                  <Input id="edit-itemName" name="itemName" defaultValue={selectedItem.item_name} required />
+                  <Input
+                    id="edit-itemName"
+                    name="itemName"
+                    defaultValue={selectedItem.item_name}
+                    required
+                  />
                 </div>
                 <div>
                   <Label htmlFor="edit-category">Kategori</Label>
-                  <Select name="category" defaultValue={selectedItem.category} required>
+                  <Select
+                    name="category"
+                    defaultValue={selectedItem.category}
+                    required
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -790,7 +972,12 @@ export default function InventoryPage() {
                 </div>
                 <div>
                   <Label htmlFor="edit-unit">Unit</Label>
-                  <Input id="edit-unit" name="unit" defaultValue={selectedItem.unit} required />
+                  <Input
+                    id="edit-unit"
+                    name="unit"
+                    defaultValue={selectedItem.unit}
+                    required
+                  />
                 </div>
                 <div>
                   <Label htmlFor="edit-costPerUnit">Harga Beli</Label>
@@ -814,7 +1001,12 @@ export default function InventoryPage() {
                 </div>
                 <div>
                   <Label htmlFor="edit-supplier">Supplier</Label>
-                  <Input id="edit-supplier" name="supplier" defaultValue={selectedItem.supplier} required />
+                  <Input
+                    id="edit-supplier"
+                    name="supplier"
+                    defaultValue={selectedItem.supplier}
+                    required
+                  />
                 </div>
                 <div>
                   <Label htmlFor="edit-expiryDate">Tanggal Kadaluarsa</Label>
@@ -831,8 +1023,8 @@ export default function InventoryPage() {
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    setIsEditDialogOpen(false)
-                    setSelectedItem(null)
+                    setIsEditDialogOpen(false);
+                    setSelectedItem(null);
                   }}
                 >
                   Batal
@@ -845,12 +1037,18 @@ export default function InventoryPage() {
       </Dialog>
 
       {/* Category Management Dialog */}
-      <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+      <Dialog
+        open={isCategoryDialogOpen}
+        onOpenChange={setIsCategoryDialogOpen}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               Kelola Kategori
-              <Dialog open={isAddCategoryDialogOpen} onOpenChange={setIsAddCategoryDialogOpen}>
+              <Dialog
+                open={isAddCategoryDialogOpen}
+                onOpenChange={setIsAddCategoryDialogOpen}
+              >
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <Plus className="mr-2 h-4 w-4" />
@@ -867,11 +1065,20 @@ export default function InventoryPage() {
                       <Input id="categoryName" name="categoryName" required />
                     </div>
                     <div>
-                      <Label htmlFor="categoryDescription">Deskripsi (Opsional)</Label>
-                      <Input id="categoryDescription" name="categoryDescription" />
+                      <Label htmlFor="categoryDescription">
+                        Deskripsi (Opsional)
+                      </Label>
+                      <Input
+                        id="categoryDescription"
+                        name="categoryDescription"
+                      />
                     </div>
                     <div className="flex justify-end space-x-2">
-                      <Button type="button" variant="outline" onClick={() => setIsAddCategoryDialogOpen(false)}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsAddCategoryDialogOpen(false)}
+                      >
                         Batal
                       </Button>
                       <Button type="submit">Simpan</Button>
@@ -882,14 +1089,28 @@ export default function InventoryPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="text-sm text-gray-600 mb-4">Kategori yang tersedia:</div>
+            <div className="text-sm text-gray-600 mb-4">
+              Kategori yang tersedia:
+            </div>
             {categories.map((category) => (
-              <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg">
+              <div
+                key={category.id}
+                className="flex items-center justify-between p-3 border rounded-lg"
+              >
                 <div>
                   <div className="font-medium">{category.name}</div>
-                  {category.description && <div className="text-sm text-gray-500">{category.description}</div>}
+                  {category.description && (
+                    <div className="text-sm text-gray-500">
+                      {category.description}
+                    </div>
+                  )}
                   <div className="text-sm text-gray-500">
-                    {inventory.filter((item) => item.category === category.name).length} items
+                    {
+                      inventory.filter(
+                        (item) => item.category === category.name
+                      ).length
+                    }{" "}
+                    items
                   </div>
                 </div>
                 <div className="flex space-x-2">
@@ -897,8 +1118,8 @@ export default function InventoryPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setSelectedCategory(category)
-                      setIsEditCategoryDialogOpen(true)
+                      setSelectedCategory(category);
+                      setIsEditCategoryDialogOpen(true);
                     }}
                   >
                     <Edit className="h-4 w-4" />
@@ -919,7 +1140,10 @@ export default function InventoryPage() {
       </Dialog>
 
       {/* Edit Category Dialog */}
-      <Dialog open={isEditCategoryDialogOpen} onOpenChange={setIsEditCategoryDialogOpen}>
+      <Dialog
+        open={isEditCategoryDialogOpen}
+        onOpenChange={setIsEditCategoryDialogOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Kategori</DialogTitle>
@@ -928,10 +1152,17 @@ export default function InventoryPage() {
             <form action={handleEditCategory} className="space-y-4">
               <div>
                 <Label htmlFor="edit-categoryName">Nama Kategori</Label>
-                <Input id="edit-categoryName" name="categoryName" defaultValue={selectedCategory.name} required />
+                <Input
+                  id="edit-categoryName"
+                  name="categoryName"
+                  defaultValue={selectedCategory.name}
+                  required
+                />
               </div>
               <div>
-                <Label htmlFor="edit-categoryDescription">Deskripsi (Opsional)</Label>
+                <Label htmlFor="edit-categoryDescription">
+                  Deskripsi (Opsional)
+                </Label>
                 <Input
                   id="edit-categoryDescription"
                   name="categoryDescription"
@@ -940,15 +1171,20 @@ export default function InventoryPage() {
               </div>
               <div className="text-sm text-gray-600">
                 Mengubah kategori ini akan mempengaruhi{" "}
-                {inventory.filter((item) => item.category === selectedCategory.name).length} item inventory.
+                {
+                  inventory.filter(
+                    (item) => item.category === selectedCategory.name
+                  ).length
+                }{" "}
+                item inventory.
               </div>
               <div className="flex justify-end space-x-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    setIsEditCategoryDialogOpen(false)
-                    setSelectedCategory(null)
+                    setIsEditCategoryDialogOpen(false);
+                    setSelectedCategory(null);
                   }}
                 >
                   Batal
@@ -960,5 +1196,5 @@ export default function InventoryPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

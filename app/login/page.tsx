@@ -1,48 +1,54 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/contexts/auth-context"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Shirt } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/auth-context";
+import { Loader2, Shirt } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("kyodaistudio56@gmail.com")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [email, setEmail] = useState("kyodaistudio56@gmail.com");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const { signIn, user, userProfile } = useAuth()
-  const router = useRouter()
+  const { signIn, user, userProfile } = useAuth();
+  const router = useRouter();
 
   // Redirect if already logged in
   useEffect(() => {
     if (user && userProfile) {
-      router.push("/dashboard")
+      router.push("/dashboard");
     }
-  }, [user, userProfile, router])
+  }, [user, userProfile, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    const result = await signIn(email, password)
+    const result = await signIn(email, password);
 
     if (result.error) {
-      setError(result.error)
-      setLoading(false)
+      setError(result.error);
+      setLoading(false);
     } else {
       // Success - redirect will happen via useEffect
-      router.push("/dashboard")
+      router.push("/dashboard");
     }
-  }
+  };
 
   // Don't show login form if already authenticated
   if (user && userProfile) {
@@ -53,7 +59,7 @@ export default function LoginPage() {
           <p>Redirecting to dashboard...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -65,7 +71,9 @@ export default function LoginPage() {
               <Shirt className="h-8 w-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Monic Laundry POS</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            Monic Laundry POS
+          </CardTitle>
           <CardDescription>Masuk ke sistem Point of Sale</CardDescription>
         </CardHeader>
         <CardContent>
@@ -119,5 +127,5 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
