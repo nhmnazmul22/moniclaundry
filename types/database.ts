@@ -118,6 +118,7 @@ export interface Service {
   id: string;
   name: string;
   description?: string;
+  price?: number;
   price_per_kg: number;
   min_weight: number;
   estimated_hours: number;
@@ -171,6 +172,8 @@ export interface OrderItem {
   subtotal: number;
   notes?: string;
   service?: Service;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Delivery {

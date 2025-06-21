@@ -9,7 +9,6 @@ export async function getBranchList() {
       console.error("Error fetching branches:", error);
       throw error;
     }
-    console.log(branches);
     return branches as Branches[];
   } catch (error) {
     console.error("Error in getBranchList:", error);
