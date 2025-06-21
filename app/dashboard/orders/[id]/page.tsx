@@ -6,6 +6,7 @@ import {
   CashTransferReceiptTemplate,
   DepositReceiptTemplate,
   InternalReceiptTemplate,
+  ReceiptTemplate,
 } from "@/components/receipt-template";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,7 @@ export default function OrderDetailPage() {
   const [pdfLoading, setPdfLoading] = useState(false);
 
   const { toast } = useToast();
+  const receiptTemplate = useRef<HTMLDivElement>(null);
   const cashTransferRef = useRef<HTMLDivElement>(null);
   const depositRef = useRef<HTMLDivElement>(null);
   const internalRef = useRef<HTMLDivElement>(null);
@@ -278,7 +280,7 @@ export default function OrderDetailPage() {
     }
   };
   const handlePrintReceipt = async () => {
-    await generatePDF(cashTransferRef, "nota-original", true);
+    await generatePDF(receiptTemplate, "nota-original", true);
   };
 
   const handleDownloadCashTransfer = async () => {
@@ -615,6 +617,12 @@ export default function OrderDetailPage() {
       <div className="absolute -left-[9999px] -top-[9999px]">
         {order && (
           <>
+            <ReceiptTemplate
+              ref={receiptTemplate}
+              order={order}
+              orderItems={orderItems}
+              businessInfo={businessInfo}
+            />
             <CashTransferReceiptTemplate
               ref={cashTransferRef}
               order={order}

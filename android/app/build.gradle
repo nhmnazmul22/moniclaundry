@@ -1,6 +1,8 @@
 plugins {
-    id 'com.android.application'
+    id 'com.android.application' version '8.1.2'
 }
+
+
 
 android {
     namespace 'com.moniclaundry.pos'
@@ -16,14 +18,14 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
         // Web app URL configuration
-        buildConfigField "String", "WEB_APP_URL", "\"https://your-app-url.vercel.app\""
+        buildConfigField "String", "WEB_APP_URL", "\"https://moniclaundry.vercel.app\""
     }
 
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            buildConfigField "String", "WEB_APP_URL", "\"https://your-production-url.vercel.app\""
+            buildConfigField "String", "WEB_APP_URL", "\"https://moniclaundry.vercel.app\""
         }
         debug {
             buildConfigField "String", "WEB_APP_URL", "\"http://10.0.2.2:3000\""
