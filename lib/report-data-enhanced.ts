@@ -158,3 +158,4 @@ export class EnhancedReportProcessor {
     };
   }
 }
+export type { EnhancedReportData } from "./pdf-generator-enhanced";

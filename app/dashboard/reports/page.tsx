@@ -19,10 +19,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  downloadCSV,
+  generateDetailedServiceCSV,
+  generateProfessionalCSV,
+} from "@/lib/csv-generator";
 import { getOrders, getPayments } from "@/lib/data";
-import type { EnhancedReportData } from "@/lib/pdf-generator-enhanced";
-import { generateFirstImageFormat } from "@/lib/pdf-generator-format-first-image";
-import { generateSecondImageFormat } from "@/lib/pdf-generator-format-second-image";
+import {
+  downloadExcel,
+  generateProfessionalExcel,
+} from "@/lib/excel-generator";
+import type { EnhancedReportData } from "@/lib/report-data-enhanced";
 import { EnhancedReportProcessor } from "@/lib/report-data-enhanced";
 import { formatCurrency } from "@/lib/utils";
 import { addDays, format } from "date-fns";
@@ -30,7 +37,7 @@ import {
   AlertTriangle,
   Calculator,
   CreditCard,
-  Download,
+  FileSpreadsheet,
   FileText,
   Loader2,
   TrendingUp,
@@ -43,7 +50,7 @@ export default function ReportsPage() {
   const [reportData, setReportData] = useState<EnhancedReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
@@ -88,77 +95,72 @@ export default function ReportsPage() {
     }
   }, [dateRange, reportType]);
 
-  const handleGenerateFirstImageFormat = async () => {
-    if (!reportData) {
-      alert("Tidak ada data untuk dibuat PDF.");
-      return;
-    }
-
-    setGeneratingPDF(true);
-    try {
-      await generateFirstImageFormat(reportData);
-      console.log("First image format PDF generated successfully");
-    } catch (error) {
-      console.error("PDF generation error:", error);
-      alert("Terjadi kesalahan saat membuat PDF Format Gambar 1");
-    } finally {
-      setGeneratingPDF(false);
-    }
-  };
-
-  const handleGenerateSecondImageFormat = async () => {
-    if (!reportData) {
-      alert("Tidak ada data untuk dibuat PDF.");
-      return;
-    }
-
-    setGeneratingPDF(true);
-    try {
-      await generateSecondImageFormat(reportData);
-      console.log("Second image format PDF generated successfully");
-    } catch (error) {
-      console.error("PDF generation error:", error);
-      alert("Terjadi kesalahan saat membuat PDF Format Gambar 2");
-    } finally {
-      setGeneratingPDF(false);
-    }
-  };
-
-  const handleExportCSV = () => {
+  const handleExportProfessionalCSV = async () => {
     if (!reportData) {
       alert("Tidak ada data untuk diekspor.");
       return;
     }
 
-    const headers = ["Kategori", "Nilai", "Keterangan"];
-    const csvRows = [
-      headers.join(","),
-      `Total Penjualan,${reportData.salesData.rupiah},"${reportData.salesData.kilo} kg, ${reportData.salesData.satuan} pcs"`,
-      `Cash,${reportData.paymentMethods.cash.nominal},${reportData.paymentMethods.cash.transactions} transaksi`,
-      `Transfer,${reportData.paymentMethods.transfer.nominal},${reportData.paymentMethods.transfer.transactions} transaksi`,
-      `QRIS,${reportData.paymentMethods.qris.nominal},${reportData.paymentMethods.qris.transactions} transaksi`,
-      `Deposit,${reportData.paymentMethods.deposit.nominal},${reportData.paymentMethods.deposit.transactions} transaksi`,
-      `Pengeluaran,${reportData.pengeluaran},Expenses`,
-      `Net Cash,${reportData.netCash},Cash - Pengeluaran`,
-    ];
+    setExporting(true);
+    try {
+      const csvContent = generateProfessionalCSV(reportData);
+      const filename = `Laporan_Laundry_Professional_${format(
+        dateRange?.from || new Date(),
+        "yyyyMMdd"
+      )}-${format(dateRange?.to || new Date(), "yyyyMMdd")}.csv`;
+      downloadCSV(csvContent, filename);
+      console.log("Professional CSV exported successfully");
+    } catch (error) {
+      console.error("CSV export error:", error);
+      alert("Terjadi kesalahan saat mengekspor CSV");
+    } finally {
+      setExporting(false);
+    }
+  };
 
-    const csvString = csvRows.join("\n");
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute(
-        "download",
-        `laporan_laundry_${format(
-          dateRange?.from || new Date(),
-          "yyyyMMdd"
-        )}-${format(dateRange?.to || new Date(), "yyyyMMdd")}.csv`
-      );
-      link.style.visibility = "hidden";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  const handleExportDetailedServiceCSV = async () => {
+    if (!reportData) {
+      alert("Tidak ada data untuk diekspor.");
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const csvContent = generateDetailedServiceCSV(reportData);
+      const filename = `Laporan_Laundry_DetailService_${format(
+        dateRange?.from || new Date(),
+        "yyyyMMdd"
+      )}-${format(dateRange?.to || new Date(), "yyyyMMdd")}.csv`;
+      downloadCSV(csvContent, filename);
+      console.log("Detailed service CSV exported successfully");
+    } catch (error) {
+      console.error("CSV export error:", error);
+      alert("Terjadi kesalahan saat mengekspor CSV");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    if (!reportData) {
+      alert("Tidak ada data untuk diekspor.");
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const workbook = generateProfessionalExcel(reportData);
+      const filename = `Laporan_Laundry_Excel_${format(
+        dateRange?.from || new Date(),
+        "yyyyMMdd"
+      )}-${format(dateRange?.to || new Date(), "yyyyMMdd")}.xlsx`;
+      downloadExcel(workbook, filename);
+      console.log("Excel exported successfully");
+    } catch (error) {
+      console.error("Excel export error:", error);
+      alert("Terjadi kesalahan saat mengekspor Excel");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -175,35 +177,36 @@ export default function ReportsPage() {
           </h1>
           <p className="text-muted-foreground">
             Laporan lengkap penjualan, pembayaran, dan analisis bisnis laundry
+            dalam format profesional
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button
-            onClick={handleGenerateFirstImageFormat}
-            disabled={!reportData || loading || generatingPDF}
+            onClick={handleExportExcel}
+            disabled={!reportData || loading || exporting}
           >
-            {generatingPDF ? (
+            {exporting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <FileText className="mr-2 h-4 w-4" />
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
             )}
-            PDF Format Gambar 1
+            Export Excel (Recommended)
           </Button>
           <Button
-            onClick={handleGenerateSecondImageFormat}
-            disabled={!reportData || loading || generatingPDF}
+            onClick={handleExportProfessionalCSV}
+            disabled={!reportData || loading || exporting}
             variant="outline"
           >
             <FileText className="mr-2 h-4 w-4" />
-            PDF Format Gambar 2
+            Export CSV Professional
           </Button>
           <Button
-            onClick={handleExportCSV}
-            disabled={!reportData || loading}
-            variant="outline"
+            onClick={handleExportDetailedServiceCSV}
+            disabled={!reportData || loading || exporting}
+            variant="secondary"
           >
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
+            <FileText className="mr-2 h-4 w-4" />
+            Export CSV Detail
           </Button>
         </div>
       </div>
@@ -212,9 +215,8 @@ export default function ReportsPage() {
         <CardHeader>
           <CardTitle>Konfigurasi Laporan</CardTitle>
           <CardDescription>
-            Pilih format laporan sesuai dengan kebutuhan Anda. Format Gambar 1
-            untuk laporan standar, Format Gambar 2 untuk detail kategori
-            layanan.
+            Pilih format export sesuai kebutuhan. Excel format memberikan
+            tampilan terbaik dengan formatting lengkap.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-4 items-end">
