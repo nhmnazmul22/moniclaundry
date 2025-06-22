@@ -25,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useBranch } from "@/contexts/branch-context";
 import { getOrders, getPayments } from "@/lib/data";
 import { generateLaundryReport, type ReportData } from "@/lib/pdf-generator";
 import { ReportDataProcessor } from "@/lib/report-data-processor";
@@ -35,6 +36,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { DateRange } from "react-day-picker";
 
 export default function ReportsPage() {
+  const { currentBranchId } = useBranch();
+
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +58,7 @@ export default function ReportsPage() {
     setError(null);
     try {
       const [ordersData, paymentsData] = await Promise.all([
-        getOrders(),
+        getOrders(currentBranchId),
         getPayments(),
       ]);
 
