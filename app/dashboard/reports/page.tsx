@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,45 +17,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import {
-  downloadCSV,
-  generateDetailedServiceCSV,
-  generateProfessionalCSV,
-} from "@/lib/csv-generator";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { getOrders, getPayments } from "@/lib/data";
-import {
-  downloadExcel,
-  generateProfessionalExcel,
-} from "@/lib/excel-generator";
-import type { EnhancedReportData } from "@/lib/report-data-enhanced";
-import { EnhancedReportProcessor } from "@/lib/report-data-enhanced";
+import { generateLaundryReport, type ReportData } from "@/lib/pdf-generator";
+import { ReportDataProcessor } from "@/lib/report-data-processor";
 import { formatCurrency } from "@/lib/utils";
 import { addDays, format } from "date-fns";
-import {
-  AlertTriangle,
-  Calculator,
-  CreditCard,
-  FileSpreadsheet,
-  FileText,
-  Loader2,
-  TrendingUp,
-  Users,
-} from "lucide-react";
+import { AlertTriangle, Download, FileText, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { DateRange } from "react-day-picker";
 
 export default function ReportsPage() {
-  const [reportData, setReportData] = useState<EnhancedReportData | null>(null);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [exporting, setExporting] = useState(false);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date(),
   });
-  const [reportType, setReportType] = useState<string>("enhanced_summary");
+  const [reportType, setReportType] = useState<string>("revenue_summary");
 
   const generateReport = useCallback(async () => {
     if (!dateRange?.from || !dateRange?.to) {
@@ -75,7 +63,8 @@ export default function ReportsPage() {
         throw new Error("Gagal mengambil data untuk laporan.");
       }
 
-      const processedData = EnhancedReportProcessor.createEnhancedReport(
+      // Use the flexible processor that works with your actual data structure
+      const processedData = ReportDataProcessor.createMockDataFromActual(
         ordersData,
         paymentsData,
         dateRange
@@ -95,72 +84,47 @@ export default function ReportsPage() {
     }
   }, [dateRange, reportType]);
 
-  const handleExportProfessionalCSV = async () => {
+  const handleGeneratePDF = async () => {
     if (!reportData) {
-      alert("Tidak ada data untuk diekspor.");
+      alert("Tidak ada data untuk dibuat PDF.");
       return;
     }
 
-    setExporting(true);
+    setGeneratingPDF(true);
+
     try {
-      const csvContent = generateProfessionalCSV(reportData);
-      const filename = `Laporan_Laundry_Professional_${format(
-        dateRange?.from || new Date(),
-        "yyyyMMdd"
-      )}-${format(dateRange?.to || new Date(), "yyyyMMdd")}.csv`;
-      downloadCSV(csvContent, filename);
-      console.log("Professional CSV exported successfully");
+      console.log("Starting PDF generation with data:", reportData);
+
+      // Check if required dependencies are available
+      if (typeof window === "undefined") {
+        throw new Error("PDF generation must run in browser environment");
+      }
+
+      // Use the separated PDF generator with better error handling
+      await generateLaundryReport(reportData, dateRange);
+
+      console.log("PDF generated successfully");
     } catch (error) {
-      console.error("CSV export error:", error);
-      alert("Terjadi kesalahan saat mengekspor CSV");
+      console.error("Detailed PDF generation error:", error);
+
+      // More specific error messages
+      let errorMessage = "Terjadi kesalahan saat membuat PDF";
+
+      if (error instanceof Error) {
+        if (error.message.includes("jsPDF")) {
+          errorMessage =
+            "Error dengan library PDF. Pastikan jsPDF terinstall dengan benar.";
+        } else if (error.message.includes("autoTable")) {
+          errorMessage =
+            "Error dengan tabel PDF. Pastikan jspdf-autotable terinstall dengan benar.";
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+
+      alert(errorMessage);
     } finally {
-      setExporting(false);
-    }
-  };
-
-  const handleExportDetailedServiceCSV = async () => {
-    if (!reportData) {
-      alert("Tidak ada data untuk diekspor.");
-      return;
-    }
-
-    setExporting(true);
-    try {
-      const csvContent = generateDetailedServiceCSV(reportData);
-      const filename = `Laporan_Laundry_DetailService_${format(
-        dateRange?.from || new Date(),
-        "yyyyMMdd"
-      )}-${format(dateRange?.to || new Date(), "yyyyMMdd")}.csv`;
-      downloadCSV(csvContent, filename);
-      console.log("Detailed service CSV exported successfully");
-    } catch (error) {
-      console.error("CSV export error:", error);
-      alert("Terjadi kesalahan saat mengekspor CSV");
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const handleExportExcel = async () => {
-    if (!reportData) {
-      alert("Tidak ada data untuk diekspor.");
-      return;
-    }
-
-    setExporting(true);
-    try {
-      const workbook = generateProfessionalExcel(reportData);
-      const filename = `Laporan_Laundry_Excel_${format(
-        dateRange?.from || new Date(),
-        "yyyyMMdd"
-      )}-${format(dateRange?.to || new Date(), "yyyyMMdd")}.xlsx`;
-      downloadExcel(workbook, filename);
-      console.log("Excel exported successfully");
-    } catch (error) {
-      console.error("Excel export error:", error);
-      alert("Terjadi kesalahan saat mengekspor Excel");
-    } finally {
-      setExporting(false);
+      setGeneratingPDF(false);
     }
   };
 
@@ -168,56 +132,77 @@ export default function ReportsPage() {
     generateReport();
   }, [generateReport]);
 
+  const handleExportCSV = () => {
+    if (!reportData || reportData.dailyBreakdown.length === 0) {
+      alert("Tidak ada data untuk diekspor.");
+      return;
+    }
+    const headers = ["Date", "Revenue", "Orders", "Avg Per Order"];
+    const csvRows = [
+      headers.join(","),
+      ...reportData.dailyBreakdown.map((row) =>
+        [row.date, row.revenue, row.orders, row.avgPerOrder.toFixed(2)].join(
+          ","
+        )
+      ),
+    ];
+    const csvString = csvRows.join("\n");
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `report_${reportType}_${format(
+          dateRange?.from || new Date(),
+          "yyyyMMdd"
+        )}-${format(dateRange?.to || new Date(), "yyyyMMdd")}.csv`
+      );
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Laporan Jual Cuci Laundry
+            Reports & Analytics
           </h1>
           <p className="text-muted-foreground">
-            Laporan lengkap penjualan, pembayaran, dan analisis bisnis laundry
-            dalam format profesional
+            Analisis performa bisnis dan laporan keuangan
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2">
           <Button
-            onClick={handleExportExcel}
-            disabled={!reportData || loading || exporting}
+            onClick={handleGeneratePDF}
+            disabled={!reportData || loading || generatingPDF}
           >
-            {exporting ? (
+            {generatingPDF ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              <FileText className="mr-2 h-4 w-4" />
             )}
-            Export Excel (Recommended)
+            Generate PDF
           </Button>
           <Button
-            onClick={handleExportProfessionalCSV}
-            disabled={!reportData || loading || exporting}
+            onClick={handleExportCSV}
+            disabled={!reportData || loading}
             variant="outline"
           >
-            <FileText className="mr-2 h-4 w-4" />
-            Export CSV Professional
-          </Button>
-          <Button
-            onClick={handleExportDetailedServiceCSV}
-            disabled={!reportData || loading || exporting}
-            variant="secondary"
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            Export CSV Detail
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
           </Button>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Konfigurasi Laporan</CardTitle>
-          <CardDescription>
-            Pilih format export sesuai kebutuhan. Excel format memberikan
-            tampilan terbaik dengan formatting lengkap.
-          </CardDescription>
+          <CardTitle>Report Configuration</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-4 items-end">
           <div className="grid gap-2">
@@ -227,14 +212,14 @@ export default function ReportsPage() {
                 <SelectValue placeholder="Pilih Tipe Laporan" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="enhanced_summary">
-                  Laporan Lengkap Laundry
+                <SelectItem value="revenue_summary">
+                  Ringkasan Pendapatan
                 </SelectItem>
-                <SelectItem value="daily_breakdown">
-                  Breakdown Harian
+                <SelectItem value="order_details" disabled>
+                  Detail Pesanan (Segera Hadir)
                 </SelectItem>
-                <SelectItem value="payment_analysis">
-                  Analisis Pembayaran
+                <SelectItem value="customer_insights" disabled>
+                  Wawasan Pelanggan (Segera Hadir)
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -283,163 +268,63 @@ export default function ReportsPage() {
 
       {!loading && !error && reportData && (
         <>
-          {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Penjualan
-                </CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(reportData.salesData.rupiah)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {reportData.salesData.kilo.toFixed(1)} kg •{" "}
-                  {reportData.salesData.satuan} pcs
+          <Card>
+            <CardHeader>
+              <CardTitle>Ringkasan Laporan</CardTitle>
+              <CardDescription>
+                Untuk periode{" "}
+                {dateRange?.from ? format(dateRange.from, "dd MMM yyyy") : ""} -{" "}
+                {dateRange?.to ? format(dateRange.to, "dd MMM yyyy") : ""}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-3">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Total Revenue
                 </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Net Cash</CardTitle>
-                <Calculator className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(reportData.netCash)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Cash - Pengeluaran
+                <p className="text-2xl font-bold">
+                  {formatCurrency(reportData.totalRevenue)}
                 </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Transaksi
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {reportData.transactionCount.kilo +
-                    reportData.transactionCount.satuan}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {reportData.transactionCount.kilo} kilo •{" "}
-                  {reportData.transactionCount.satuan} satuan
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Total Orders
                 </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Customer</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {reportData.customerTransactions.new +
-                    reportData.customerTransactions.old}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {reportData.customerTransactions.new} baru •{" "}
-                  {reportData.customerTransactions.old} lama
+                <p className="text-2xl font-bold">{reportData.totalOrders}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Avg Order Value
                 </p>
-              </CardContent>
-            </Card>
-          </div>
+                <p className="text-2xl font-bold">
+                  {formatCurrency(reportData.avgOrderValue)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Payment Methods Breakdown */}
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Cara Bayar
-                </CardTitle>
+                <CardTitle>Penjualan</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">Cash</Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {reportData.paymentMethods.cash.transactions} transaksi
-                      </span>
-                    </div>
-                    <span className="font-semibold">
-                      {formatCurrency(reportData.paymentMethods.cash.nominal)}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">Transfer</Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {reportData.paymentMethods.transfer.transactions}{" "}
-                        transaksi
-                      </span>
-                    </div>
-                    <span className="font-semibold">
-                      {formatCurrency(
-                        reportData.paymentMethods.transfer.nominal
-                      )}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">QRIS</Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {reportData.paymentMethods.qris.transactions} transaksi
-                      </span>
-                    </div>
-                    <span className="font-semibold">
-                      {formatCurrency(reportData.paymentMethods.qris.nominal)}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">Deposit</Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {reportData.paymentMethods.deposit.transactions}{" "}
-                        transaksi
-                      </span>
-                    </div>
-                    <span className="font-semibold">
-                      {formatCurrency(
-                        reportData.paymentMethods.deposit.nominal
-                      )}
-                    </span>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-red-600">Pengeluaran:</span>
-                  <span className="text-red-600 font-semibold">
-                    {formatCurrency(reportData.pengeluaran)}
+                <div className="flex justify-between">
+                  <span>Rupiah:</span>
+                  <span className="font-semibold">
+                    {formatCurrency(reportData.salesData.rupiah)}
                   </span>
                 </div>
-
-                <div className="flex items-center justify-between font-bold text-lg">
-                  <span>Net Cash:</span>
-                  <span
-                    className={
-                      reportData.netCash >= 0
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }
-                  >
-                    {formatCurrency(reportData.netCash)}
+                <div className="flex justify-between">
+                  <span>Jumlah Kilo:</span>
+                  <span className="font-semibold">
+                    {reportData.salesData.kilo.toFixed(1)} kg
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Jumlah Satuan:</span>
+                  <span className="font-semibold">
+                    {reportData.salesData.satuan} pcs
                   </span>
                 </div>
               </CardContent>
@@ -447,74 +332,95 @@ export default function ReportsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Kategori Layanan</CardTitle>
+                <CardTitle>Cara Bayar</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Regular</div>
-                      <div className="text-sm text-muted-foreground">
-                        {reportData.serviceCategories.regular.kilo.toFixed(1)}{" "}
-                        kg ×{" "}
-                        {formatCurrency(
-                          reportData.serviceCategories.regular.price
-                        )}
-                      </div>
-                    </div>
-                    <span className="font-semibold">
-                      {formatCurrency(
-                        reportData.serviceCategories.regular.total
-                      )}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Express</div>
-                      <div className="text-sm text-muted-foreground">
-                        {reportData.serviceCategories.express.kilo.toFixed(1)}{" "}
-                        kg ×{" "}
-                        {formatCurrency(
-                          reportData.serviceCategories.express.price
-                        )}
-                      </div>
-                    </div>
-                    <span className="font-semibold">
-                      {formatCurrency(
-                        reportData.serviceCategories.express.total
-                      )}
-                    </span>
-                  </div>
+              <CardContent className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Cash:</span>
+                  <span>
+                    {formatCurrency(reportData.paymentBreakdown.cash.amount)}
+                  </span>
                 </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Detail Items:</h4>
-                  {reportData.serviceCategories.items.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <div>
-                        <div>{item.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {item.quantity} × {formatCurrency(item.price)}
-                        </div>
-                      </div>
-                      <span className="font-medium">
-                        {formatCurrency(item.total)}
-                      </span>
-                    </div>
-                  ))}
+                <div className="flex justify-between text-sm">
+                  <span>Transfer:</span>
+                  <span>
+                    {formatCurrency(
+                      reportData.paymentBreakdown.transfer.amount
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>QRIS:</span>
+                  <span>
+                    {formatCurrency(reportData.paymentBreakdown.qris.amount)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Deposit:</span>
+                  <span>
+                    {formatCurrency(reportData.paymentBreakdown.deposit.amount)}
+                  </span>
+                </div>
+                <hr />
+                <div className="flex justify-between text-sm">
+                  <span>Pengeluaran:</span>
+                  <span className="text-red-600">
+                    {formatCurrency(reportData.expenses)}
+                  </span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>Nett Cash:</span>
+                  <span>{formatCurrency(reportData.netCash)}</span>
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Daily Revenue Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {reportData.dailyBreakdown.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">
+                  Tidak ada data untuk ditampilkan pada rentang tanggal ini.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tanggal</TableHead>
+                      <TableHead className="text-right">Revenue</TableHead>
+                      <TableHead className="text-right">Orders</TableHead>
+                      <TableHead className="text-right">
+                        Avg per Order
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reportData.dailyBreakdown.map((item) => (
+                      <TableRow key={item.date}>
+                        <TableCell>
+                          {format(new Date(item.date), "dd MMM yyyy")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(item.revenue)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.orders}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(item.avgPerOrder)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
-
       {!loading && !error && !reportData && (
         <Card>
           <CardContent className="py-10 text-center">
