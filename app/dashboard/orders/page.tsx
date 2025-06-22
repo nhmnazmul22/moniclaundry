@@ -1,43 +1,70 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { formatCurrency, formatDateTime, getOrderStatusColor } from "@/lib/utils"
-import { getOrders } from "@/lib/data"
-import type { Order } from "@/types/database"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, Eye, Edit, Trash2, Loader2, AlertTriangle } from "lucide-react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/client"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useBranch } from "@/contexts/branch-context";
+import { getOrders } from "@/lib/data";
+import { supabase } from "@/lib/supabase/client";
+import {
+  formatCurrency,
+  formatDateTime,
+  getOrderStatusColor,
+} from "@/lib/utils";
+import type { Order } from "@/types/database";
+import {
+  AlertTriangle,
+  Edit,
+  Eye,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function OrdersPage() {
-  const router = useRouter()
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const router = useRouter();
+  const { currentBranchId } = useBranch();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const fetchOrdersData = async () => {
-    setLoading(true)
-    setError(null)
-    const data = await getOrders()
+  const fetchOrdersData = async (currentBranchId: string) => {
+    setLoading(true);
+    setError(null);
+    const data = await getOrders(currentBranchId);
     if (data) {
-      setOrders(data)
+      setOrders(data);
     } else {
-      setError("Gagal memuat data order.")
+      setError("Gagal memuat data order.");
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    fetchOrdersData()
-  }, [searchTerm, statusFilter])
+    fetchOrdersData(currentBranchId);
+  }, [searchTerm, statusFilter, currentBranchId]);
 
   const getStatusLabel = (status: string) => {
     const labels: { [key: string]: string } = {
@@ -46,54 +73,66 @@ export default function OrdersPage() {
       ready: "Siap Diambil/Dikirim",
       delivered: "Selesai",
       cancelled: "Dibatalkan",
-    }
-    return labels[status] || status.charAt(0).toUpperCase() + status.slice(1)
-  }
+    };
+    return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
+  };
 
   const getPaymentStatusColor = (status: string | undefined) => {
-    if (!status) return "bg-gray-100 text-gray-800"
+    if (!status) return "bg-gray-100 text-gray-800";
     const colors: { [key: string]: string } = {
       pending: "bg-yellow-100 text-yellow-800",
       paid: "bg-green-100 text-green-800",
       partial: "bg-orange-100 text-orange-800",
       refunded: "bg-red-100 text-red-800",
-    }
-    return colors[status] || "bg-gray-100 text-gray-800"
-  }
+    };
+    return colors[status] || "bg-gray-100 text-gray-800";
+  };
 
   const handleViewOrder = (orderId: string) => {
-    router.push(`/dashboard/orders/${orderId}`)
-  }
+    router.push(`/dashboard/orders/${orderId}`);
+  };
 
   const handleEditOrder = (orderId: string) => {
-    router.push(`/dashboard/orders/edit/${orderId}`)
-  }
+    router.push(`/dashboard/orders/edit/${orderId}`);
+  };
 
   const handleDeleteOrder = async (orderId: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus order ini? Tindakan ini tidak dapat diurungkan.")) {
+    if (
+      confirm(
+        "Apakah Anda yakin ingin menghapus order ini? Tindakan ini tidak dapat diurungkan."
+      )
+    ) {
       try {
         // Delete order items first
-        const { error: itemsError } = await supabase.from("order_items").delete().eq("order_id", orderId)
-        if (itemsError) throw itemsError
+        const { error: itemsError } = await supabase
+          .from("order_items")
+          .delete()
+          .eq("order_id", orderId);
+        if (itemsError) throw itemsError;
 
         // Delete order
-        const { error: orderError } = await supabase.from("orders").delete().eq("id", orderId)
-        if (orderError) throw orderError
+        const { error: orderError } = await supabase
+          .from("orders")
+          .delete()
+          .eq("id", orderId);
+        if (orderError) throw orderError;
 
-        alert("Order berhasil dihapus.")
-        fetchOrdersData() // Refresh data
+        alert("Order berhasil dihapus.");
+        fetchOrdersData(currentBranchId); // Refresh data
       } catch (err: any) {
-        alert(`Gagal menghapus order: ${err.message}`)
+        alert(`Gagal menghapus order: ${err.message}`);
       }
     }
-  }
+  };
 
   const stats = {
     total: orders.length,
-    pending: orders.filter((o) => ["received", "washing"].includes(o.order_status)).length,
+    pending: orders.filter((o) =>
+      ["received", "washing"].includes(o.order_status)
+    ).length,
     ready: orders.filter((o) => o.order_status === "ready").length,
     delivered: orders.filter((o) => o.order_status === "delivered").length,
-  }
+  };
 
   if (loading) {
     return (
@@ -101,7 +140,7 @@ export default function OrdersPage() {
         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
         <p>Memuat data order...</p>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -109,18 +148,23 @@ export default function OrdersPage() {
       <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
         <p className="text-red-500 text-lg">{error}</p>
-        <Button onClick={fetchOrdersData} className="mt-4">
+        <Button
+          onClick={() => fetchOrdersData(currentBranchId)}
+          className="mt-4"
+        >
           Coba Lagi
         </Button>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Orders Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Orders Management
+          </h1>
           <p className="text-muted-foreground">Kelola semua pesanan laundry</p>
         </div>
         <Link href="/dashboard/orders/new">
@@ -142,10 +186,14 @@ export default function OrdersPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sedang Diproses</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Sedang Diproses
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.pending}</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.pending}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -153,7 +201,9 @@ export default function OrdersPage() {
             <CardTitle className="text-sm font-medium">Siap Diambil</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.ready}</div>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.ready}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -161,7 +211,9 @@ export default function OrdersPage() {
             <CardTitle className="text-sm font-medium">Selesai</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-600">{stats.delivered}</div>
+            <div className="text-2xl font-bold text-gray-600">
+              {stats.delivered}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -206,7 +258,9 @@ export default function OrdersPage() {
         </CardHeader>
         <CardContent>
           {orders.length === 0 && !loading ? (
-            <p className="text-center text-gray-500 py-8">Tidak ada order yang cocok dengan filter Anda.</p>
+            <p className="text-center text-gray-500 py-8">
+              Tidak ada order yang cocok dengan filter Anda.
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -223,33 +277,53 @@ export default function OrdersPage() {
               <TableBody>
                 {orders.map((order) => (
                   <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.order_number}</TableCell>
+                    <TableCell className="font-medium">
+                      {order.order_number}
+                    </TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{order.customer?.name || "N/A"}</div>
-                        <div className="text-sm text-gray-500">{order.customer?.phone || "N/A"}</div>
+                        <div className="font-medium">
+                          {order.customer?.name || "N/A"}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {order.customer?.phone || "N/A"}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>{formatCurrency(order.total_amount)}</TableCell>
                     <TableCell>
-                      <Badge className={getOrderStatusColor(order.order_status)}>
+                      <Badge
+                        className={getOrderStatusColor(order.order_status)}
+                      >
                         {getStatusLabel(order.order_status)}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getPaymentStatusColor(order.payment_status)}>
+                      <Badge
+                        className={getPaymentStatusColor(order.payment_status)}
+                      >
                         {order.payment_status?.toUpperCase() || "N/A"}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {order.estimated_completion ? formatDateTime(order.estimated_completion) : "N/A"}
+                      {order.estimated_completion
+                        ? formatDateTime(order.estimated_completion)
+                        : "N/A"}
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleViewOrder(order.id)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewOrder(order.id)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleEditOrder(order.id)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditOrder(order.id)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
@@ -270,5 +344,5 @@ export default function OrdersPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

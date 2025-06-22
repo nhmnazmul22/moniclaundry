@@ -15,10 +15,16 @@ type Delivery = Database["public"]["Tables"]["deliveries"]["Row"];
 type Payment = Database["public"]["Tables"]["payments"]["Row"];
 type Staff = Database["public"]["Tables"]["users"]["Row"];
 
-export async function getDashboardStats() {
+export async function getDashboardStats(branchId?: string) {
   try {
+    const ordersQuery = supabase.from("orders").select("*");
+
+    if (branchId) {
+      ordersQuery.eq("current_branch_id", branchId);
+    }
+
     const [ordersResult, customersResult, paymentsResult] = await Promise.all([
-      supabase.from("orders").select("*"),
+      ordersQuery,
       supabase.from("customers").select("*"),
       supabase.from("payments").select("*"),
     ]);
@@ -36,11 +42,12 @@ export async function getDashboardStats() {
       .reduce((sum, p) => sum + (p.amount || 0), 0);
 
     const pendingOrders = orders.filter((o) => o.status === "pending").length;
+
+    const today = new Date().toISOString().split("T")[0];
     const todayRevenue = payments
-      .filter((p) => {
-        const today = new Date().toISOString().split("T")[0];
-        return p.created_at?.startsWith(today) && p.status === "completed";
-      })
+      .filter(
+        (p) => p.created_at?.startsWith(today) && p.status === "completed"
+      )
       .reduce((sum, p) => sum + (p.amount || 0), 0);
 
     return {
@@ -57,9 +64,9 @@ export async function getDashboardStats() {
   }
 }
 
-export async function getOrders() {
+export async function getOrders(branchId: string) {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("orders")
       .select(
         `
@@ -72,6 +79,13 @@ export async function getOrders() {
       `
       )
       .order("created_at", { ascending: false });
+
+    // Apply Branch id
+    if (branchId) {
+      query = query.eq("current_branch_id", branchId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data as Order[];

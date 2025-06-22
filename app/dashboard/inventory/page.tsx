@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
 import { toast } from "@/hooks/use-toast";
+import { getBranchList } from "@/lib/branch-data";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Branches } from "@/types/database";
 import {
@@ -43,7 +44,6 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-
 
 interface Category {
   id: string;
@@ -99,6 +99,7 @@ export default function InventoryPage() {
     try {
       const params = new URLSearchParams();
       if (search) params.append("search", search);
+      if (currentBranchId) params.append("branchId", currentBranchId);
 
       const response = await fetch(`/api/inventory?${params}`);
       const result = await response.json();
@@ -152,6 +153,12 @@ export default function InventoryPage() {
     }
   };
 
+  const fetchBranches = () => {
+    getBranchList().then((data) => {
+      if (data) setBranches(data);
+    });
+  };
+
   // Search with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -159,7 +166,11 @@ export default function InventoryPage() {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, [searchTerm, currentBranchId]);
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
 
   const lowStockItems = inventory.filter(
     (item) => item.current_stock <= item.min_stock
@@ -206,6 +217,7 @@ export default function InventoryPage() {
         selling_price: Number(formData.get("sellingPrice")),
         supplier: formData.get("supplier") as string,
         expiry_date: (formData.get("expiryDate") as string) || null,
+        current_branch_id: branchId || null,
       };
 
       const response = await fetch("/api/inventory", {

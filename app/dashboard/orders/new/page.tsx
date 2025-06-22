@@ -23,10 +23,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useBranch } from "@/contexts/branch-context";
+import { getBranchList } from "@/lib/branch-data";
 import { getCustomers, getServices } from "@/lib/data";
 import { supabase } from "@/lib/supabase/client";
 import { formatCurrency } from "@/lib/utils";
-import type { Customer, Service } from "@/types/database";
+import type { Branches, Customer, Service } from "@/types/database";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -48,8 +49,9 @@ export default function NewOrderPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loadingDependencies, setLoadingDependencies] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [branches, setBranches] = useState<Branches[]>([]);
   // Form state
+  const [branchId, setBranchId] = useState<string>("");
   const [customerId, setCustomerId] = useState<string>("");
   const [orderItems, setOrderItems] = useState<OrderItemForm[]>([]);
   const [notes, setNotes] = useState<string>("");
@@ -76,9 +78,19 @@ export default function NewOrderPage() {
     }
   }, [toast]);
 
+  const fetchBranches = () => {
+    getBranchList().then((data) => {
+      if (data) setBranches(data);
+    });
+  };
+
   useEffect(() => {
     fetchDependencies();
   }, [fetchDependencies, currentBranchId]);
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
 
   const handleAddOrderItem = () => {
     const defaultService = services[0];
@@ -185,6 +197,15 @@ export default function NewOrderPage() {
       return;
     }
 
+     if (!branchId) {
+      toast({
+        title: "Error",
+        description: "Cabang harus dipilih.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     // Generate order number (simple example, consider a more robust solution)
@@ -210,9 +231,9 @@ export default function NewOrderPage() {
       total_amount: totalAmount,
       payment_method: paymentMethod,
       payment_status: paymentStatus,
-      order_status: "received", // Initial status
+      order_status: "received", 
       notes: notes,
-      // created_by: get from auth context
+      current_branch_id: branchId,
     };
 
     const { data: newOrder, error: orderError } = await supabase
@@ -460,6 +481,26 @@ export default function NewOrderPage() {
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Instruksi khusus, preferensi, dll."
             />
+          </div>
+
+          <div>
+            <Select
+              name="current_branch_id"
+              value={branchId}
+              onValueChange={setBranchId}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Branch" />
+              </SelectTrigger>
+              <SelectContent>
+                {branches.length > 0 &&
+                  branches.map((branch) => (
+                    <SelectItem key={branch.id} value={branch.id}>
+                      {branch.name} - {`(${branch.type})`}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
         <CardFooter className="flex justify-end gap-2">

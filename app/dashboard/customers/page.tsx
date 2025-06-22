@@ -90,7 +90,6 @@ export default function CustomersPage() {
   }, []);
 
   const handleAddSubmit = async (formData: FormData) => {
-    console.log(formData);
     startTransition(async () => {
       const result = await addCustomer(formData, branchId);
       if (result.success) {
@@ -159,10 +158,14 @@ export default function CustomersPage() {
 
   const stats = {
     total: customers.length,
-    // These stats would require more complex queries or client-side filtering
-    active: customers.length, // Placeholder
-    vip: 0, // Placeholder
+    active: customers.length,
+    vip: 0,
     totalRevenue: customers.reduce((sum, c) => sum + (c.total_spent || 0), 0),
+  };
+
+  const selectedBranch = (id: string) => {
+    const branch = branches.find((b) => b.id === id);
+    return branch || null;
   };
 
   return (
@@ -424,12 +427,21 @@ export default function CustomersPage() {
                     {selectedCustomer.email || "Tidak ada"}
                   </p>
                 </div>
-                <div className="col-span-2">
+                <div>
                   <Label className="text-sm font-medium text-gray-500">
                     Alamat
                   </Label>
                   <p className="text-sm">
                     {selectedCustomer.address || "Tidak ada"}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Branch Name
+                  </Label>
+                  <p className="text-sm">
+                    {selectedBranch(selectedCustomer.current_branch_id!)
+                      ?.name || "-"}
                   </p>
                 </div>
                 <div>

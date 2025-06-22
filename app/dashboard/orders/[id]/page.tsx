@@ -64,7 +64,7 @@ export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
-
+  const [branches, setBranches] = useState<Branches[]>([]);
   const [order, setOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -139,11 +139,21 @@ export default function OrderDetailPage() {
     }
   };
 
+  const fetchBranches = () => {
+    getBranchList().then((data) => {
+      if (data) setBranches(data);
+    });
+  };
+
   useEffect(() => {
     if (orderId) {
       fetchOrderData();
     }
   }, [orderId]);
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
 
   const handleDeleteOrder = async () => {
     if (
@@ -343,6 +353,11 @@ export default function OrderDetailPage() {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
+  const selectedBranch = (id: string) => {
+    const branch = branches.find((b) => b.id === id);
+    return branch || null;
+  };
+
   if (loading && !order) {
     return (
       <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
@@ -371,9 +386,14 @@ export default function OrderDetailPage() {
 
   // Dummy business info for receipt
   const businessInfo = {
-    name: branch?.name || "Monic Laundry Galaxy",
-    address: branch?.address || "Jl. Taman Galaxy Raya No 301 E",
-    phone: branch?.phone || "+6287710108075",
+    name:
+      selectedBranch(order.current_branch_id || "")?.name ||
+      "Monic Laundry Galaxy",
+    address:
+      selectedBranch(order.current_branch_id || "")?.address ||
+      "Jl. Taman Galaxy Raya No 301 E",
+    phone:
+      selectedBranch(order.current_branch_id || "")?.phone || "+6287710108075",
   };
 
   // Add dummy order items if none exist
@@ -531,6 +551,11 @@ export default function OrderDetailPage() {
                 <span>{formatDateTime(order.estimated_completion)}</span>
               </div>
             )}
+
+            <div className="flex justify-between">
+              <span className="text-sm font-medium">Branch Name:</span>
+              <span>{businessInfo.name || "N/A"}</span>
+            </div>
           </CardContent>
         </Card>
 

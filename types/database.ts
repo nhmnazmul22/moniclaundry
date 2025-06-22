@@ -161,6 +161,7 @@ export interface Order {
   order_items?: OrderItem[];
   payments?: Payment[];
   deliveries?: Delivery[];
+  current_branch_id?: string;
 }
 
 export interface OrderItem {
