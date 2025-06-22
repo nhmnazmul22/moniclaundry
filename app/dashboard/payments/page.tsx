@@ -1,13 +1,8 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { formatCurrency, formatDate } from "@/lib/utils"
-import { getOrders } from "@/lib/data"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -16,59 +11,91 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Plus, Search, Eye, Trash2, CreditCard, Banknote, Smartphone, Loader2 } from "lucide-react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { supabase } from "@/lib/supabase/client"
-import { useToast } from "@/components/ui/use-toast"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useToast } from "@/components/ui/use-toast";
+import { useBranch } from "@/contexts/branch-context";
+import { getOrders } from "@/lib/data";
+import { supabase } from "@/lib/supabase/client";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import {
+  Banknote,
+  CreditCard,
+  Eye,
+  Loader2,
+  Plus,
+  Search,
+  Smartphone,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 type Payment = {
-  id: string
-  order_id: string
-  amount: number
-  payment_method: string
-  payment_date: string
-  reference_number?: string
-  notes?: string
-  status: string
-  created_at: string
+  id: string;
+  order_id: string;
+  amount: number;
+  payment_method: string;
+  payment_date: string;
+  reference_number?: string;
+  notes?: string;
+  status: string;
+  created_at: string;
   order?: {
-    order_number: string
+    order_number: string;
     customer?: {
-      name: string
-      phone: string
-    }
-    total_amount: number
-  }
-}
+      name: string;
+      phone: string;
+    };
+    total_amount: number;
+  };
+};
 
 export default function PaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>([])
-  const [orders, setOrders] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [methodFilter, setMethodFilter] = useState("all")
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
+  const { currentBranchId } = useBranch();
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [methodFilter, setMethodFilter] = useState("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
   // Form states
-  const [selectedOrder, setSelectedOrder] = useState("")
-  const [amount, setAmount] = useState(0)
-  const [paymentMethod, setPaymentMethod] = useState("tunai")
-  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0])
-  const [referenceNumber, setReferenceNumber] = useState("")
-  const [notes, setNotes] = useState("")
+  const [selectedOrder, setSelectedOrder] = useState("");
+  const [amount, setAmount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState("tunai");
+  const [paymentDate, setPaymentDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [referenceNumber, setReferenceNumber] = useState("");
+  const [notes, setNotes] = useState("");
 
-  const { toast } = useToast()
+  const { toast } = useToast();
 
   const fetchPayments = async () => {
     try {
       const { data, error } = await supabase
         .from("payments")
-        .select(`
+        .select(
+          `
           *,
           orders (
             order_number,
@@ -78,88 +105,97 @@ export default function PaymentsPage() {
               phone
             )
           )
-        `)
-        .order("created_at", { ascending: false })
+        `
+        )
+        .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Error fetching payments:", error)
-        return []
+        console.error("Error fetching payments:", error);
+        return [];
       }
 
-      return data || []
+      return data || [];
     } catch (error) {
-      console.error("Error fetching payments:", error)
-      return []
+      console.error("Error fetching payments:", error);
+      return [];
     }
-  }
+  };
 
   const fetchOrders = async () => {
     try {
-      const ordersData = await getOrders()
+      const ordersData = await getOrders(currentBranchId);
       // Filter orders that can have payments (completed, delivered, or ready)
       const payableOrders = ordersData.filter((order: any) => {
-        const validStatuses = ["completed", "delivered", "ready", "in_progress"]
-        return validStatuses.includes(order.order_status)
-      })
-      return payableOrders
+        const validStatuses = [
+          "completed",
+          "delivered",
+          "ready",
+          "in_progress",
+        ];
+        return validStatuses.includes(order.order_status);
+      });
+      return payableOrders;
     } catch (error) {
-      console.error("Error fetching orders:", error)
-      return []
+      console.error("Error fetching orders:", error);
+      return [];
     }
-  }
+  };
 
   const loadData = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const [paymentsData, ordersData] = await Promise.all([fetchPayments(), fetchOrders()])
+      const [paymentsData, ordersData] = await Promise.all([
+        fetchPayments(),
+        fetchOrders(),
+      ]);
 
-      console.log("Orders data for payments:", ordersData)
-      console.log("Payments data:", paymentsData)
+      console.log("Orders data for payments:", ordersData);
+      console.log("Payments data:", paymentsData);
 
-      setPayments(paymentsData as Payment[])
-      setOrders(ordersData)
+      setPayments(paymentsData as Payment[]);
+      setOrders(ordersData);
     } catch (error) {
-      console.error("Error loading data:", error)
+      console.error("Error loading data:", error);
       toast({
         title: "Error",
         description: "Gagal memuat data pembayaran.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   // Update amount when order is selected
   useEffect(() => {
     if (selectedOrder) {
-      const order = orders.find((o) => o.id === selectedOrder)
+      const order = orders.find((o) => o.id === selectedOrder);
       if (order) {
-        setAmount(order.total_amount || 0)
+        setAmount(order.total_amount || 0);
       }
     }
-  }, [selectedOrder, orders])
+  }, [selectedOrder, orders]);
 
   const getPaymentMethodIcon = (method: string) => {
     switch (method.toLowerCase()) {
       case "tunai":
-        return <Banknote className="h-4 w-4" />
+        return <Banknote className="h-4 w-4" />;
       case "transfer":
       case "bank":
-        return <CreditCard className="h-4 w-4" />
+        return <CreditCard className="h-4 w-4" />;
       case "e-wallet":
       case "gopay":
       case "ovo":
       case "dana":
-        return <Smartphone className="h-4 w-4" />
+        return <Smartphone className="h-4 w-4" />;
       default:
-        return <CreditCard className="h-4 w-4" />
+        return <CreditCard className="h-4 w-4" />;
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
@@ -167,9 +203,9 @@ export default function PaymentsPage() {
       completed: "bg-green-100 text-green-800",
       failed: "bg-red-100 text-red-800",
       cancelled: "bg-gray-100 text-gray-800",
-    }
-    return colors[status] || "bg-gray-100 text-gray-800"
-  }
+    };
+    return colors[status] || "bg-gray-100 text-gray-800";
+  };
 
   const getStatusLabel = (status: string) => {
     const labels: { [key: string]: string } = {
@@ -177,9 +213,9 @@ export default function PaymentsPage() {
       completed: "Selesai",
       failed: "Gagal",
       cancelled: "Dibatalkan",
-    }
-    return labels[status] || status
-  }
+    };
+    return labels[status] || status;
+  };
 
   const handleCreatePayment = async () => {
     if (!selectedOrder || !amount || !paymentMethod) {
@@ -187,8 +223,8 @@ export default function PaymentsPage() {
         title: "Error",
         description: "Mohon lengkapi semua field yang diperlukan.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
@@ -200,85 +236,102 @@ export default function PaymentsPage() {
         reference_number: referenceNumber || null,
         notes: notes || null,
         status: "completed", // Default to completed for manual entry
-      }
+      };
 
-      const { data, error } = await supabase.from("payments").insert(newPayment).select().single()
+      const { data, error } = await supabase
+        .from("payments")
+        .insert(newPayment)
+        .select()
+        .single();
 
       if (error) {
-        console.error("Error creating payment:", error)
+        console.error("Error creating payment:", error);
         toast({
           title: "Error",
           description: `Gagal membuat pembayaran: ${error.message}`,
           variant: "destructive",
-        })
+        });
       } else {
         toast({
           title: "Sukses",
           description: "Pembayaran berhasil ditambahkan.",
-        })
-        setIsModalOpen(false)
-        loadData() // Refresh data
+        });
+        setIsModalOpen(false);
+        loadData(); // Refresh data
         // Reset form
-        setSelectedOrder("")
-        setAmount(0)
-        setPaymentMethod("tunai")
-        setPaymentDate(new Date().toISOString().split("T")[0])
-        setReferenceNumber("")
-        setNotes("")
+        setSelectedOrder("");
+        setAmount(0);
+        setPaymentMethod("tunai");
+        setPaymentDate(new Date().toISOString().split("T")[0]);
+        setReferenceNumber("");
+        setNotes("");
       }
     } catch (error) {
-      console.error("Unexpected error:", error)
+      console.error("Unexpected error:", error);
       toast({
         title: "Error",
         description: "Terjadi kesalahan yang tidak terduga.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleViewPayment = (payment: Payment) => {
-    setSelectedPayment(payment)
-    setIsViewDialogOpen(true)
-  }
+    setSelectedPayment(payment);
+    setIsViewDialogOpen(true);
+  };
 
   const handleDeletePayment = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus pembayaran ini?")) return
+    if (!confirm("Apakah Anda yakin ingin menghapus pembayaran ini?")) return;
 
-    const { error } = await supabase.from("payments").delete().eq("id", id)
+    const { error } = await supabase.from("payments").delete().eq("id", id);
 
     if (error) {
       toast({
         title: "Error",
         description: `Gagal menghapus pembayaran: ${error.message}`,
         variant: "destructive",
-      })
+      });
     } else {
       toast({
         title: "Sukses",
         description: "Pembayaran berhasil dihapus.",
-      })
-      loadData()
+      });
+      loadData();
     }
-  }
+  };
 
   const filteredPayments = payments.filter((payment) => {
     const matchesSearch =
-      payment.order?.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.order?.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.reference_number?.toLowerCase().includes(searchTerm.toLowerCase())
+      payment.order?.order_number
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      payment.order?.customer?.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      payment.reference_number
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === "all" || payment.status === statusFilter
-    const matchesMethod = methodFilter === "all" || payment.payment_method === methodFilter
+    const matchesStatus =
+      statusFilter === "all" || payment.status === statusFilter;
+    const matchesMethod =
+      methodFilter === "all" || payment.payment_method === methodFilter;
 
-    return matchesSearch && matchesStatus && matchesMethod
-  })
+    return matchesSearch && matchesStatus && matchesMethod;
+  });
 
   const stats = {
-    totalRevenue: payments.filter((p) => p.status === "completed").reduce((sum, p) => sum + p.amount, 0),
+    totalRevenue: payments
+      .filter((p) => p.status === "completed")
+      .reduce((sum, p) => sum + p.amount, 0),
     totalTransactions: payments.length,
-    avgTransaction: payments.length > 0 ? payments.reduce((sum, p) => sum + p.amount, 0) / payments.length : 0,
+    avgTransaction:
+      payments.length > 0
+        ? payments.reduce((sum, p) => sum + p.amount, 0) / payments.length
+        : 0,
     pendingPayments: payments.filter((p) => p.status === "pending").length,
-  }
+  };
 
   if (loading) {
     return (
@@ -286,15 +339,19 @@ export default function PaymentsPage() {
         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
         <p>Memuat data pembayaran...</p>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Payments Management</h1>
-          <p className="text-muted-foreground">Kelola pembayaran dan transaksi keuangan</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Payments Management
+          </h1>
+          <p className="text-muted-foreground">
+            Kelola pembayaran dan transaksi keuangan
+          </p>
         </div>
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogTrigger asChild>
@@ -306,7 +363,9 @@ export default function PaymentsPage() {
           <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
               <DialogTitle>Tambah Pembayaran Baru</DialogTitle>
-              <DialogDescription>Input detail pembayaran baru.</DialogDescription>
+              <DialogDescription>
+                Input detail pembayaran baru.
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
@@ -320,7 +379,8 @@ export default function PaymentsPage() {
                   <SelectContent>
                     {orders.map((order) => (
                       <SelectItem key={order.id} value={order.id}>
-                        {order.order_number} - {order.customer?.name} ({formatCurrency(order.total_amount)})
+                        {order.order_number} - {order.customer?.name} (
+                        {formatCurrency(order.total_amount)})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -394,7 +454,11 @@ export default function PaymentsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsModalOpen(false)}
+              >
                 Batal
               </Button>
               <Button type="button" onClick={handleCreatePayment}>
@@ -413,13 +477,19 @@ export default function PaymentsPage() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
-            <p className="text-xs text-muted-foreground">dari {stats.totalTransactions} transaksi</p>
+            <div className="text-2xl font-bold">
+              {formatCurrency(stats.totalRevenue)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              dari {stats.totalTransactions} transaksi
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Transactions
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalTransactions}</div>
@@ -428,19 +498,29 @@ export default function PaymentsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Transaction</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Avg Transaction
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stats.avgTransaction)}</div>
-            <p className="text-xs text-muted-foreground">rata-rata per transaksi</p>
+            <div className="text-2xl font-bold">
+              {formatCurrency(stats.avgTransaction)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              rata-rata per transaksi
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Pending Payments
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.pendingPayments}</div>
+            <div className="text-2xl font-bold text-yellow-600">
+              {stats.pendingPayments}
+            </div>
             <p className="text-xs text-muted-foreground">menunggu konfirmasi</p>
           </CardContent>
         </Card>
@@ -515,35 +595,55 @@ export default function PaymentsPage() {
                 <TableRow key={payment.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{payment.order?.order_number || payment.order_id}</div>
-                      <div className="text-sm text-gray-500">ID: {payment.id.substring(0, 8)}...</div>
+                      <div className="font-medium">
+                        {payment.order?.order_number || payment.order_id}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        ID: {payment.id.substring(0, 8)}...
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{payment.order?.customer?.name || "N/A"}</div>
-                      <div className="text-sm text-gray-500">{payment.order?.customer?.phone || "N/A"}</div>
+                      <div className="font-medium">
+                        {payment.order?.customer?.name || "N/A"}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {payment.order?.customer?.phone || "N/A"}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium">{formatCurrency(payment.amount)}</div>
+                    <div className="font-medium">
+                      {formatCurrency(payment.amount)}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       {getPaymentMethodIcon(payment.payment_method)}
-                      <span className="capitalize">{payment.payment_method}</span>
+                      <span className="capitalize">
+                        {payment.payment_method}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>{formatDate(payment.payment_date)}</TableCell>
                   <TableCell>
-                    <div className="text-sm font-mono">{payment.reference_number || "N/A"}</div>
+                    <div className="text-sm font-mono">
+                      {payment.reference_number || "N/A"}
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(payment.status)}>{getStatusLabel(payment.status)}</Badge>
+                    <Badge className={getStatusColor(payment.status)}>
+                      {getStatusLabel(payment.status)}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => handleViewPayment(payment)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewPayment(payment)}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button
@@ -573,49 +673,82 @@ export default function PaymentsPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Order Number</Label>
-                  <p className="text-sm">{selectedPayment.order?.order_number || selectedPayment.order_id}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Order Number
+                  </Label>
+                  <p className="text-sm">
+                    {selectedPayment.order?.order_number ||
+                      selectedPayment.order_id}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Customer</Label>
-                  <p className="text-sm">{selectedPayment.order?.customer?.name || "N/A"}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Customer
+                  </Label>
+                  <p className="text-sm">
+                    {selectedPayment.order?.customer?.name || "N/A"}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Amount</Label>
-                  <p className="text-sm font-bold text-lg">{formatCurrency(selectedPayment.amount)}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Amount
+                  </Label>
+                  <p className="text-sm font-bold">
+                    {formatCurrency(selectedPayment.amount)}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Payment Method</Label>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Payment Method
+                  </Label>
                   <div className="flex items-center space-x-2">
                     {getPaymentMethodIcon(selectedPayment.payment_method)}
-                    <span className="capitalize">{selectedPayment.payment_method}</span>
+                    <span className="capitalize">
+                      {selectedPayment.payment_method}
+                    </span>
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Payment Date</Label>
-                  <p className="text-sm">{formatDate(selectedPayment.payment_date)}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Payment Date
+                  </Label>
+                  <p className="text-sm">
+                    {formatDate(selectedPayment.payment_date)}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Status</Label>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Status
+                  </Label>
                   <Badge className={getStatusColor(selectedPayment.status)}>
                     {getStatusLabel(selectedPayment.status)}
                   </Badge>
                 </div>
                 {selectedPayment.reference_number && (
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Reference Number</Label>
-                    <p className="text-sm font-mono">{selectedPayment.reference_number}</p>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Reference Number
+                    </Label>
+                    <p className="text-sm font-mono">
+                      {selectedPayment.reference_number}
+                    </p>
                   </div>
                 )}
                 {selectedPayment.notes && (
                   <div className="col-span-2">
-                    <Label className="text-sm font-medium text-gray-500">Notes</Label>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Notes
+                    </Label>
                     <p className="text-sm">{selectedPayment.notes}</p>
                   </div>
                 )}
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Created At</Label>
-                  <p className="text-sm">{formatDate(selectedPayment.created_at)}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Created At
+                  </Label>
+                  <p className="text-sm">
+                    {formatDate(selectedPayment.created_at)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -623,5 +756,5 @@ export default function PaymentsPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
