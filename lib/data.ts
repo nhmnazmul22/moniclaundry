@@ -17,16 +17,20 @@ type Staff = Database["public"]["Tables"]["users"]["Row"];
 
 export async function getDashboardStats(branchId?: string) {
   try {
-    const ordersQuery = supabase.from("orders").select("*");
+    let ordersQuery = supabase.from("orders").select("*");
+    let customerQuery = supabase.from("customers").select("*");
+    let paymentQuery = supabase.from("payments").select("*");
 
     if (branchId) {
-      ordersQuery.eq("current_branch_id", branchId);
+      ordersQuery = ordersQuery.eq("current_branch_id", branchId);
+      customerQuery = customerQuery.eq("current_branch_id", branchId);
+      paymentQuery = paymentQuery.eq("current_branch_id", branchId);
     }
 
     const [ordersResult, customersResult, paymentsResult] = await Promise.all([
       ordersQuery,
-      supabase.from("customers").select("*"),
-      supabase.from("payments").select("*"),
+      customerQuery,
+      paymentQuery,
     ]);
 
     if (ordersResult.error) throw ordersResult.error;

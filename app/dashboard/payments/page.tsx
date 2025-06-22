@@ -92,7 +92,7 @@ export default function PaymentsPage() {
 
   const fetchPayments = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("payments")
         .select(
           `
@@ -109,6 +109,12 @@ export default function PaymentsPage() {
         )
         .order("created_at", { ascending: false });
 
+      if (currentBranchId) {
+        query = query.eq("current_branch_id", currentBranchId);
+      }
+
+      const { data, error } = await query;
+      console.log("Payments data:", data);
       if (error) {
         console.error("Error fetching payments:", error);
         return [];
@@ -168,7 +174,7 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [currentBranchId]);
 
   // Update amount when order is selected
   useEffect(() => {
@@ -318,7 +324,7 @@ export default function PaymentsPage() {
     const matchesMethod =
       methodFilter === "all" || payment.payment_method === methodFilter;
 
-    return matchesSearch && matchesStatus && matchesMethod;
+    return matchesSearch || matchesStatus || matchesMethod;
   });
 
   const stats = {

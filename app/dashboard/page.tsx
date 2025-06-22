@@ -22,7 +22,6 @@ import {
   Clock,
   DollarSign,
   Eye,
-  Loader2,
   Plus,
   ShoppingCart,
   Users,
@@ -90,13 +89,13 @@ export default function DashboardPage() {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-150px)]">
-        <Loader2 className="h-16 w-16 animate-spin text-blue-600" />
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-[calc(100vh-150px)]">
+  //       <Loader2 className="h-16 w-16 animate-spin text-blue-600" />
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">

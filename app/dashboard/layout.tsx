@@ -24,7 +24,6 @@ import { cn } from "@/lib/utils";
 import { Branches } from "@/types/database";
 import {
   BarChart3,
-  Bell,
   CreditCard,
   LayoutDashboard,
   Loader2,
@@ -224,13 +223,6 @@ export default function DashboardLayout({
                   </SelectContent>
                 </Select>
               </div>
-              {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  3
-                </span>
-              </Button>
 
               {/* User menu */}
               <DropdownMenu>
@@ -239,14 +231,8 @@ export default function DashboardLayout({
                     variant="ghost"
                     className="relative h-10 w-10 rounded-full"
                   >
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage
-                        src={
-                          userProfile?.avatar_url ||
-                          "/placeholder.svg?width=40&height=40&query=avatar"
-                        }
-                        alt={userProfile?.full_name || "User"}
-                      />
+                    <Avatar className="h-10 w-10 border-[1px] border-gray-200">
+                      <AvatarImage src="/avatar.png" alt="Avatar" />
                       <AvatarFallback>
                         {getInitials(userProfile?.full_name)}
                       </AvatarFallback>
