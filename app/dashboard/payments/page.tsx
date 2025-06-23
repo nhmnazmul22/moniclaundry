@@ -277,6 +277,13 @@ export default function PaymentsPage() {
                 total_deposit: Number(customer?.total_deposit - order.subtotal),
               })
               .eq("id", order.customer.id);
+
+            await supabase
+              .from("orders")
+              .update({
+                payment_status: "paid",
+              })
+              .eq("id", order.id);
           } else {
             toast({
               title: "Error",
