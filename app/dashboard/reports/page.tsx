@@ -36,31 +36,12 @@ import { AlertTriangle, Download, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { DateRange } from "react-day-picker";
 
-const salesData: any = {
-  salesData: { kilo: 39, rupiah: 319002, satuan: 3 },
-  paymentBreakdown: {
-    cash: { amount: 24000, transactions: 2 },
-    transfer: { amount: 18000, transactions: 2 },
-    qris: { amount: 0, transactions: 0 },
-    deposit: { amount: 106000, transactions: 5 },
-  },
-  expenses: 47850.3,
-  netCash: -23850.3,
-  transactionCounts: { kilo: 9, satuan: 3 },
-  depositData: {
-    topUp: { amount: 15950.1, transactions: 0 },
-    usage: { amount: 106000, transactions: 5 },
-  },
-  customerData: { new: 3, existing: 9 },
-};
-
 export default function ReportsPage() {
   const { currentBranchId } = useBranch();
-
+  console.log("Current Branch ID:", currentBranchId);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
@@ -69,7 +50,6 @@ export default function ReportsPage() {
   const [reportType, setReportType] = useState<string>("revenue_summary");
 
   const generateReport = useCallback(async () => {
-    console.log(reportData);
     if (!dateRange?.from || !dateRange?.to) {
       setError("Silakan pilih rentang tanggal.");
       return;
@@ -79,7 +59,7 @@ export default function ReportsPage() {
     try {
       const [ordersData, paymentsData] = await Promise.all([
         getOrders(currentBranchId),
-        getPayments(),
+        getPayments(currentBranchId),
       ]);
 
       if (!ordersData || !paymentsData) {
@@ -92,7 +72,7 @@ export default function ReportsPage() {
         paymentsData,
         dateRange
       );
-
+      console.log(processedData);
       setReportData(processedData);
     } catch (e) {
       setError(
@@ -105,11 +85,11 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [dateRange, reportType]);
+  }, [dateRange, reportType, currentBranchId]);
 
   useEffect(() => {
     generateReport();
-  }, [generateReport]);
+  }, [generateReport, currentBranchId]);
 
   return (
     <div className="space-y-6">
@@ -124,7 +104,7 @@ export default function ReportsPage() {
         </div>
         <div className="flex gap-2">
           <Button
-            onClick={() => exportSalesReport(createDummyData())}
+            onClick={() => exportSalesReport(createDummyData(reportData!))}
             disabled={!reportData || loading}
             variant="outline"
           >

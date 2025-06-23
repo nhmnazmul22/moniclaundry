@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
+import { ReportData } from "./pdf-generator";
 
 interface PaymentMethod {
   amount: number;
@@ -49,91 +50,143 @@ export interface SalesReportData {
   };
 }
 
-export const createDummyData = (): SalesReportData => {
+export const createDummyData = (reportData: ReportData): SalesReportData => {
+  const regularTotalKilo = reportData.serviceBreakdown.kiloan.regular.reduce(
+    (acc, item) => acc + item.kilo,
+    0
+  );
+
+  const regularTotalAmount = reportData.serviceBreakdown.kiloan.regular.reduce(
+    (acc, item) => acc + item.amount,
+    0
+  );
+
+  const expressTotalKilo = reportData.serviceBreakdown.kiloan.express.reduce(
+    (acc, item) => acc + item.kilo,
+    0
+  );
+
+  const expressTotalAmount = reportData.serviceBreakdown.kiloan.express.reduce(
+    (acc, item) => acc + item.amount,
+    0
+  );
+
+  const regularData = reportData.serviceBreakdown.kiloan.regular.map(
+    (item) => ({
+      jenis_layanan: item.service,
+      total_kilo: item.kilo,
+      nominal: item.amount,
+    })
+  );
+
+  const expressData = reportData.serviceBreakdown.kiloan.express.map(
+    (item) => ({
+      jenis_layanan: item.service,
+      total_kilo: item.kilo,
+      nominal: item.amount,
+    })
+  );
+
+  const kiloanDetails: any = [];
+
+  reportData.serviceBreakdown.kiloan.regular.map((item) => {
+    kiloanDetails.push(item);
+  });
+
+  reportData.serviceBreakdown.kiloan.express.map((item) => {
+    kiloanDetails.push(item);
+  });
+
+  const sautanTotalKilo = reportData.serviceBreakdown.satuan.reduce(
+    (acc, item) => acc + item.count,
+    0
+  );
+
+  const sautanTotalAmount = reportData.serviceBreakdown.satuan.reduce(
+    (acc, item) => acc + item.amount,
+    0
+  );
+
+  const sautanData = reportData.serviceBreakdown.satuan.map((item) => ({
+    jenis_barang: item.item,
+    total_barang: item.count,
+    nominal: item.amount,
+  }));
+
   return {
-    salesData: { rupiah: 1000000, kilo: 150, satuan: 200 },
-    salesDataMonth: { rupiah: 5000000, kilo: 700, satuan: 800 },
-    salesDataPeriod: { rupiah: 15000000, kilo: 2000, satuan: 2500 },
+    salesData: {
+      rupiah: Number(reportData.salesData.rupiah),
+      kilo: Number(reportData.salesData.kilo),
+      satuan: Number(reportData.salesData.satuan),
+    },
+    salesDataMonth: {
+      rupiah: Number(reportData.salesData.rupiah),
+      kilo: Number(reportData.salesData.kilo),
+      satuan: Number(reportData.salesData.satuan),
+    },
+    salesDataPeriod: {
+      rupiah: Number(reportData.salesData.rupiah),
+      kilo: Number(reportData.salesData.kilo),
+      satuan: Number(reportData.salesData.satuan),
+    },
     paymentBreakdown: {
-      cash: { transactions: 50, amount: 700000 },
-      transfer: { transactions: 20, amount: 200000 },
-      qris: { transactions: 10, amount: 50000 },
-      deposit: { transactions: 5, amount: 50000 },
+      cash: {
+        transactions: Number(reportData.paymentBreakdown.cash.transactions),
+        amount: Number(reportData.paymentBreakdown.cash.amount),
+      },
+      transfer: {
+        transactions: Number(reportData.paymentBreakdown.transfer.transactions),
+        amount: Number(reportData.paymentBreakdown.transfer.amount),
+      },
+      qris: {
+        transactions: Number(reportData.paymentBreakdown.qris.transactions),
+        amount: Number(reportData.paymentBreakdown.qris.amount),
+      },
+      deposit: {
+        transactions: Number(reportData.paymentBreakdown.deposit.transactions),
+        amount: Number(reportData.paymentBreakdown.deposit.amount),
+      },
     },
     piutang: { transactions: 3, amount: 150000 },
-    expenses: 200000,
-    netCash: 500000,
-    transactionCounts: { kilo: 120, satuan: 80 },
+    expenses: reportData.expenses,
+    netCash: reportData.netCash,
+    transactionCounts: {
+      kilo: reportData.transactionCounts.kilo,
+      satuan: reportData.transactionCounts.satuan,
+    },
     depositData: {
-      topUp: { transactions: 10, amount: 100000 },
-      usage: { transactions: 8, amount: 80000 },
+      topUp: {
+        transactions: reportData.depositData.topUp.transactions,
+        amount: reportData.depositData.topUp.amount,
+      },
+      usage: {
+        transactions: reportData.depositData.usage.transactions,
+        amount: reportData.depositData.usage.amount,
+      },
     },
     customerData: {
-      new: 15,
-      existing: 120,
+      new: reportData.customerData.new,
+      existing: reportData.customerData.existing,
     },
     reguler: {
-      total_kilo: 120,
-      nominal: 1200000,
-      details: [
-        {
-          jenis_layanan: "Cuci Kering Lipat 1kg",
-          total_kilo: 50,
-          nominal: 500000,
-        },
-        {
-          jenis_layanan: "Cuci Kering Setrika 1kg",
-          total_kilo: 40,
-          nominal: 400000,
-        },
-        {
-          jenis_layanan: "Cuci Kering Gantung 1kg",
-          total_kilo: 30,
-          nominal: 300000,
-        },
-      ],
+      total_kilo: regularTotalKilo,
+      nominal: regularTotalAmount,
+      details: regularData,
     },
     express: {
-      total_kilo: 15,
-      nominal: 300000,
-      details: [
-        {
-          jenis_layanan: "Cuci Kering Lipat 1kg",
-          total_kilo: 8,
-          nominal: 160000,
-        },
-        {
-          jenis_layanan: "Cuci Kering Setrika 1kg",
-          total_kilo: 7,
-          nominal: 140000,
-        },
-      ],
+      total_kilo: expressTotalKilo,
+      nominal: expressTotalAmount,
+      details: expressData,
     },
     kiloan_total: {
-      total_kilo: 135,
-      nominal: 1500000,
-      details: [
-        {
-          jenis_barang: "Bed Cover 100x100 cm",
-          total_barang: 5,
-          nominal: 100000,
-        },
-        {
-          jenis_barang: "Bed Cover 150x150 cm",
-          total_barang: 3,
-          nominal: 90000,
-        },
-        { jenis_barang: "Sprei", total_barang: 10, nominal: 150000 },
-      ],
+      total_kilo: regularTotalKilo + expressTotalKilo,
+      nominal: regularTotalAmount + expressTotalAmount,
+      details: kiloanDetails,
     },
     satuan_total: {
-      total_kilo: 200,
-      nominal: 2500000,
-      details: [
-        { jenis_barang: "Kemeja", total_barang: 50, nominal: 500000 },
-        { jenis_barang: "Celana", total_barang: 40, nominal: 400000 },
-        { jenis_barang: "Gaun", total_barang: 20, nominal: 300000 },
-      ],
+      total_kilo: sautanTotalKilo,
+      nominal: sautanTotalAmount,
+      details: sautanData,
     },
   };
 };

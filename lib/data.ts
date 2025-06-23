@@ -69,6 +69,7 @@ export async function getDashboardStats(branchId?: string) {
 }
 
 export async function getOrders(branchId: string) {
+  console.log("Fetching orders for branch:", branchId);
   try {
     let query = supabase
       .from("orders")
@@ -193,9 +194,9 @@ export async function getDeliveries(
   }
 }
 
-export async function getPayments() {
+export async function getPayments(branchId: string) {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("payments")
       .select(
         `
@@ -207,6 +208,13 @@ export async function getPayments() {
       `
       )
       .order("created_at", { ascending: false });
+
+    // Apply Branch id
+    if (branchId) {
+      query = query.eq("current_branch_id", branchId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data;
@@ -244,7 +252,6 @@ export async function getStaff(searchTerm?: string, roleFilter?: string) {
   }
 }
 
-// CRUD Operations
 export async function createOrder(orderData: any) {
   try {
     const { data, error } = await supabase

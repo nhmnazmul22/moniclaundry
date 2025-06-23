@@ -114,7 +114,7 @@ export default function PaymentsPage() {
       }
 
       const { data, error } = await query;
-      console.log("Payments data:", data);
+
       if (error) {
         console.error("Error fetching payments:", error);
         return [];
@@ -234,6 +234,8 @@ export default function PaymentsPage() {
     }
 
     try {
+      const order = orders.find((o) => o.id === selectedOrder);
+
       const newPayment = {
         order_id: selectedOrder,
         amount: amount,
@@ -242,6 +244,7 @@ export default function PaymentsPage() {
         reference_number: referenceNumber || null,
         notes: notes || null,
         status: "completed", // Default to completed for manual entry
+        current_branch_id: order.current_branch_id || currentBranchId,
       };
 
       const { data, error } = await supabase
@@ -258,43 +261,6 @@ export default function PaymentsPage() {
           variant: "destructive",
         });
       } else {
-        if (paymentMethod === "deposit") {
-          const order = orders.find((o) => o.id === selectedOrder);
-
-          const { data: customer, error: customerError } = await supabase
-            .from("customers")
-            .select("total_deposit")
-            .eq("id", order.customer.id)
-            .single();
-
-          if (
-            order.customer?.total_deposit > 0 &&
-            order.customer?.total_deposit >= order.subtotal
-          ) {
-            await supabase
-              .from("customers")
-              .update({
-                total_deposit: Number(customer?.total_deposit - order.subtotal),
-              })
-              .eq("id", order.customer.id);
-
-            await supabase
-              .from("orders")
-              .update({
-                payment_status: "paid",
-              })
-              .eq("id", order.id);
-          } else {
-            toast({
-              title: "Error",
-              description:
-                "Deposit pelanggan tidak cukup untuk menutupi total.",
-              variant: "destructive",
-            });
-            return;
-          }
-        }
-
         toast({
           title: "Sukses",
           description: "Pembayaran berhasil ditambahkan.",
@@ -456,7 +422,6 @@ export default function PaymentsPage() {
                     <SelectItem value="ovo">OVO</SelectItem>
                     <SelectItem value="dana">DANA</SelectItem>
                     <SelectItem value="shopeepay">ShopeePay</SelectItem>
-                    <SelectItem value="deposit">Deposit</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
