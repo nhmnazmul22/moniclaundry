@@ -1,4 +1,10 @@
-import type { User as AppUser, Customer, Service, Order, DashboardStats } from "@/types/database"
+import type {
+  User as AppUser,
+  Customer,
+  DashboardStats,
+  Order,
+  Service,
+} from "@/types/database";
 
 // Demo users
 export const demoUsers: AppUser[] = [
@@ -38,7 +44,7 @@ export const demoUsers: AppUser[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
-]
+];
 
 // Demo customers
 export const demoCustomers: Customer[] = [
@@ -51,6 +57,7 @@ export const demoCustomers: Customer[] = [
     loyalty_points: 150,
     total_orders: 5,
     total_spent: 250000,
+    total_deposit: 0,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -63,10 +70,11 @@ export const demoCustomers: Customer[] = [
     loyalty_points: 200,
     total_orders: 8,
     total_spent: 400000,
+    total_deposit: 0,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
-]
+];
 
 // Demo services
 export const demoServices: Service[] = [
@@ -94,7 +102,7 @@ export const demoServices: Service[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
-]
+];
 
 // Demo orders
 export const demoOrders: Order[] = [
@@ -142,7 +150,7 @@ export const demoOrders: Order[] = [
     updated_at: new Date().toISOString(),
     customer: demoCustomers[1],
   },
-]
+];
 
 // Demo dashboard stats
 export const demoDashboardStats: DashboardStats = {
@@ -161,7 +169,7 @@ export const demoDashboardStats: DashboardStats = {
   ],
   recentOrders: demoOrders,
   lowStockItems: [],
-}
+};
 
 // Demo authentication
 export const demoAuth = {
@@ -169,19 +177,19 @@ export const demoAuth = {
 
   signIn: async (email: string, password: string) => {
     // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const user = demoUsers.find((u) => u.email === email)
+    const user = demoUsers.find((u) => u.email === email);
     if (user && password === "password123") {
-      demoAuth.currentUser = user
-      return { success: true }
+      demoAuth.currentUser = user;
+      return { success: true };
     }
-    return { error: "Email atau password salah" }
+    return { error: "Email atau password salah" };
   },
 
   signOut: async () => {
-    demoAuth.currentUser = null
+    demoAuth.currentUser = null;
   },
 
   getUser: () => demoAuth.currentUser,
-}
+};

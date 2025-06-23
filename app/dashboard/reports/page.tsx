@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
 import { getOrders, getPayments } from "@/lib/data";
+import { exportSalesReport } from "@/lib/exportToExcel";
 import { generateLaundryReport, type ReportData } from "@/lib/pdf-generator";
 import { ReportDataProcessor } from "@/lib/report-data-processor";
 import { formatCurrency } from "@/lib/utils";
@@ -34,6 +35,24 @@ import { addDays, format } from "date-fns";
 import { AlertTriangle, Download, FileText, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { DateRange } from "react-day-picker";
+
+const salesData: any = {
+  salesData: { kilo: 39, rupiah: 319002, satuan: 3 },
+  paymentBreakdown: {
+    cash: { amount: 24000, transactions: 2 },
+    transfer: { amount: 18000, transactions: 2 },
+    qris: { amount: 0, transactions: 0 },
+    deposit: { amount: 106000, transactions: 5 },
+  },
+  expenses: 47850.3,
+  netCash: -23850.3,
+  transactionCounts: { kilo: 9, satuan: 3 },
+  depositData: {
+    topUp: { amount: 15950.1, transactions: 0 },
+    usage: { amount: 106000, transactions: 5 },
+  },
+  customerData: { new: 3, existing: 9 },
+};
 
 export default function ReportsPage() {
   const { currentBranchId } = useBranch();
@@ -50,6 +69,7 @@ export default function ReportsPage() {
   const [reportType, setReportType] = useState<string>("revenue_summary");
 
   const generateReport = useCallback(async () => {
+    console.log(reportData);
     if (!dateRange?.from || !dateRange?.to) {
       setError("Silakan pilih rentang tanggal.");
       return;
@@ -193,7 +213,7 @@ export default function ReportsPage() {
             Generate PDF
           </Button>
           <Button
-            onClick={handleExportCSV}
+            onClick={() => exportSalesReport(salesData)}
             disabled={!reportData || loading}
             variant="outline"
           >
