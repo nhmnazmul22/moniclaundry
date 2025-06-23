@@ -28,11 +28,11 @@ import {
 import { useBranch } from "@/contexts/branch-context";
 import { getOrders, getPayments } from "@/lib/data";
 import { createDummyData, exportSalesReport } from "@/lib/exportToExcel";
-import { generateLaundryReport, type ReportData } from "@/lib/pdf-generator";
+import { type ReportData } from "@/lib/pdf-generator";
 import { ReportDataProcessor } from "@/lib/report-data-processor";
 import { formatCurrency } from "@/lib/utils";
 import { addDays, format } from "date-fns";
-import { AlertTriangle, Download, FileText, Loader2 } from "lucide-react";
+import { AlertTriangle, Download, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { DateRange } from "react-day-picker";
 
@@ -107,87 +107,9 @@ export default function ReportsPage() {
     }
   }, [dateRange, reportType]);
 
-  const handleGeneratePDF = async () => {
-    if (!reportData) {
-      alert("Tidak ada data untuk dibuat PDF.");
-      return;
-    }
-
-    setGeneratingPDF(true);
-
-    try {
-      console.log("Starting PDF generation with data:", reportData);
-
-      // Check if required dependencies are available
-      if (typeof window === "undefined") {
-        throw new Error("PDF generation must run in browser environment");
-      }
-
-      // Use the separated PDF generator with better error handling
-      await generateLaundryReport(reportData, dateRange);
-
-      console.log("PDF generated successfully");
-    } catch (error) {
-      console.error("Detailed PDF generation error:", error);
-
-      // More specific error messages
-      let errorMessage = "Terjadi kesalahan saat membuat PDF";
-
-      if (error instanceof Error) {
-        if (error.message.includes("jsPDF")) {
-          errorMessage =
-            "Error dengan library PDF. Pastikan jsPDF terinstall dengan benar.";
-        } else if (error.message.includes("autoTable")) {
-          errorMessage =
-            "Error dengan tabel PDF. Pastikan jspdf-autotable terinstall dengan benar.";
-        } else {
-          errorMessage = `Error: ${error.message}`;
-        }
-      }
-
-      alert(errorMessage);
-    } finally {
-      setGeneratingPDF(false);
-    }
-  };
-
   useEffect(() => {
     generateReport();
   }, [generateReport]);
-
-  const handleExportCSV = () => {
-    if (!reportData || reportData.dailyBreakdown.length === 0) {
-      alert("Tidak ada data untuk diekspor.");
-      return;
-    }
-    const headers = ["Date", "Revenue", "Orders", "Avg Per Order"];
-    const csvRows = [
-      headers.join(","),
-      ...reportData.dailyBreakdown.map((row) =>
-        [row.date, row.revenue, row.orders, row.avgPerOrder.toFixed(2)].join(
-          ","
-        )
-      ),
-    ];
-    const csvString = csvRows.join("\n");
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute(
-        "download",
-        `report_${reportType}_${format(
-          dateRange?.from || new Date(),
-          "yyyyMMdd"
-        )}-${format(dateRange?.to || new Date(), "yyyyMMdd")}.csv`
-      );
-      link.style.visibility = "hidden";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -201,17 +123,6 @@ export default function ReportsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            onClick={handleGeneratePDF}
-            disabled={!reportData || loading || generatingPDF}
-          >
-            {generatingPDF ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <FileText className="mr-2 h-4 w-4" />
-            )}
-            Generate PDF
-          </Button>
           <Button
             onClick={() => exportSalesReport(createDummyData())}
             disabled={!reportData || loading}
