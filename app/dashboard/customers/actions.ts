@@ -15,6 +15,7 @@ export async function addCustomer(
         phone: formData.get("phone") as string,
         email: formData.get("email") as string,
         address: formData.get("address") as string,
+        total_deposit: Number(formData.get("total_deposit")) as number,
         current_branch_id: current_branch_id as string,
       },
     ])
@@ -36,6 +37,7 @@ export async function updateCustomer(id: string, formData: FormData) {
       phone: formData.get("phone") as string,
       email: formData.get("email") as string,
       address: formData.get("address") as string,
+      total_deposit: Number(formData.get("total_deposit")) as number,
     })
     .eq("id", id);
 

@@ -90,7 +90,7 @@ export async function getOrders(branchId: string) {
     }
 
     const { data, error } = await query;
-
+    console.log(data);
     if (error) throw error;
     return data as Order[];
   } catch (error) {

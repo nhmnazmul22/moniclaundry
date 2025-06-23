@@ -110,6 +110,7 @@ export interface Customer {
   loyalty_points: number;
   total_orders: number;
   total_spent: number;
+  total_deposit: number;
   created_at: string;
   updated_at: string;
 }
@@ -138,7 +139,7 @@ export interface Order {
   discount: number;
   tax: number;
   total_amount: number;
-  payment_method?: "cash" | "transfer" | "ewallet" | "cod";
+  payment_method?: "cash" | "transfer" | "ewallet" | "cod" | "deposit";
   payment_status: "pending" | "paid" | "partial" | "refunded";
   order_status:
     | "received"

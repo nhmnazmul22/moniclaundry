@@ -28,38 +28,33 @@ import {
   getOrderStatusColor,
 } from "@/lib/utils";
 import type { Order } from "@/types/database";
-import {
-  AlertTriangle,
-  Edit,
-  Eye,
-  Loader2,
-  Plus,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { AlertTriangle, Edit, Eye, Loader2, Plus, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
 export default function OrdersPage() {
   const router = useRouter();
   const { currentBranchId } = useBranch();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
   const fetchOrdersData = async (currentBranchId: string) => {
-    setLoading(true);
-    setError(null);
-    const data = await getOrders(currentBranchId);
-    if (data) {
-      setOrders(data);
-    } else {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getOrders(currentBranchId);
+      if (data) {
+        setOrders(data);
+      }
+    } catch (err: any) {
       setError("Gagal memuat data order.");
+    } finally {
+      console.log("Orders data fetched successfully");
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -257,90 +252,82 @@ export default function OrdersPage() {
           <CardTitle>Daftar Orders ({orders.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {orders.length === 0 && !loading ? (
-            <p className="text-center text-gray-500 py-8">
-              Tidak ada order yang cocok dengan filter Anda.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order Number</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead>Estimasi Selesai</TableHead>
-                  <TableHead>Actions</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order Number</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Payment</TableHead>
+                <TableHead>Estimasi Selesai</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium">
+                    {order.order_number}
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">
+                        {order.customer?.name || "N/A"}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {order.customer?.phone || "N/A"}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>{formatCurrency(order.total_amount)}</TableCell>
+                  <TableCell>
+                    <Badge className={getOrderStatusColor(order.order_status)}>
+                      {getStatusLabel(order.order_status)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={getPaymentStatusColor(order.payment_status)}
+                    >
+                      {order.payment_status?.toUpperCase() || "N/A"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {order.estimated_completion
+                      ? formatDateTime(order.estimated_completion)
+                      : "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewOrder(order.id)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditOrder(order.id)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDeleteOrder(order.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">
-                      {order.order_number}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">
-                          {order.customer?.name || "N/A"}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {order.customer?.phone || "N/A"}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatCurrency(order.total_amount)}</TableCell>
-                    <TableCell>
-                      <Badge
-                        className={getOrderStatusColor(order.order_status)}
-                      >
-                        {getStatusLabel(order.order_status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={getPaymentStatusColor(order.payment_status)}
-                      >
-                        {order.payment_status?.toUpperCase() || "N/A"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {order.estimated_completion
-                        ? formatDateTime(order.estimated_completion)
-                        : "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewOrder(order.id)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditOrder(order.id)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => handleDeleteOrder(order.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

@@ -50,7 +50,7 @@ export default function CustomersPage() {
   const { currentBranchId } = useBranch();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [branches, setBranches] = useState<Branches[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isPending, startTransition] = useTransition();
   const [branchId, setBranchId] = useState<string>("");
@@ -79,10 +79,7 @@ export default function CustomersPage() {
   };
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      fetchCustomers();
-    }, 300); // Debounce search
-    return () => clearTimeout(handler);
+    fetchCustomers();
   }, [searchTerm, currentBranchId]);
 
   useEffect(() => {
@@ -206,6 +203,10 @@ export default function CustomersPage() {
                 <Input id="address" name="address" />
               </div>
               <div>
+                <Label htmlFor="total_deposit">Deposit</Label>
+                <Input type="number" id="total_deposit" name="total_deposit" />
+              </div>
+              <div>
                 <Select
                   name="current_branch_id"
                   value={branchId}
@@ -306,6 +307,7 @@ export default function CustomersPage() {
                   <TableHead>Address</TableHead>
                   <TableHead>Orders</TableHead>
                   <TableHead>Total Spent</TableHead>
+                  <TableHead>Total Deposit</TableHead>
                   <TableHead>Loyalty Points</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -348,6 +350,9 @@ export default function CustomersPage() {
                     </TableCell>
                     <TableCell>
                       {formatCurrency(customer.total_spent)}
+                    </TableCell>
+                    <TableCell>
+                      {formatCurrency(customer.total_deposit)}
                     </TableCell>
                     <TableCell className="text-center">
                       {customer.loyalty_points}
@@ -460,6 +465,14 @@ export default function CustomersPage() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">
+                    Total Deposit
+                  </Label>
+                  <p className="text-sm">
+                    {formatCurrency(selectedCustomer.total_deposit)}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">
                     Loyalty Points
                   </Label>
                   <p className="text-sm">{selectedCustomer.loyalty_points}</p>
@@ -520,6 +533,14 @@ export default function CustomersPage() {
                   id="edit-address"
                   name="address"
                   defaultValue={selectedCustomer.address || ""}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-deposit">Deposit</Label>
+                <Input
+                  id="edit-deposit"
+                  name="total_deposit"
+                  defaultValue={selectedCustomer.total_deposit || ""}
                 />
               </div>
               <div className="flex justify-end space-x-2">

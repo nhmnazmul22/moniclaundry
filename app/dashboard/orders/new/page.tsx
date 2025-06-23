@@ -44,14 +44,15 @@ export default function NewOrderPage() {
   const { currentBranchId } = useBranch();
   const router = useRouter();
   const { toast } = useToast();
+  const [branches, setBranches] = useState<Branches[]>([]);
+  const [branchId, setBranchId] = useState<string>("");
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [loadingDependencies, setLoadingDependencies] = useState(true);
+  const [loadingDependencies, setLoadingDependencies] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [branches, setBranches] = useState<Branches[]>([]);
+
   // Form state
-  const [branchId, setBranchId] = useState<string>("");
   const [customerId, setCustomerId] = useState<string>("");
   const [orderItems, setOrderItems] = useState<OrderItemForm[]>([]);
   const [notes, setNotes] = useState<string>("");
@@ -85,12 +86,12 @@ export default function NewOrderPage() {
   };
 
   useEffect(() => {
-    fetchDependencies();
-  }, [fetchDependencies, currentBranchId]);
-
-  useEffect(() => {
     fetchBranches();
   }, []);
+
+  useEffect(() => {
+    fetchDependencies();
+  }, [fetchDependencies, currentBranchId]);
 
   const handleAddOrderItem = () => {
     const defaultService = services[0];
@@ -197,7 +198,7 @@ export default function NewOrderPage() {
       return;
     }
 
-     if (!branchId) {
+    if (!branchId) {
       toast({
         title: "Error",
         description: "Cabang harus dipilih.",
@@ -231,7 +232,7 @@ export default function NewOrderPage() {
       total_amount: totalAmount,
       payment_method: paymentMethod,
       payment_status: paymentStatus,
-      order_status: "received", 
+      order_status: "received",
       notes: notes,
       current_branch_id: branchId,
     };
@@ -279,7 +280,33 @@ export default function NewOrderPage() {
       return;
     }
 
-    // If payment is made directly (e.g. cash and paid)
+    if (paymentStatus === "paid" && paymentMethod === "deposit") {
+      const { data: customer, error: customerError } = await supabase
+        .from("customers")
+        .select("total_deposit")
+        .eq("id", customerId)
+        .single();
+
+      if (customer?.total_deposit > 0 && customer?.total_deposit >= subtotal) {
+        await supabase
+          .from("customers")
+          .update({
+            total_deposit: Number(customer?.total_deposit - subtotal),
+          })
+          .eq("id", customerId);
+      } else {
+        await supabase.from("orders").delete().eq("id", newOrder.id);
+        toast({
+          title: "Error",
+          description: "Deposit pelanggan tidak cukup untuk menutupi total.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    // If payment is made directly (e.g. cash, deposit and paid)
     if (paymentStatus === "paid" && totalAmount > 0) {
       const paymentData = {
         order_id: newOrder.id,
@@ -289,6 +316,7 @@ export default function NewOrderPage() {
         status: "completed",
         // created_by
       };
+
       await supabase.from("payments").insert(paymentData);
     }
 
@@ -454,6 +482,7 @@ export default function NewOrderPage() {
                   <SelectItem value="transfer">Transfer Bank</SelectItem>
                   <SelectItem value="ewallet">E-Wallet</SelectItem>
                   <SelectItem value="cod">COD (Bayar di Tempat)</SelectItem>
+                  <SelectItem value="deposit">Deposit</SelectItem>
                 </SelectContent>
               </Select>
             </div>

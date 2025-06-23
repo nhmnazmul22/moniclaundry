@@ -258,6 +258,36 @@ export default function PaymentsPage() {
           variant: "destructive",
         });
       } else {
+        if (paymentMethod === "deposit") {
+          const order = orders.find((o) => o.id === selectedOrder);
+
+          const { data: customer, error: customerError } = await supabase
+            .from("customers")
+            .select("total_deposit")
+            .eq("id", order.customer.id)
+            .single();
+
+          if (
+            order.customer?.total_deposit > 0 &&
+            order.customer?.total_deposit >= order.subtotal
+          ) {
+            await supabase
+              .from("customers")
+              .update({
+                total_deposit: Number(customer?.total_deposit - order.subtotal),
+              })
+              .eq("id", order.customer.id);
+          } else {
+            toast({
+              title: "Error",
+              description:
+                "Deposit pelanggan tidak cukup untuk menutupi total.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+
         toast({
           title: "Sukses",
           description: "Pembayaran berhasil ditambahkan.",
@@ -419,6 +449,7 @@ export default function PaymentsPage() {
                     <SelectItem value="ovo">OVO</SelectItem>
                     <SelectItem value="dana">DANA</SelectItem>
                     <SelectItem value="shopeepay">ShopeePay</SelectItem>
+                    <SelectItem value="deposit">Deposit</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

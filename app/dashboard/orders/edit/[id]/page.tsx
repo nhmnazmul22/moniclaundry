@@ -1,30 +1,36 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/client"
-import type { Order, Customer } from "@/types/database"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Loader2, AlertTriangle } from "lucide-react"
-import Link from "next/link"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/lib/supabase/client";
+import type { Customer, Order } from "@/types/database";
+import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function EditOrderPage() {
-  const params = useParams()
-  const router = useRouter()
-  const orderId = params.id as string
+  const params = useParams();
+  const router = useRouter();
+  const orderId = params.id as string;
 
-  const [order, setOrder] = useState<Order | null>(null)
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [order, setOrder] = useState<Order | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     customer_id: "",
@@ -32,11 +38,11 @@ export default function EditOrderPage() {
     payment_status: "",
     notes: "",
     estimated_completion: "",
-  })
+  });
 
   const fetchData = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       // Fetch order
@@ -44,17 +50,20 @@ export default function EditOrderPage() {
         .from("orders")
         .select("*")
         .eq("id", orderId)
-        .single()
+        .single();
 
-      if (orderError) throw orderError
+      if (orderError) throw orderError;
 
       // Fetch customers
-      const { data: customersData, error: customersError } = await supabase.from("customers").select("*").order("name")
+      const { data: customersData, error: customersError } = await supabase
+        .from("customers")
+        .select("*")
+        .order("name");
 
-      if (customersError) throw customersError
+      if (customersError) throw customersError;
 
-      setOrder(orderData)
-      setCustomers(customersData || [])
+      setOrder(orderData);
+      setCustomers(customersData || []);
 
       // Set form data
       setFormData({
@@ -65,23 +74,23 @@ export default function EditOrderPage() {
         estimated_completion: orderData.estimated_completion
           ? new Date(orderData.estimated_completion).toISOString().slice(0, 16)
           : "",
-      })
+      });
     } catch (err: any) {
-      setError(err.message || "Gagal memuat data order.")
+      setError(err.message || "Gagal memuat data order.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     if (orderId) {
-      fetchData()
+      fetchData();
     }
-  }, [orderId])
+  }, [orderId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
+    e.preventDefault();
+    setSaving(true);
 
     try {
       const updateData: any = {
@@ -93,35 +102,85 @@ export default function EditOrderPage() {
           ? new Date(formData.estimated_completion).toISOString()
           : null,
         updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from("orders")
+        .update(updateData)
+        .eq("id", orderId);
+
+      if (error) throw error;
+
+      if (order?.payment_method === "deposit") {
+        const { data: customer, error: customerError } = await supabase
+          .from("customers")
+          .select("total_deposit")
+          .eq("id", order?.customer_id)
+          .single();
+
+        let totalDeposit = customer?.total_deposit;
+
+        if (
+          order?.payment_status === "paid" &&
+          order?.order_status !== "cancelled" &&
+          (updateData.order_status === "cancelled" ||
+            updateData.payment_status === "refunded" ||
+            updateData.payment_status === "pending")
+        ) {
+          totalDeposit = Number(customer?.total_deposit + order?.subtotal);
+        }
+
+        if (
+          order?.payment_status === "paid" &&
+          order?.order_status === "cancelled" &&
+          updateData.order_status !== "cancelled"
+        ) {
+          totalDeposit = Number(customer?.total_deposit - order?.subtotal);
+        }
+
+        if (
+          (order.payment_status === "refunded" ||
+            order.payment_status === "pending") &&
+          order.order_status !== "cancelled" &&
+          updateData.payment_status === "paid"
+        ) {
+          totalDeposit = Number(customer?.total_deposit - order?.subtotal);
+        }
+
+        await supabase
+          .from("customers")
+          .update({
+            total_deposit: totalDeposit,
+          })
+          .eq("id", order?.customer_id);
       }
 
-      const { error } = await supabase.from("orders").update(updateData).eq("id", orderId)
-
-      if (error) throw error
-
-      alert("Order berhasil diperbarui!")
-      router.push(`/dashboard/orders/${orderId}`)
+      alert("Order berhasil diperbarui!");
+      router.push(`/dashboard/orders/${orderId}`);
     } catch (err: any) {
-      alert(`Gagal memperbarui order: ${err.message}`)
+      alert(`Gagal memperbarui order: ${err.message}`);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   if (loading) {
+    console.log(loading);
     return (
       <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
         <p>Memuat data order...</p>
       </div>
-    )
+    );
   }
 
   if (error || !order) {
     return (
       <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
-        <p className="text-red-500 text-lg">{error || "Order tidak ditemukan"}</p>
+        <p className="text-red-500 text-lg">
+          {error || "Order tidak ditemukan"}
+        </p>
         <Link href="/dashboard/orders">
           <Button>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -129,7 +188,7 @@ export default function EditOrderPage() {
           </Button>
         </Link>
       </div>
-    )
+    );
   }
 
   return (
@@ -158,7 +217,9 @@ export default function EditOrderPage() {
                 <Label htmlFor="customer">Customer</Label>
                 <Select
                   value={formData.customer_id}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, customer_id: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, customer_id: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih customer" />
@@ -177,7 +238,9 @@ export default function EditOrderPage() {
                 <Label htmlFor="order_status">Status Order</Label>
                 <Select
                   value={formData.order_status}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, order_status: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, order_status: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih status" />
@@ -188,7 +251,9 @@ export default function EditOrderPage() {
                     <SelectItem value="drying">Sedang Dikeringkan</SelectItem>
                     <SelectItem value="ironing">Sedang Disetrika</SelectItem>
                     <SelectItem value="ready">Siap Diambil</SelectItem>
-                    <SelectItem value="out_for_delivery">Sedang Diantar</SelectItem>
+                    <SelectItem value="out_for_delivery">
+                      Sedang Diantar
+                    </SelectItem>
                     <SelectItem value="delivered">Selesai</SelectItem>
                     <SelectItem value="cancelled">Dibatalkan</SelectItem>
                   </SelectContent>
@@ -199,7 +264,9 @@ export default function EditOrderPage() {
                 <Label htmlFor="payment_status">Status Pembayaran</Label>
                 <Select
                   value={formData.payment_status}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, payment_status: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, payment_status: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih status pembayaran" />
@@ -219,7 +286,12 @@ export default function EditOrderPage() {
                   id="estimated_completion"
                   type="datetime-local"
                   value={formData.estimated_completion}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, estimated_completion: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      estimated_completion: e.target.value,
+                    }))
+                  }
                 />
               </div>
             </div>
@@ -230,7 +302,9 @@ export default function EditOrderPage() {
                 id="notes"
                 placeholder="Catatan tambahan untuk order ini..."
                 value={formData.notes}
-                onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, notes: e.target.value }))
+                }
                 rows={3}
               />
             </div>
@@ -256,5 +330,5 @@ export default function EditOrderPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
