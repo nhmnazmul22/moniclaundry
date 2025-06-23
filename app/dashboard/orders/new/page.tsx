@@ -231,7 +231,7 @@ export default function NewOrderPage() {
       tax: tax,
       total_amount: totalAmount,
       payment_method: paymentMethod,
-      payment_status: paymentStatus,
+      payment_status: paymentMethod === "deposit" ? "paid" : paymentStatus,
       order_status: "received",
       notes: notes,
       current_branch_id: branchId,
@@ -280,7 +280,8 @@ export default function NewOrderPage() {
       return;
     }
 
-    if (paymentStatus === "paid" && paymentMethod === "deposit") {
+    // Deposit payment handling
+    if (paymentMethod === "deposit") {
       const { data: customer, error: customerError } = await supabase
         .from("customers")
         .select("total_deposit")
@@ -294,6 +295,8 @@ export default function NewOrderPage() {
             total_deposit: Number(customer?.total_deposit - subtotal),
           })
           .eq("id", customerId);
+
+        setPaymentStatus("paid"); // Set payment status to paid if deposit covers the total
       } else {
         await supabase.from("orders").delete().eq("id", newOrder.id);
         toast({
@@ -488,7 +491,11 @@ export default function NewOrderPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="paymentStatus">Status Pembayaran</Label>
-              <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+              <Select
+                value={paymentStatus}
+                onValueChange={setPaymentStatus}
+                disabled={paymentMethod === "deposit"}
+              >
                 <SelectTrigger id="paymentStatus">
                   <SelectValue />
                 </SelectTrigger>

@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
 import { getOrders, getPayments } from "@/lib/data";
-import { exportSalesReport } from "@/lib/exportToExcel";
+import { createDummyData, exportSalesReport } from "@/lib/exportToExcel";
 import { generateLaundryReport, type ReportData } from "@/lib/pdf-generator";
 import { ReportDataProcessor } from "@/lib/report-data-processor";
 import { formatCurrency } from "@/lib/utils";
@@ -213,7 +213,7 @@ export default function ReportsPage() {
             Generate PDF
           </Button>
           <Button
-            onClick={() => exportSalesReport(salesData)}
+            onClick={() => exportSalesReport(createDummyData())}
             disabled={!reportData || loading}
             variant="outline"
           >
