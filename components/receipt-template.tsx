@@ -449,7 +449,8 @@ export const ReceiptTemplate = React.forwardRef<
     >
       {/* Header */}
       <div className="text-center mb-4">
-        <h1 className="text-lg font-bold">{businessInfo.name}</h1>
+        <img src="/pdf-logo.png" className="w-20 h-auto mx-auto" />
+        <h1 className="text-lg font-bold mt-[-10pxs]">{businessInfo.name}</h1>
         <p>{businessInfo.address}</p>
         <p>{businessInfo.phone}</p>
       </div>
