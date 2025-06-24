@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/auth-context";
 import { Loader2 } from "lucide-react";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function HomePage() {
@@ -11,9 +11,9 @@ export default function HomePage() {
 
   useEffect(() => {
     if (user) {
-      redirect("/dashboard");
+      router.push("/dashboard");
     } else {
-      redirect("/login");
+      router.push("/login");
     }
   }, [user]);
 
