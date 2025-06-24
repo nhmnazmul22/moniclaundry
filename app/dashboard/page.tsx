@@ -22,6 +22,7 @@ import {
   Clock,
   DollarSign,
   Eye,
+  Loader2,
   Plus,
   ShoppingCart,
   Users,
@@ -36,22 +37,23 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await getDashboardStats(currentBranchId);
-        setStats(data);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load dashboard data"
-        );
-        setStats(null); // Clear stats on error
-      } finally {
-        setLoading(false);
-      }
+  async function fetchStats() {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getDashboardStats(currentBranchId);
+      setStats(data);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load dashboard data"
+      );
+      setStats(null); // Clear stats on error
+    } finally {
+      setLoading(false);
     }
+  }
+
+  useEffect(() => {
     fetchStats();
   }, [currentBranchId]);
 
@@ -89,13 +91,13 @@ export default function DashboardPage() {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
-  // if (loading) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-[calc(100vh-150px)]">
-  //       <Loader2 className="h-16 w-16 animate-spin text-blue-600" />
-  //     </div>
-  //   );
-  // }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-150px)]">
+        <Loader2 className="h-16 w-16 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">

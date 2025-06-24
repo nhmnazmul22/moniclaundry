@@ -113,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         // Load the web app
         String webAppUrl = BuildConfig.WEB_APP_URL;
         if (webAppUrl == null || webAppUrl.isEmpty()) {
-            webAppUrl = "https://your-app-url.vercel.app"; // Fallback URL
+            webAppUrl = "https://moniclaundry.vercel.app"; // Fallback URL
         }
         
         webView.loadUrl(webAppUrl);

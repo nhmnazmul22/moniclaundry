@@ -1,23 +1,21 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/contexts/auth-context"
-import { Loader2 } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context";
+import { Loader2 } from "lucide-react";
+import { redirect, useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function HomePage() {
-  const { user, loading } = useAuth()
-  const router = useRouter()
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      if (user) {
-        router.push("/dashboard")
-      } else {
-        router.push("/login")
-      }
+    if (user) {
+      redirect("/dashboard");
+    } else {
+      redirect("/login");
     }
-  }, [user, loading, router])
+  }, [user]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -26,5 +24,5 @@ export default function HomePage() {
         <p>Loading application...</p>
       </div>
     </div>
-  )
+  );
 }

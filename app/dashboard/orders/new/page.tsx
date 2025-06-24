@@ -30,7 +30,7 @@ import { formatCurrency } from "@/lib/utils";
 import type { Branches, Customer, Service } from "@/types/database";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface OrderItemForm {
   service_id: string;
@@ -59,12 +59,12 @@ export default function NewOrderPage() {
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
   const [paymentStatus, setPaymentStatus] = useState<string>("pending"); // Default to pending
 
-  const fetchDependencies = useCallback(async () => {
-    setLoadingDependencies(true);
+  const fetchDependencies = async () => {
     try {
+      setLoadingDependencies(true);
       const [customersData, servicesData] = await Promise.all([
         getCustomers(currentBranchId, ""),
-        getServices(""),
+        getServices(currentBranchId),
       ]);
       if (customersData) setCustomers(customersData);
       if (servicesData) setServices(servicesData.filter((s) => s.is_active)); // Only active services
@@ -77,7 +77,7 @@ export default function NewOrderPage() {
     } finally {
       setLoadingDependencies(false);
     }
-  }, [toast]);
+  };
 
   const fetchBranches = () => {
     getBranchList().then((data) => {
@@ -91,7 +91,7 @@ export default function NewOrderPage() {
 
   useEffect(() => {
     fetchDependencies();
-  }, [fetchDependencies, currentBranchId]);
+  }, [currentBranchId]);
 
   const handleAddOrderItem = () => {
     const defaultService = services[0];
@@ -310,7 +310,10 @@ export default function NewOrderPage() {
     }
 
     // If payment is made directly (e.g. cash, deposit and paid)
-    if (paymentStatus === "paid" && totalAmount > 0) {
+    if (
+      (paymentStatus === "paid" || paymentMethod === "deposit") &&
+      totalAmount > 0
+    ) {
       const paymentData = {
         order_id: newOrder.id,
         amount: totalAmount,

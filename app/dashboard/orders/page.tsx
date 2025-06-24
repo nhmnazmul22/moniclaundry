@@ -28,7 +28,15 @@ import {
   getOrderStatusColor,
 } from "@/lib/utils";
 import type { Order } from "@/types/database";
-import { AlertTriangle, Edit, Eye, Loader2, Plus, Search, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Edit,
+  Eye,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -52,14 +60,28 @@ export default function OrdersPage() {
     } catch (err: any) {
       setError("Gagal memuat data order.");
     } finally {
-      console.log("Orders data fetched successfully");
       setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchOrdersData(currentBranchId);
-  }, [searchTerm, statusFilter, currentBranchId]);
+  }, [currentBranchId]);
+
+  // 1. First filter by status
+  const statusFilteredOrders = orders.filter((order) => {
+    return statusFilter === "all" || order.order_status === statusFilter;
+  });
+
+  // 2. Then filter by search term
+  const filteredOrders = statusFilteredOrders.filter((order) => {
+    const search = searchTerm.toLowerCase();
+    return (
+      order.order_number?.toLowerCase().includes(search) ||
+      order.customer?.name?.toLowerCase().includes(search) ||
+      order.customer?.phone?.includes(search)
+    );
+  });
 
   const getStatusLabel = (status: string) => {
     const labels: { [key: string]: string } = {
@@ -265,7 +287,7 @@ export default function OrdersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => (
+              {filteredOrders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">
                     {order.order_number}
