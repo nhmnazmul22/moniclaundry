@@ -6,7 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:debug": "tauri build --debug",
+    "tauri:android": "tauri android dev",
+    "tauri:android:build": "tauri android build",
+    "build:all": "npm run build && npm run tauri:build",
+    "build:desktop": "npm run build && npm run tauri:build",
+    "build:android": "npm run build && npm run tauri:android:build",
+    "clean": "rimraf .next out dist src-tauri/target",
+    "prebuild": "npm run lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -71,6 +82,7 @@
     "zod": "latest"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.5.0",
     "@types/file-saver": "^2.0.7",
     "@types/node": "^22",
     "@types/react": "^18",
