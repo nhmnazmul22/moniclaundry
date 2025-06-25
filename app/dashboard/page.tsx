@@ -42,6 +42,7 @@ export default function DashboardPage() {
       setLoading(true);
       setError(null);
       const data = await getDashboardStats(currentBranchId);
+      console.log(data);
       setStats(data);
     } catch (err) {
       setError(

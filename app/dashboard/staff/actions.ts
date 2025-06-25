@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
@@ -17,7 +17,7 @@ const CreateStaffSchema = z.object({
 })
 
 export async function createStaffAction(prevState: any, formData: FormData) {
-  const supabase = createClient()
+  const supabase = supabaseAdmin
 
   // 1. Validasi data dari form
   const validatedFields = CreateStaffSchema.safeParse(Object.fromEntries(formData.entries()))
