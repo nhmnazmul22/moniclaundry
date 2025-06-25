@@ -1,10 +1,13 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client";
+import { type NextRequest, NextResponse } from "next/server";
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const body = await request.json()
-
+    const body = await request.json();
+    const id = (await params).id;
     const { data, error } = await supabase
       .from("inventory")
       .update({
@@ -20,34 +23,46 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         expiry_date: body.expiry_date || null,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
-      .single()
+      .single();
 
     if (error) {
-      console.error("Error updating inventory item:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error("Error updating inventory item:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ data })
+    return NextResponse.json({ data });
   } catch (error) {
-    console.error("Error in inventory PUT:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error in inventory PUT:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { error } = await supabase.from("inventory").delete().eq("id", params.id)
+    const { error } = await supabase
+      .from("inventory")
+      .delete()
+      .eq("id", params.id);
 
     if (error) {
-      console.error("Error deleting inventory item:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error("Error deleting inventory item:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error in inventory DELETE:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error in inventory DELETE:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
