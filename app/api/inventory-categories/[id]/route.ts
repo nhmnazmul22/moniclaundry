@@ -1,9 +1,14 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client";
+import { type NextRequest, NextResponse } from "next/server";
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+
+  const id = (await params).id
   try {
-    const body = await request.json()
+    const body = await request.json();
 
     const { data, error } = await supabase
       .from("inventory_categories")
@@ -12,33 +17,39 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         description: body.description || null,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
-      .single()
+      .single();
 
     if (error) {
-      console.error("Error updating category:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error("Error updating category:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ data })
+    return NextResponse.json({ data });
   } catch (error) {
-    console.error("Error in categories PUT:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error in categories PUT:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     // Check if category is being used by any inventory items
     const { data: inventoryItems, error: checkError } = await supabase
       .from("inventory")
       .select("id")
-      .eq("category_id", params.id)
+      .eq("category_id", params.id);
 
     if (checkError) {
-      console.error("Error checking category usage:", checkError)
-      return NextResponse.json({ error: checkError.message }, { status: 500 })
+      console.error("Error checking category usage:", checkError);
+      return NextResponse.json({ error: checkError.message }, { status: 500 });
     }
 
     if (inventoryItems && inventoryItems.length > 0) {
@@ -46,20 +57,26 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         {
           error: "Cannot delete category that is being used by inventory items",
         },
-        { status: 400 },
-      )
+        { status: 400 }
+      );
     }
 
-    const { error } = await supabase.from("inventory_categories").delete().eq("id", params.id)
+    const { error } = await supabase
+      .from("inventory_categories")
+      .delete()
+      .eq("id", params.id);
 
     if (error) {
-      console.error("Error deleting category:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error("Error deleting category:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error in categories DELETE:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error in categories DELETE:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
