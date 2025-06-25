@@ -77,10 +77,18 @@ export default function OrderDetailPage() {
   const [pdfLoading, setPdfLoading] = useState(false);
 
   const { toast } = useToast();
-  const receiptTemplate = useRef<HTMLDivElement>(null);
-  const cashTransferRef = useRef<HTMLDivElement>(null);
-  const depositRef = useRef<HTMLDivElement>(null);
-  const internalRef = useRef<HTMLDivElement>(null);
+  const receiptTemplate = useRef<HTMLDivElement>(
+    null
+  ) as React.RefObject<HTMLDivElement>;
+  const cashTransferRef = useRef<HTMLDivElement>(
+    null
+  ) as React.RefObject<HTMLDivElement>;
+  const depositRef = useRef<HTMLDivElement>(
+    null
+  ) as React.RefObject<HTMLDivElement>;
+  const internalRef = useRef<HTMLDivElement>(
+    null
+  ) as React.RefObject<HTMLDivElement>;
 
   const fetchOrderData = async () => {
     setLoading(true);
@@ -116,6 +124,10 @@ export default function OrderDetailPage() {
 
       // Fetch the branching data for the order
       const branches = await getBranchList();
+      if (!branches) {
+        throw new Error("Branches not found for this order.");
+      }
+
       const branch = branches.find((b) => b.id === orderData.current_branch_id);
 
       if (!branch) {
@@ -290,7 +302,7 @@ export default function OrderDetailPage() {
     }
   };
   const handlePrintReceipt = async () => {
-    await generatePDF(receiptTemplate, "nota-original", true);
+    await generatePDF(receiptTemplate!, "nota-original", true);
   };
 
   const handleDownloadCashTransfer = async () => {
