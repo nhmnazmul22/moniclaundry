@@ -37,14 +37,15 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const id = (await params).id;
   try {
     // Check if category is being used by any inventory items
     const { data: inventoryItems, error: checkError } = await supabase
       .from("inventory")
       .select("id")
-      .eq("category_id", params.id);
+      .eq("category_id", id);
 
     if (checkError) {
       console.error("Error checking category usage:", checkError);
@@ -63,7 +64,7 @@ export async function DELETE(
     const { error } = await supabase
       .from("inventory_categories")
       .delete()
-      .eq("id", params.id);
+      .eq("id", id);
 
     if (error) {
       console.error("Error deleting category:", error);
