@@ -4,9 +4,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  experimental: {
-    serverComponentsExternalPackages: ["@supabase/supabase-js"],
-  },
   typescript: {
     ignoreBuildErrors: false,
   },

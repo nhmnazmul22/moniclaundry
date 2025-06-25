@@ -75,7 +75,9 @@ export default function DashboardPage() {
       delivered: "Selesai",
       cancelled: "Dibatalkan",
     };
-    return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
+    return (
+      labels[status] || status?.charAt(0)?.toUpperCase() + status?.slice(1)
+    );
   };
 
   const getOrderStatusColor = (status: string) => {
@@ -251,8 +253,8 @@ export default function DashboardPage() {
                         className="flex justify-between items-center text-sm"
                       >
                         <span className="text-orange-700">
-                          {item.item_name} - Sisa: {item.current_stock}{" "}
-                          {item.unit} (Min: {item.min_stock})
+                          {item.item_name} - Sisa: {item.max_stock} {item.unit}{" "}
+                          (Min: {item.min_stock})
                         </span>
                         <Link
                           href={`/dashboard/inventory?edit=${item.id}&action=restock`}
@@ -313,7 +315,7 @@ export default function DashboardPage() {
                                 order.order_status
                               )} text-xs`}
                             >
-                              {getOrderStatusLabel(order.order_status)}
+                              {getOrderStatusLabel(order.order_status) || ""}
                             </Badge>
                           </div>
                         </div>

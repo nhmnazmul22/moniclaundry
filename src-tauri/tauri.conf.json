@@ -1,17 +1,18 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Monic Laundry POS",
-  "version": "1.0.0",
-  "identifier": "com.moniclaundry.pos",
+  "productName": "monic-laundry-pos",
+  "version": "0.1.0",
+  "identifier": "com.monic.laundry.pos",
   "build": {
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../out",
     "devUrl": "http://localhost:3000",
-    "frontendDist": "../out"
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
   },
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Monic Laundry POS",
         "width": 1200,
         "height": 800,
@@ -22,7 +23,8 @@
         "center": true,
         "decorations": true,
         "alwaysOnTop": false,
-        "skipTaskbar": false
+        "skipTaskbar": false,
+        "theme": "Light"
       }
     ],
     "security": {
@@ -30,7 +32,8 @@
     },
     "trayIcon": {
       "iconPath": "icons/icon.png",
-      "iconAsTemplate": true
+      "iconAsTemplate": false,
+      "tooltip": "Monic Laundry POS"
     }
   },
   "bundle": {
@@ -42,51 +45,54 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "publisher": "Monic Laundry",
+    "category": "Business",
+    "shortDescription": "Point of Sale System for Laundry Business",
+    "longDescription": "A comprehensive point of sale system designed specifically for laundry businesses, featuring order management, customer tracking, and receipt printing.",
+    "resources": [],
+    "copyright": "Copyright © 2024 Monic Laundry. All rights reserved.",
+    "licenseFile": null,
+    "externalBin": [],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "10.13",
+      "exceptionDomain": "",
+      "signingIdentity": null,
+      "providerShortName": null,
+      "entitlements": null
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    }
   },
   "plugins": {
-    "shell": {
-      "open": true
-    },
-    "dialog": {
-      "ask": true,
-      "confirm": true,
-      "message": true,
-      "open": true,
-      "save": true
-    },
+    "dialog": {},
     "fs": {
-      "readFile": true,
-      "writeFile": true,
-      "readDir": true,
-      "copyFile": true,
-      "createDir": true,
-      "removeDir": true,
-      "removeFile": true,
-      "renameFile": true,
-      "exists": true
+      "scope": {
+        "allow": ["$TEMP/**", "$APPDATA/**"],
+        "deny": []
+      }
     },
-    "path": {
-      "all": true
-    },
-    "os": {
-      "all": true
-    },
-    "notification": {
-      "all": true
-    },
-    "globalShortcut": {
-      "all": true
-    },
-    "window": {
-      "close": true,
-      "hide": true,
-      "show": true,
-      "maximize": true,
-      "minimize": true,
-      "unmaximize": true,
-      "unminimize": true,
-      "startDragging": true
+    "shell": {
+      "scope": {
+        "allow": [
+          {
+            "name": "open-pdf",
+            "cmd": "cmd",
+            "args": ["/C", "start", "", { "validator": "\\S+" }],
+            "sidecar": false
+          }
+        ],
+        "deny": []
+      }
     }
   }
 }

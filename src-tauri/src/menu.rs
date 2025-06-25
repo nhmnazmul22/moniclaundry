@@ -1,61 +1,72 @@
-use tauri::{CustomMenuItem, Menu, MenuItem, Submenu};
+use tauri::{
+    menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder},
+    App, Result,
+};
 
-pub fn create_menu() -> Menu {
-    let new_order = CustomMenuItem::new("new_order".to_string(), "New Order")
-        .accelerator("CmdOrCtrl+N");
-    let print_receipt = CustomMenuItem::new("print_receipt".to_string(), "Print Receipt")
-        .accelerator("CmdOrCtrl+P");
-    let quit = CustomMenuItem::new("quit".to_string(), "Exit")
-        .accelerator("CmdOrCtrl+Q");
+pub fn create_menu(app: &App) -> Result<tauri::menu::Menu<tauri::Wry>> {
+    let new_order = MenuItemBuilder::with_id("new_order", "New Order")
+        .accelerator("CmdOrCtrl+N")
+        .build(app)?;
+    let print_receipt = MenuItemBuilder::with_id("print_receipt", "Print Receipt")
+        .accelerator("CmdOrCtrl+P")
+        .build(app)?;
+    let quit = MenuItemBuilder::with_id("quit", "Exit")
+        .accelerator("CmdOrCtrl+Q")
+        .build(app)?;
 
-    let file_menu = Submenu::new(
-        "File",
-        Menu::new()
-            .add_item(new_order)
-            .add_item(print_receipt)
-            .add_native_item(MenuItem::Separator)
-            .add_item(quit),
-    );
+    let file_menu = SubmenuBuilder::new(app, "File")
+        .item(&new_order)
+        .item(&print_receipt)
+        .separator()
+        .item(&quit)
+        .build()?;
 
-    let dashboard = CustomMenuItem::new("dashboard".to_string(), "Dashboard")
-        .accelerator("CmdOrCtrl+1");
-    let orders = CustomMenuItem::new("orders".to_string(), "Orders")
-        .accelerator("CmdOrCtrl+2");
-    let customers = CustomMenuItem::new("customers".to_string(), "Customers")
-        .accelerator("CmdOrCtrl+3");
-    let reload = CustomMenuItem::new("reload".to_string(), "Reload")
-        .accelerator("CmdOrCtrl+R");
-    let dev_tools = CustomMenuItem::new("dev_tools".to_string(), "Toggle Developer Tools")
-        .accelerator("F12");
+    let dashboard = MenuItemBuilder::with_id("dashboard", "Dashboard")
+        .accelerator("CmdOrCtrl+1")
+        .build(app)?;
+    let orders = MenuItemBuilder::with_id("orders", "Orders")
+        .accelerator("CmdOrCtrl+2")
+        .build(app)?;
+    let customers = MenuItemBuilder::with_id("customers", "Customers")
+        .accelerator("CmdOrCtrl+3")
+        .build(app)?;
+    let reload = MenuItemBuilder::with_id("reload", "Reload")
+        .accelerator("CmdOrCtrl+R")
+        .build(app)?;
+    let dev_tools = MenuItemBuilder::with_id("dev_tools", "Toggle Developer Tools")
+        .accelerator("F12")
+        .build(app)?;
 
-    let view_menu = Submenu::new(
-        "View",
-        Menu::new()
-            .add_item(dashboard)
-            .add_item(orders)
-            .add_item(customers)
-            .add_native_item(MenuItem::Separator)
-            .add_item(reload)
-            .add_item(dev_tools),
-    );
+    let view_menu = SubmenuBuilder::new(app, "View")
+        .item(&dashboard)
+        .item(&orders)
+        .item(&customers)
+        .separator()
+        .item(&reload)
+        .item(&dev_tools)
+        .build()?;
 
-    let backup_database = CustomMenuItem::new("backup_database".to_string(), "Backup Database");
-    let settings = CustomMenuItem::new("settings".to_string(), "Settings")
-        .accelerator("CmdOrCtrl+,");
+    let backup_database = MenuItemBuilder::with_id("backup_database", "Backup Database")
+        .build(app)?;
+    let settings = MenuItemBuilder::with_id("settings", "Settings")
+        .accelerator("CmdOrCtrl+,")
+        .build(app)?;
 
-    let tools_menu = Submenu::new(
-        "Tools",
-        Menu::new()
-            .add_item(backup_database)
-            .add_item(settings),
-    );
+    let tools_menu = SubmenuBuilder::new(app, "Tools")
+        .item(&backup_database)
+        .item(&settings)
+        .build()?;
 
-    let about = CustomMenuItem::new("about".to_string(), "About Monic Laundry POS");
-    let help_menu = Submenu::new("Help", Menu::new().add_item(about));
+    let about = MenuItemBuilder::with_id("about", "About Monic Laundry POS")
+        .build(app)?;
+    let help_menu = SubmenuBuilder::new(app, "Help")
+        .item(&about)
+        .build()?;
 
-    Menu::new()
-        .add_submenu(file_menu)
-        .add_submenu(view_menu)
-        .add_submenu(tools_menu)
-        .add_submenu(help_menu)
+    MenuBuilder::new(app)
+        .item(&file_menu)
+        .item(&view_menu)
+        .item(&tools_menu)
+        .item(&help_menu)
+        .build()
 }

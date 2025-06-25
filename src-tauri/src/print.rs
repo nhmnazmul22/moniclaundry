@@ -1,8 +1,4 @@
-use crate::commands::{ReceiptData, ReceiptItem};
-use chrono::{DateTime, Utc};
-use printpdf::*;
-use std::fs::File;
-use std::io::BufWriter;
+use crate::commands::ReceiptData;
 
 pub async fn print_receipt_pdf(receipt_data: ReceiptData) -> Result<bool, String> {
     let pdf_path = create_receipt_pdf(receipt_data).await?;
@@ -11,7 +7,7 @@ pub async fn print_receipt_pdf(receipt_data: ReceiptData) -> Result<bool, String
     #[cfg(target_os = "windows")]
     {
         std::process::Command::new("cmd")
-            .args(["/C", "start", &pdf_path])
+            .args(["/C", "start", "", &pdf_path])
             .spawn()
             .map_err(|e| format!("Failed to open PDF: {}", e))?;
     }
@@ -36,96 +32,57 @@ pub async fn print_receipt_pdf(receipt_data: ReceiptData) -> Result<bool, String
 }
 
 pub async fn create_receipt_pdf(receipt_data: ReceiptData) -> Result<String, String> {
-    let (doc, page1, layer1) = PdfDocument::new("Receipt", Mm(80.0), Mm(200.0), "Layer 1");
-    let current_layer = doc.get_page(page1).get_layer(layer1);
+    // Create a simple text-based receipt instead of using complex PDF operations
+    let receipt_content = format_receipt_text(&receipt_data);
     
-    // Add fonts (you might need to include font files in your bundle)
-    let font = doc.add_builtin_font(BuiltinFont::Helvetica).unwrap();
-    let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold).unwrap();
+    // For now, let's create a simple text file instead of PDF
+    // This is a fallback until we can properly configure printpdf
+    let temp_dir = std::env::temp_dir();
+    let receipt_path = temp_dir.join(format!("receipt_{}.txt", receipt_data.order_number));
     
-    let mut y_position = Mm(180.0);
+    std::fs::write(&receipt_path, receipt_content)
+        .map_err(|e| format!("Failed to create receipt file: {}", e))?;
+    
+    Ok(receipt_path.to_string_lossy().to_string())
+}
+
+fn format_receipt_text(receipt_data: &ReceiptData) -> String {
+    let mut content = String::new();
     
     // Header
-    current_layer.use_text("MONIC LAUNDRY", 14.0, Mm(10.0), y_position, &font_bold);
-    y_position -= Mm(6.0);
-    current_layer.use_text("Jl. Laundry No. 123", 10.0, Mm(10.0), y_position, &font);
-    y_position -= Mm(4.0);
-    current_layer.use_text("Telp: 021-12345678", 10.0, Mm(10.0), y_position, &font);
-    y_position -= Mm(8.0);
-    
-    // Separator line
-    let line = Line {
-        points: vec![(Point::new(Mm(5.0), y_position), false), (Point::new(Mm(75.0), y_position), false)],
-        is_closed: false,
-        has_fill: false,
-        has_stroke: true,
-        is_clipping_path: false,
-    };
-    current_layer.add_shape(line);
-    y_position -= Mm(6.0);
+    content.push_str("========================================\n");
+    content.push_str("              MONIC LAUNDRY             \n");
+    content.push_str("           Jl. Laundry No. 123          \n");
+    content.push_str("           Telp: 021-12345678           \n");
+    content.push_str("========================================\n\n");
     
     // Order details
-    current_layer.use_text(&format!("No. Order: {}", receipt_data.order_number), 10.0, Mm(5.0), y_position, &font);
-    y_position -= Mm(4.0);
-    current_layer.use_text(&format!("Tanggal: {}", receipt_data.date), 10.0, Mm(5.0), y_position, &font);
-    y_position -= Mm(4.0);
-    current_layer.use_text(&format!("Customer: {}", receipt_data.customer_name), 10.0, Mm(5.0), y_position, &font);
-    y_position -= Mm(6.0);
-    
-    // Another separator
-    let line2 = Line {
-        points: vec![(Point::new(Mm(5.0), y_position), false), (Point::new(Mm(75.0), y_position), false)],
-        is_closed: false,
-        has_fill: false,
-        has_stroke: true,
-        is_clipping_path: false,
-    };
-    current_layer.add_shape(line2);
-    y_position -= Mm(6.0);
+    content.push_str(&format!("No. Order    : {}\n", receipt_data.order_number));
+    content.push_str(&format!("Tanggal      : {}\n", receipt_data.date));
+    content.push_str(&format!("Customer     : {}\n", receipt_data.customer_name));
+    content.push_str("----------------------------------------\n");
     
     // Items
     for item in &receipt_data.items {
-        current_layer.use_text(&item.service, 10.0, Mm(5.0), y_position, &font);
-        y_position -= Mm(4.0);
-        let item_detail = format!("{}kg x {} = Rp {}", 
+        content.push_str(&format!("{}\n", item.service));
+        content.push_str(&format!("{}kg x {} = Rp {}\n\n", 
             item.weight, 
             format_currency(item.price), 
             format_currency(item.subtotal)
-        );
-        current_layer.use_text(&item_detail, 9.0, Mm(5.0), y_position, &font);
-        y_position -= Mm(6.0);
+        ));
     }
     
-    // Final separator
-    let line3 = Line {
-        points: vec![(Point::new(Mm(5.0), y_position), false), (Point::new(Mm(75.0), y_position), false)],
-        is_closed: false,
-        has_fill: false,
-        has_stroke: true,
-        is_clipping_path: false,
-    };
-    current_layer.add_shape(line3);
-    y_position -= Mm(6.0);
-    
-    // Total
-    current_layer.use_text(&format!("TOTAL: Rp {}", format_currency(receipt_data.total)), 12.0, Mm(5.0), y_position, &font_bold);
-    y_position -= Mm(8.0);
+    content.push_str("========================================\n");
+    content.push_str(&format!("TOTAL: Rp {}\n", format_currency(receipt_data.total)));
+    content.push_str("========================================\n\n");
     
     // Footer
-    current_layer.use_text("Terima kasih atas kepercayaan Anda!", 9.0, Mm(5.0), y_position, &font);
-    y_position -= Mm(4.0);
-    current_layer.use_text(&format!("Barang siap: {}", receipt_data.estimated_completion), 9.0, Mm(5.0), y_position, &font);
+    content.push_str("Terima kasih atas kepercayaan Anda!\n");
+    content.push_str(&format!("Barang siap: {}\n", receipt_data.estimated_completion));
     
-    // Save PDF
-    let temp_dir = std::env::temp_dir();
-    let pdf_path = temp_dir.join(format!("receipt_{}.pdf", receipt_data.order_number));
-    let file = File::create(&pdf_path).map_err(|e| format!("Failed to create PDF file: {}", e))?;
-    let mut writer = BufWriter::new(file);
-    doc.save(&mut writer).map_err(|e| format!("Failed to save PDF: {}", e))?;
-    
-    Ok(pdf_path.to_string_lossy().to_string())
+    content
 }
 
 fn format_currency(amount: f64) -> String {
-    format!("{:,.0}", amount).replace(',', ".")
+    format!("{:.0}", amount).replace(',', ".")
 }

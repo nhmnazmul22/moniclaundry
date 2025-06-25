@@ -1,45 +1,54 @@
-"use client";
+"use client"
 
-import {
-  createContext,
-  Dispatch,
-  SetStateAction,
-  useContext,
-  useState,
-} from "react";
+import type React from "react"
+
+import { createContext, type Dispatch, type SetStateAction, useContext, useState, useEffect } from "react"
 
 type BranchContextProviderType = {
-  children: React.ReactNode;
-};
+  children: React.ReactNode
+}
 
 type BranchContextType = {
-  currentBranchId: string;
-  setCurrentBranchId: Dispatch<SetStateAction<string>>;
-};
+  currentBranchId: string
+  setCurrentBranchId: Dispatch<SetStateAction<string>>
+}
 
-const AuthContext = createContext<BranchContextType | undefined>(undefined);
+const BranchContext = createContext<BranchContextType | undefined>(undefined)
 
-export const BranchContextProvider: React.FC<BranchContextProviderType> = ({
-  children,
-}) => {
-  const [currentBranchId, setCurrentBranchId] = useState<string>("");
+export const BranchContextProvider: React.FC<BranchContextProviderType> = ({ children }) => {
+  const [currentBranchId, setCurrentBranchId] = useState<string>("")
+
+  // Load saved branch from localStorage on mount
+  useEffect(() => {
+    const savedBranchId = localStorage.getItem("currentBranchId")
+    if (savedBranchId) {
+      setCurrentBranchId(savedBranchId)
+    }
+  }, [])
+
+  // Save branch to localStorage when it changes
+  useEffect(() => {
+    if (currentBranchId) {
+      localStorage.setItem("currentBranchId", currentBranchId)
+    }
+  }, [currentBranchId])
 
   return (
-    <AuthContext.Provider
+    <BranchContext.Provider
       value={{
         currentBranchId: currentBranchId,
         setCurrentBranchId: setCurrentBranchId,
       }}
     >
       {children}
-    </AuthContext.Provider>
-  );
-};
+    </BranchContext.Provider>
+  )
+}
 
 export function useBranch() {
-  const context = useContext(AuthContext);
+  const context = useContext(BranchContext)
   if (context === undefined) {
-    throw new Error("useBranch must be used within an AuthProvider");
+    throw new Error("useBranch must be used within a BranchContextProvider")
   }
-  return context;
+  return context
 }

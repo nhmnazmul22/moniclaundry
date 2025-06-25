@@ -96,3 +96,21 @@ export function debounce<T extends (...args: any[]) => any>(func: T, wait: numbe
   }
 }
 
+export class TimeoutError extends Error {
+  constructor(message = "Query timeout") {
+    super(message);
+    this.name = "TimeoutError";
+  }
+}
+
+export function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs = 10000
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new TimeoutError()), timeoutMs)
+    ),
+  ]);
+}

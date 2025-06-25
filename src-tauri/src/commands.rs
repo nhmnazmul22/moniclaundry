@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tauri::{command, Window};
+use tauri::Emitter;
+use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
 #[derive(Serialize, Deserialize)]
 pub struct ReceiptData {
@@ -50,11 +52,14 @@ pub async fn show_message_dialog(
     window: Window,
     options: DialogOptions,
 ) -> Result<bool, String> {
-    let result = tauri::api::dialog::blocking::message(
-        Some(&window),
-        &options.title.unwrap_or_else(|| "Message".to_string()),
-        &options.message,
-    );
+    let title = options.title.unwrap_or_else(|| "Message".to_string());
+    
+    window.dialog()
+        .message(&options.message)
+        .title(&title)
+        .kind(MessageDialogKind::Info)
+        .blocking_show();
+    
     Ok(true)
 }
 
@@ -63,24 +68,38 @@ pub async fn show_save_dialog(
     window: Window,
     options: SaveDialogOptions,
 ) -> Result<Option<String>, String> {
-    let mut dialog_builder = tauri::api::dialog::FileDialogBuilder::new();
+    use std::sync::mpsc;
     
+    let mut dialog = window.dialog().file();
+
     if let Some(title) = options.title {
-        dialog_builder = dialog_builder.set_title(&title);
+        dialog = dialog.set_title(&title);
     }
-    
+
     if let Some(default_path) = options.default_path {
-        dialog_builder = dialog_builder.set_file_name(&default_path);
+        dialog = dialog.set_file_name(&default_path);
     }
-    
+
     if let Some(filters) = options.filters {
         for filter in filters {
-            dialog_builder = dialog_builder.add_filter(&filter.name, &filter.extensions);
+            // Convert Vec<String> to Vec<&str> for the add_filter method
+            let extensions: Vec<&str> = filter.extensions.iter().map(|s| s.as_str()).collect();
+            dialog = dialog.add_filter(&filter.name, &extensions);
         }
     }
+
+    // Use a channel to get the result from the callback
+    let (tx, rx) = mpsc::channel();
     
-    let result = dialog_builder.save_file();
-    Ok(result.map(|path| path.to_string_lossy().to_string()))
+    dialog.save_file(move |result| {
+        let _ = tx.send(result);
+    });
+    
+    match rx.recv() {
+        Ok(Some(path)) => Ok(Some(path.to_string().to_string())),
+        Ok(None) => Ok(None),
+        Err(_) => Err("Dialog operation failed".to_string()),
+    }
 }
 
 #[command]
@@ -88,24 +107,39 @@ pub async fn show_open_dialog(
     window: Window,
     options: SaveDialogOptions,
 ) -> Result<Option<Vec<String>>, String> {
-    let mut dialog_builder = tauri::api::dialog::FileDialogBuilder::new();
+    use std::sync::mpsc;
     
+    let mut dialog = window.dialog().file();
+
     if let Some(title) = options.title {
-        dialog_builder = dialog_builder.set_title(&title);
+        dialog = dialog.set_title(&title);
     }
-    
+
     if let Some(filters) = options.filters {
         for filter in filters {
-            dialog_builder = dialog_builder.add_filter(&filter.name, &filter.extensions);
+            // Convert Vec<String> to Vec<&str> for the add_filter method
+            let extensions: Vec<&str> = filter.extensions.iter().map(|s| s.as_str()).collect();
+            dialog = dialog.add_filter(&filter.name, &extensions);
         }
     }
+
+    // Use a channel to get the result from the callback
+    let (tx, rx) = mpsc::channel();
     
-    let result = dialog_builder.pick_files();
-    Ok(result.map(|paths| {
-        paths.into_iter()
-            .map(|path| path.to_string_lossy().to_string())
-            .collect()
-    }))
+    dialog.pick_files(move |result| {
+        let _ = tx.send(result);
+    });
+    
+    match rx.recv() {
+        Ok(Some(paths)) => Ok(Some(
+            paths
+                .into_iter()
+                .map(|p| p.to_string().to_string())
+                .collect()
+        )),
+        Ok(None) => Ok(None),
+        Err(_) => Err("Dialog operation failed".to_string()),
+    }
 }
 
 #[command]
@@ -114,15 +148,14 @@ pub async fn print_receipt(receipt_data: ReceiptData) -> Result<bool, String> {
 }
 
 #[command]
-pub async fn backup_database(file_path: String) -> Result<bool, String> {
-    // Implement database backup logic here
-    // This would typically involve connecting to your database and exporting data
+pub async fn backup_database(_file_path: String) -> Result<bool, String> {
+    // implement your backup logic
     Ok(true)
 }
 
 #[command]
-pub async fn restore_database(file_path: String) -> Result<bool, String> {
-    // Implement database restore logic here
+pub async fn restore_database(_file_path: String) -> Result<bool, String> {
+    // implement your restore logic
     Ok(true)
 }
 
@@ -136,8 +169,7 @@ pub async fn get_system_info() -> Result<HashMap<String, String>, String> {
 
 #[command]
 pub async fn navigate_to(window: Window, path: String) -> Result<(), String> {
-    window.emit("navigate", path).map_err(|e| e.to_string())?;
-    Ok(())
+    window.emit("navigate", path).map_err(|e| e.to_string())
 }
 
 #[command]

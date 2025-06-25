@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tauri::Manager;
 
 #[derive(Serialize, Deserialize)]
 pub struct AppConfig {
@@ -17,7 +18,9 @@ impl Default for AppConfig {
     }
 }
 
-pub fn get_app_data_dir() -> Result<std::path::PathBuf, String> {
-    tauri::api::path::app_data_dir(&tauri::Config::default())
-        .ok_or_else(|| "Failed to get app data directory".to_string())
+#[allow(dead_code)]
+pub async fn get_app_data_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))
 }
