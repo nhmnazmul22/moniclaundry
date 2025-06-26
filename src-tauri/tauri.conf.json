@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "identifier": "com.monic.laundry.pos",
   "build": {
-    "frontendDist": "../out",
+    "frontendDist": "https://moniclaundry.vercel.app/",
     "devUrl": "http://localhost:3000",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeBuildCommand": ""
   },
   "app": {
     "windows": [
@@ -74,25 +74,9 @@
     }
   },
   "plugins": {
-    "dialog": {},
+    "dialog": null,
     "fs": {
-      "scope": {
-        "allow": ["$TEMP/**", "$APPDATA/**"],
-        "deny": []
-      }
-    },
-    "shell": {
-      "scope": {
-        "allow": [
-          {
-            "name": "open-pdf",
-            "cmd": "cmd",
-            "args": ["/C", "start", "", { "validator": "\\S+" }],
-            "sidecar": false
-          }
-        ],
-        "deny": []
-      }
+      "requireLiteralLeadingDot": true
     }
   }
 }
