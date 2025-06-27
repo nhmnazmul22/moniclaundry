@@ -1,8 +1,8 @@
 import mongoose, { Document, Model, ObjectId, Schema } from "mongoose";
 
 export interface DeliverySchedule extends Document {
-  order_id?: ObjectId;
-  kurir_id?: ObjectId;
+  order_id: ObjectId;
+  kurir_id: ObjectId;
   delivery_type: string;
   scheduled_time: Date;
   actual_time?: Date;
@@ -10,12 +10,13 @@ export interface DeliverySchedule extends Document {
   customer_address?: string;
   delivery_fee?: number;
   notes?: string;
+  current_branch_id: ObjectId;
 }
 
 const DeliveryScheduleSchema: Schema<DeliverySchedule> = new mongoose.Schema(
   {
     order_id: { type: mongoose.Types.ObjectId, required: true },
-    kurir_id: { type: String, required: true },
+    kurir_id: { type: mongoose.Types.ObjectId, required: true },
     delivery_type: { type: String, enum: ["pickup", "delivery"] },
     scheduled_time: { type: Date, required: true },
     actual_time: { type: Date },
@@ -27,6 +28,7 @@ const DeliveryScheduleSchema: Schema<DeliverySchedule> = new mongoose.Schema(
     customer_address: { type: String },
     delivery_fee: { type: Number, default: 0 },
     notes: { type: String },
+    current_branch_id: { type: mongoose.Types.ObjectId, required: true },
   },
   { timestamps: true, versionKey: false }
 );
