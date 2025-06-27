@@ -4,7 +4,7 @@ import mongoose, { Document, Model, ObjectId, Schema } from "mongoose";
 // Define the interface
 export interface Orders extends Document {
   order_number: string;
-  customer_id?: string;
+  customer_id?: ObjectId;
   total_weight: number;
   subtotal: number;
   discount?: number;
@@ -25,7 +25,7 @@ export interface Orders extends Document {
 const OrderSchema: Schema<Orders> = new mongoose.Schema(
   {
     order_number: { type: String, required: true },
-    customer_id: { type: String },
+    customer_id: { type: mongoose.Types.ObjectId },
     total_weight: { type: Number, required: true },
     subtotal: { type: Number, required: true },
     discount: { type: Number, default: 0 },

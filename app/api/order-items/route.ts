@@ -1,18 +1,47 @@
 import { dbConnect } from "@/lib/config/db";
-import InventoryItemModel from "@/lib/models/InventoryModel";
 import OrderItemsModel from "@/lib/models/OrderItemsModel";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
     await dbConnect();
-    const inventoryItem = await InventoryItemModel.find({});
+    const orderItems = await OrderItemsModel.aggregate([
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "orderDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "services",
+          localField: "service_id",
+          foreignField: "_id",
+          as: "serviceDetails",
+        },
+      },
+      {
+        $unwind: "$orderDetails",
+      },
+      {
+        $unwind: "$serviceDetails",
+      },
+      {
+        $project: {
+          order_id: 0,
+          service_id: 0,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+    ]);
 
-    if (inventoryItem.length === 0 || !inventoryItem) {
+    if (orderItems.length === 0) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Inventory Items Not found",
+          message: "Order Items Not found",
         },
         { status: 404 }
       );
@@ -21,7 +50,7 @@ export async function GET() {
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: orderItems,
       },
       { status: 200 }
     );
@@ -41,9 +70,23 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const body = await request.json();
 
-    const { item_name, current_stock, current_branch_id } = body;
+    const {
+      order_id,
+      service_id,
+      quantity,
+      unit_price,
+      subtotal,
+      current_branch_id,
+    } = body;
 
-    if (!item_name || !current_stock || !current_branch_id) {
+    if (
+      !order_id ||
+      !service_id ||
+      !subtotal ||
+      !quantity ||
+      !unit_price ||
+      !current_branch_id
+    ) {
       return NextResponse.json(
         {
           status: "Failed",
@@ -53,14 +96,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new inventory items data
-    const inventoryItem = await OrderItemsModel.create(body);
+    // Create new order items data
+    const orderItem = await OrderItemsModel.create(body);
 
-    if (!inventoryItem) {
+    if (!orderItem) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Failed to create inventory item",
+          message: "Failed to create order item",
         },
         { status: 500 }
       );
@@ -69,7 +112,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: orderItem,
       },
       { status: 201 }
     );

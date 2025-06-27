@@ -1,27 +1,27 @@
 import { dbConnect } from "@/lib/config/db";
-import InventoryItemModel from "@/lib/models/InventoryModel";
-import OrderItemsModel from "@/lib/models/OrderItemsModel";
+import UsersModel from "@/lib/models/UsersModel";
+import bcrypt from "bcrypt";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
     await dbConnect();
-    const inventoryItem = await InventoryItemModel.find({});
+    const users = await UsersModel.find({}, { password: 0 });
 
-    if (inventoryItem.length === 0 || !inventoryItem) {
+    if (!users) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Inventory Items Not found",
+          message: "Failed to fetching users",
         },
-        { status: 404 }
+        { status: 500 }
       );
     }
 
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: users,
       },
       { status: 200 }
     );
@@ -41,9 +41,9 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const body = await request.json();
 
-    const { item_name, current_stock, current_branch_id } = body;
+    const { email, password, role } = body;
 
-    if (!item_name || !current_stock || !current_branch_id) {
+    if (!email || !password || !role) {
       return NextResponse.json(
         {
           status: "Failed",
@@ -53,14 +53,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new inventory items data
-    const inventoryItem = await OrderItemsModel.create(body);
+    // find user exist or not
+    const prevUser = await UsersModel.findOne({ email: email });
 
-    if (!inventoryItem) {
+    if (prevUser) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Failed to create inventory item",
+          message: "User already exist, please try another user.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Bcrypt the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    if (!hashedPassword) {
+      return NextResponse.json(
+        {
+          status: "Failed",
+          message: "Password hashing failed",
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log(body);
+
+    // Create new Branched data
+    const user = await UsersModel.create({ ...body, password: hashedPassword });
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          status: "Failed",
+          message: "Failed to create user",
         },
         { status: 500 }
       );
@@ -69,7 +97,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: user,
       },
       { status: 201 }
     );

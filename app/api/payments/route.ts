@@ -1,27 +1,44 @@
 import { dbConnect } from "@/lib/config/db";
-import InventoryItemModel from "@/lib/models/InventoryModel";
-import OrderItemsModel from "@/lib/models/OrderItemsModel";
+import PaymentsModel from "@/lib/models/PaymentsModel";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
     await dbConnect();
-    const inventoryItem = await InventoryItemModel.find({});
+    const payments = await PaymentsModel.aggregate([
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "orderDetails",
+        },
+      },
+      {
+        $unwind: "$orderDetails",
+      },
+      {
+        $project: {
+          order_id: 0,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+    ]);
 
-    if (inventoryItem.length === 0 || !inventoryItem) {
+    if (payments.length === 0) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Inventory Items Not found",
+          message: "Failed to fetching payment",
         },
-        { status: 404 }
+        { status: 500 }
       );
     }
 
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: payments,
       },
       { status: 200 }
     );
@@ -41,9 +58,9 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const body = await request.json();
 
-    const { item_name, current_stock, current_branch_id } = body;
+    const { order_id, amount, payment_method, current_branch_id } = body;
 
-    if (!item_name || !current_stock || !current_branch_id) {
+    if (!order_id || !amount || !payment_method || !current_branch_id) {
       return NextResponse.json(
         {
           status: "Failed",
@@ -53,14 +70,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new inventory items data
-    const inventoryItem = await OrderItemsModel.create(body);
+    // Create new payment data
+    const payment = await PaymentsModel.create(body);
 
-    if (!inventoryItem) {
+    if (!payment) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Failed to create inventory item",
+          message: "Failed to create payment",
         },
         { status: 500 }
       );
@@ -69,7 +86,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: payment,
       },
       { status: 201 }
     );

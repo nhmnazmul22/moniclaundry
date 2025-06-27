@@ -3,7 +3,7 @@ import mongoose, { Document, Model, ObjectId, Schema } from "mongoose";
 
 // Define the interface
 export interface Payments extends Document {
-  order_id?: string;
+  order_id: ObjectId;
   amount: number;
   payment_method: string;
   payment_date?: Date;
@@ -18,7 +18,7 @@ export interface Payments extends Document {
 // Define the schema
 const PaymentSchema: Schema<Payments> = new mongoose.Schema(
   {
-    order_id: { type: String },
+    order_id: { type: mongoose.Types.ObjectId, required: true },
     amount: { type: Number, required: true },
     payment_method: { type: String, required: true },
     payment_date: { type: Date, default: Date.now },

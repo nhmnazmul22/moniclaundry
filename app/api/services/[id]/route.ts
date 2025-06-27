@@ -1,5 +1,5 @@
 import { dbConnect } from "@/lib/config/db";
-import InventoryItemModel from "@/lib/models/InventoryModel";
+import ServiceModel from "@/lib/models/ServicesModel";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -8,14 +8,14 @@ export async function GET(
 ) {
   try {
     await dbConnect();
-    const itemId = (await params).id;
-    const inventoryItem = await InventoryItemModel.findById(itemId);
+    const serviceId = (await params).id;
+    const service = await ServiceModel.findById(serviceId);
 
-    if (!inventoryItem) {
+    if (!service) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Inventory Item not found",
+          message: "Service not found",
         },
         { status: 404 }
       );
@@ -24,7 +24,7 @@ export async function GET(
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: service,
       },
       { status: 200 }
     );
@@ -45,19 +45,19 @@ export async function PUT(
 ) {
   try {
     await dbConnect();
-    const itemId = (await params).id;
+    const serviceId = (await params).id;
     const body = await request.json();
 
-    // Update Inventory item data
-    const UpdatedItem = await InventoryItemModel.findByIdAndUpdate(
-      itemId,
+    // Update service data
+    const UpdatedService = await ServiceModel.findByIdAndUpdate(
+      serviceId,
       {
         ...body,
       },
       { new: true }
     );
 
-    if (!UpdatedItem) {
+    if (!UpdatedService) {
       return NextResponse.json(
         {
           status: "Failed",
@@ -70,7 +70,7 @@ export async function PUT(
     return NextResponse.json(
       {
         status: "Successful",
-        data: UpdatedItem,
+        data: UpdatedService,
       },
       { status: 201 }
     );
@@ -91,25 +91,25 @@ export async function DELETE(
 ) {
   try {
     await dbConnect();
-    const itemId = (await params).id;
+    const serviceId = (await params).id;
 
-    if (!itemId) {
+    if (!serviceId) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Please, insert a Item id to delete item",
+          message: "Please, insert a service id to delete service",
         },
         { status: 404 }
       );
     }
 
-    const deletedItem = await InventoryItemModel.findByIdAndDelete(itemId);
+    const deletedService = await ServiceModel.findByIdAndDelete(serviceId);
 
-    if (!deletedItem) {
+    if (!deletedService) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Failed to delete Item",
+          message: "Failed to delete service",
         },
         { status: 500 }
       );
@@ -118,7 +118,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         status: "Successful",
-        data: deletedItem,
+        data: deletedService,
       },
       { status: 200 }
     );

@@ -1,27 +1,44 @@
 import { dbConnect } from "@/lib/config/db";
-import InventoryItemModel from "@/lib/models/InventoryModel";
-import OrderItemsModel from "@/lib/models/OrderItemsModel";
+import OrdersModel from "@/lib/models/OrdersModel";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
     await dbConnect();
-    const inventoryItem = await InventoryItemModel.find({});
+    const orders = await OrdersModel.aggregate([
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customer_id",
+          foreignField: "_id",
+          as: "customerDetails",
+        },
+      },
+      {
+        $unwind: "$customerDetails",
+      },
+      {
+        $project: {
+          customer_id: 0,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+    ]);
 
-    if (inventoryItem.length === 0 || !inventoryItem) {
+    if (orders.length === 0) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Inventory Items Not found",
+          message: "Failed to fetching orders",
         },
-        { status: 404 }
+        { status: 500 }
       );
     }
 
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: orders,
       },
       { status: 200 }
     );
@@ -41,9 +58,25 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const body = await request.json();
 
-    const { item_name, current_stock, current_branch_id } = body;
+    const {
+      order_number,
+      customer_id,
+      total_weight,
+      subtotal,
+      total_amount,
+      payment_method,
+      current_branch_id,
+    } = body;
 
-    if (!item_name || !current_stock || !current_branch_id) {
+    if (
+      !order_number ||
+      !customer_id ||
+      !total_weight ||
+      !subtotal ||
+      !total_amount ||
+      !payment_method ||
+      !current_branch_id
+    ) {
       return NextResponse.json(
         {
           status: "Failed",
@@ -53,14 +86,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new inventory items data
-    const inventoryItem = await OrderItemsModel.create(body);
+    // Create new order data
+    const order = await OrdersModel.create(body);
 
-    if (!inventoryItem) {
+    if (!order) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Failed to create inventory item",
+          message: "Failed to create order",
         },
         { status: 500 }
       );
@@ -69,7 +102,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: order,
       },
       { status: 201 }
     );

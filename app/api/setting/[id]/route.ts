@@ -1,27 +1,38 @@
 import { dbConnect } from "@/lib/config/db";
-import InventoryItemModel from "@/lib/models/InventoryModel";
-import OrderItemsModel from "@/lib/models/OrderItemsModel";
+import SettingModel from "@/lib/models/SettingModel";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET({ params }: { params: Promise<{ id: string }> }) {
   try {
     await dbConnect();
-    const inventoryItem = await InventoryItemModel.find({});
+    const settingId = (await params).id;
 
-    if (inventoryItem.length === 0 || !inventoryItem) {
+    if (!settingId) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Inventory Items Not found",
+          message: "Please, insert a setting id to find setting",
         },
         { status: 404 }
+      );
+    }
+
+    const setting = await SettingModel.findById(settingId);
+
+    if (!setting) {
+      return NextResponse.json(
+        {
+          status: "Failed",
+          message: "Failed to fetching setting",
+        },
+        { status: 500 }
       );
     }
 
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: setting,
       },
       { status: 200 }
     );
@@ -36,31 +47,29 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await dbConnect();
+    const settingId = (await params).id;
     const body = await request.json();
 
-    const { item_name, current_stock, current_branch_id } = body;
+    // Updated Setting data
+    const updatedSetting = await SettingModel.findByIdAndUpdate(
+      settingId,
+      {
+        ...body,
+      },
+      { new: true }
+    );
 
-    if (!item_name || !current_stock || !current_branch_id) {
+    if (!updatedSetting) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Required field missing",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Create new inventory items data
-    const inventoryItem = await OrderItemsModel.create(body);
-
-    if (!inventoryItem) {
-      return NextResponse.json(
-        {
-          status: "Failed",
-          message: "Failed to create inventory item",
+          message: "Failed to update setting",
         },
         { status: 500 }
       );
@@ -69,7 +78,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: updatedSetting,
       },
       { status: 201 }
     );

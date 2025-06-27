@@ -1,6 +1,6 @@
 import { dbConnect } from "@/lib/config/db";
-import InventoryItemModel from "@/lib/models/InventoryModel";
-import { NextRequest, NextResponse } from "next/server";
+import StaffModel from "@/lib/models/StaffModel";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
@@ -8,23 +8,34 @@ export async function GET(
 ) {
   try {
     await dbConnect();
-    const itemId = (await params).id;
-    const inventoryItem = await InventoryItemModel.findById(itemId);
+    const staffId = (await params).id;
 
-    if (!inventoryItem) {
+    if (!staffId) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Inventory Item not found",
+          message: "Please, insert a staff id to find stuff",
         },
         { status: 404 }
+      );
+    }
+
+    const staff = await StaffModel.findById(staffId);
+
+    if (!staff) {
+      return NextResponse.json(
+        {
+          status: "Failed",
+          message: "Failed to fetching staff",
+        },
+        { status: 500 }
       );
     }
 
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: staff,
       },
       { status: 200 }
     );
@@ -45,23 +56,23 @@ export async function PUT(
 ) {
   try {
     await dbConnect();
-    const itemId = (await params).id;
+    const staffId = (await params).id;
     const body = await request.json();
 
-    // Update Inventory item data
-    const UpdatedItem = await InventoryItemModel.findByIdAndUpdate(
-      itemId,
+    // Update staff data
+    const UpdatedStaff = await StaffModel.findByIdAndUpdate(
+      staffId,
       {
         ...body,
       },
       { new: true }
     );
 
-    if (!UpdatedItem) {
+    if (!UpdatedStaff) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Failed to update service",
+          message: "Failed to update staff",
         },
         { status: 500 }
       );
@@ -70,7 +81,7 @@ export async function PUT(
     return NextResponse.json(
       {
         status: "Successful",
-        data: UpdatedItem,
+        data: UpdatedStaff,
       },
       { status: 201 }
     );
@@ -91,25 +102,25 @@ export async function DELETE(
 ) {
   try {
     await dbConnect();
-    const itemId = (await params).id;
+    const staffId = (await params).id;
 
-    if (!itemId) {
+    if (!staffId) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Please, insert a Item id to delete item",
+          message: "Please, insert a staff id to find stuff",
         },
         { status: 404 }
       );
     }
 
-    const deletedItem = await InventoryItemModel.findByIdAndDelete(itemId);
+    const deletedStaff = await StaffModel.findByIdAndDelete(staffId);
 
-    if (!deletedItem) {
+    if (!deletedStaff) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Failed to delete Item",
+          message: "Failed to delete staff",
         },
         { status: 500 }
       );
@@ -118,7 +129,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         status: "Successful",
-        data: deletedItem,
+        data: deletedStaff,
       },
       { status: 200 }
     );

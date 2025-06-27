@@ -1,27 +1,25 @@
 import { dbConnect } from "@/lib/config/db";
-import InventoryItemModel from "@/lib/models/InventoryModel";
-import OrderItemsModel from "@/lib/models/OrderItemsModel";
+import SettingModel from "@/lib/models/SettingModel";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    await dbConnect();
-    const inventoryItem = await InventoryItemModel.find({});
+    const settings = await SettingModel.find({});
 
-    if (inventoryItem.length === 0 || !inventoryItem) {
+    if (!settings) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Inventory Items Not found",
+          message: "Failed to fetching settings",
         },
-        { status: 404 }
+        { status: 500 }
       );
     }
 
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: settings,
       },
       { status: 200 }
     );
@@ -41,26 +39,14 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const body = await request.json();
 
-    const { item_name, current_stock, current_branch_id } = body;
+    // Create new Setting Obj
+    const settings = await SettingModel.create(body);
 
-    if (!item_name || !current_stock || !current_branch_id) {
+    if (!settings) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Required field missing",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Create new inventory items data
-    const inventoryItem = await OrderItemsModel.create(body);
-
-    if (!inventoryItem) {
-      return NextResponse.json(
-        {
-          status: "Failed",
-          message: "Failed to create inventory item",
+          message: "Failed to create setting",
         },
         { status: 500 }
       );
@@ -69,7 +55,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: settings,
       },
       { status: 201 }
     );

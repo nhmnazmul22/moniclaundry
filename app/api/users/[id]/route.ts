@@ -1,5 +1,6 @@
 import { dbConnect } from "@/lib/config/db";
-import InventoryItemModel from "@/lib/models/InventoryModel";
+import UsersModel from "@/lib/models/UsersModel";
+import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -8,23 +9,28 @@ export async function GET(
 ) {
   try {
     await dbConnect();
-    const itemId = (await params).id;
-    const inventoryItem = await InventoryItemModel.findById(itemId);
+    const userId = (await params).id;
+    const user = await UsersModel.findById(
+      {
+        _id: new mongoose.Types.ObjectId(userId),
+      },
+      { password: 0 }
+    );
 
-    if (!inventoryItem) {
+    if (!user) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Inventory Item not found",
+          message: "User not found",
         },
-        { status: 404 }
+        { status: 304 }
       );
     }
 
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: user,
       },
       { status: 200 }
     );
@@ -45,23 +51,23 @@ export async function PUT(
 ) {
   try {
     await dbConnect();
-    const itemId = (await params).id;
+    const userId = (await params).id;
     const body = await request.json();
 
-    // Update Inventory item data
-    const UpdatedItem = await InventoryItemModel.findByIdAndUpdate(
-      itemId,
+    // Update users data
+    const UpdatedUser = await UsersModel.findByIdAndUpdate(
+      userId,
       {
         ...body,
       },
       { new: true }
     );
 
-    if (!UpdatedItem) {
+    if (!UpdatedUser) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Failed to update service",
+          message: "Failed to update staff",
         },
         { status: 500 }
       );
@@ -70,7 +76,7 @@ export async function PUT(
     return NextResponse.json(
       {
         status: "Successful",
-        data: UpdatedItem,
+        data: UpdatedUser,
       },
       { status: 201 }
     );
@@ -91,25 +97,25 @@ export async function DELETE(
 ) {
   try {
     await dbConnect();
-    const itemId = (await params).id;
+    const userId = (await params).id;
 
-    if (!itemId) {
+    if (!userId) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Please, insert a Item id to delete item",
+          message: "Please, insert a user id to find user",
         },
         { status: 404 }
       );
     }
 
-    const deletedItem = await InventoryItemModel.findByIdAndDelete(itemId);
+    const deletedUser = await UsersModel.findByIdAndDelete(userId);
 
-    if (!deletedItem) {
+    if (!deletedUser) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Failed to delete Item",
+          message: "Failed to delete user",
         },
         { status: 500 }
       );
@@ -118,7 +124,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         status: "Successful",
-        data: deletedItem,
+        data: deletedUser,
       },
       { status: 200 }
     );

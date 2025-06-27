@@ -1,27 +1,26 @@
 import { dbConnect } from "@/lib/config/db";
-import InventoryItemModel from "@/lib/models/InventoryModel";
-import OrderItemsModel from "@/lib/models/OrderItemsModel";
+import ReportsModel from "@/lib/models/ReportsModel";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
     await dbConnect();
-    const inventoryItem = await InventoryItemModel.find({});
+    const reports = await ReportsModel.find({});
 
-    if (inventoryItem.length === 0 || !inventoryItem) {
+    if (!reports) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Inventory Items Not found",
+          message: "Failed to fetching reports",
         },
-        { status: 404 }
+        { status: 500 }
       );
     }
 
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: reports,
       },
       { status: 200 }
     );
@@ -41,9 +40,9 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const body = await request.json();
 
-    const { item_name, current_stock, current_branch_id } = body;
+    const { report_type, report_data, current_branch_id } = body;
 
-    if (!item_name || !current_stock || !current_branch_id) {
+    if (!report_type || !report_data || !current_branch_id) {
       return NextResponse.json(
         {
           status: "Failed",
@@ -53,14 +52,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new inventory items data
-    const inventoryItem = await OrderItemsModel.create(body);
+    // Create new Report data
+    const report = await ReportsModel.create(body);
 
-    if (!inventoryItem) {
+    if (!report) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Failed to create inventory item",
+          message: "Failed to create report",
         },
         { status: 500 }
       );
@@ -69,7 +68,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: report,
       },
       { status: 201 }
     );

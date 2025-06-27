@@ -1,27 +1,26 @@
 import { dbConnect } from "@/lib/config/db";
-import InventoryItemModel from "@/lib/models/InventoryModel";
-import OrderItemsModel from "@/lib/models/OrderItemsModel";
+import ServiceModel from "@/lib/models/ServicesModel";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
     await dbConnect();
-    const inventoryItem = await InventoryItemModel.find({});
+    const services = await ServiceModel.find({});
 
-    if (inventoryItem.length === 0 || !inventoryItem) {
+    if (!services) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Inventory Items Not found",
+          message: "Failed to fetching services",
         },
-        { status: 404 }
+        { status: 500 }
       );
     }
 
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: services,
       },
       { status: 200 }
     );
@@ -41,9 +40,16 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const body = await request.json();
 
-    const { item_name, current_stock, current_branch_id } = body;
+    const { name, price_per_kg, min_weight, category, current_branch_id } =
+      body;
 
-    if (!item_name || !current_stock || !current_branch_id) {
+    if (
+      !name ||
+      !price_per_kg ||
+      !min_weight ||
+      !category ||
+      !current_branch_id
+    ) {
       return NextResponse.json(
         {
           status: "Failed",
@@ -53,14 +59,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new inventory items data
-    const inventoryItem = await OrderItemsModel.create(body);
+    // Create new Service data
+    const service = await ServiceModel.create(body);
 
-    if (!inventoryItem) {
+    if (!service) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Failed to create inventory item",
+          message: "Failed to create service",
         },
         { status: 500 }
       );
@@ -69,7 +75,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         status: "Successful",
-        data: inventoryItem,
+        data: service,
       },
       { status: 201 }
     );

@@ -15,13 +15,21 @@ export interface OrderItem extends Document {
 // Define the schema
 const OrderItemSchema: Schema<OrderItem> = new mongoose.Schema(
   {
-    order_id: { type: mongoose.Types.ObjectId, required: true },
-    service_id: { type: mongoose.Types.ObjectId, require: true },
+    order_id: { type: mongoose.Types.ObjectId, ref: "orders", required: true },
+    service_id: {
+      type: mongoose.Types.ObjectId,
+      ref: "services",
+      require: true,
+    },
     quantity: { type: Number, required: true },
     unit_price: { type: Number, required: true },
     subtotal: { type: Number, required: true },
     notes: { type: String },
-    current_branch_id: { type: mongoose.Types.ObjectId, required: true },
+    current_branch_id: {
+      type: mongoose.Types.ObjectId,
+      ref: "branches",
+      required: true,
+    },
   },
   { timestamps: true, versionKey: false }
 );

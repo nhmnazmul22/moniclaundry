@@ -10,7 +10,7 @@ export interface Users extends Document {
   phone?: string;
   address?: string;
   avatar_url?: string;
-  isActive?: Boolean;
+  is_active?: Boolean;
   current_branch_id?: ObjectId[];
 }
 
@@ -24,15 +24,15 @@ const DataSchema: Schema<Users> = new mongoose.Schema(
     phone: { type: String },
     address: { type: String },
     avatar_url: { type: String },
-    isActive: { type: Boolean, required: true },
+    is_active: { type: Boolean, required: true },
     current_branch_id: { type: [mongoose.Types.ObjectId] },
   },
   { timestamps: true, versionKey: false }
 );
 
 // Define the model
-const SuperUsersModel: Model<Users> =
-  mongoose.models.superusers || mongoose.model<Users>("users", DataSchema);
+const UsersModel: Model<Users> =
+  mongoose.models.users || mongoose.model<Users>("users", DataSchema);
 
 // Export the model
-export default SuperUsersModel;
+export default UsersModel;
