@@ -36,7 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getBranchList } from "@/lib/branch-data";
 import { getServices } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
-import type { Branches, Service } from "@/types/database";
+import type { Branches, Service } from "@/types";
 import {
   Clock,
   Edit,

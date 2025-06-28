@@ -31,7 +31,7 @@ import { useBranch } from "@/contexts/branch-context";
 import { toast } from "@/hooks/use-toast";
 import { getBranchList } from "@/lib/branch-data";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Branches } from "@/types/database";
+import { Branches } from "@/types";
 import {
   AlertTriangle,
   Edit,

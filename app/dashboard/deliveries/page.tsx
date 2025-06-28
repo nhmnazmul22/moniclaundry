@@ -36,7 +36,7 @@ import { getOrders } from "@/lib/data";
 import { getStaffList } from "@/lib/staff-data";
 import { supabase } from "@/lib/supabase/client";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import { Branches } from "@/types/database";
+import { Branches } from "@/types";
 import {
   AlertTriangle,
   Edit,

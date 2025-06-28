@@ -36,12 +36,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { getBranchList } from "@/lib/branch-data";
 import { supabase } from "@/lib/supabase/client";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import {
-  Branches,
-  type Customer,
-  type Order,
-  type OrderItem,
-} from "@/types/database";
+import { Branches, type Customer, type Order, type OrderItem } from "@/types";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {

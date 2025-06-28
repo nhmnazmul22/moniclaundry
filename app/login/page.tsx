@@ -1,7 +1,5 @@
 "use client";
 
-import type React from "react";
-
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,45 +11,40 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/auth-context";
 import { Loader2, Shirt } from "lucide-react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import type React from "react";
+import { useState } from "react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("kyodaistudio56@gmail.com");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const { signIn, user, userProfile } = useAuth();
   const router = useRouter();
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user && userProfile) {
-      router.push("/dashboard");
-    }
-  }, [user, userProfile, router]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const result = await signIn(email, password);
+    const res = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
 
-    if (result.error) {
-      setError(result.error);
+    if (res?.error) {
+      setError("Email atau password salah.");
       setLoading(false);
     } else {
-      // Success - redirect will happen via useEffect
       router.push("/dashboard");
     }
   };
 
   // Don't show login form if already authenticated
-  if (user && userProfile) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -77,7 +70,7 @@ export default function LoginPage() {
           <CardDescription>Masuk ke sistem Point of Sale</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>

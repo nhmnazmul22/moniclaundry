@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,13 +9,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAuth } from "@/contexts/auth-context"
-import { useBranch } from "@/contexts/branch-context"
-import { getBranchList } from "@/lib/branch-data"
-import { cn } from "@/lib/utils"
-import type { Branches } from "@/types/database"
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useBranch } from "@/contexts/branch-context";
+import { getBranchList } from "@/lib/branch-data";
+import { cn } from "@/lib/utils";
+import { AppDispatch, RootState } from "@/store";
+import type { Branches } from "@/types";
 import {
   BarChart3,
   CreditCard,
@@ -32,11 +38,13 @@ import {
   UserCheck,
   Users,
   X,
-} from "lucide-react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import type React from "react"
-import { useEffect, useState, useCallback } from "react"
+} from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 const navigation = (userProfile: any) => [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -48,102 +56,94 @@ const navigation = (userProfile: any) => [
   { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
   { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
   // Only show Staff menu for Owner role
-  ...(userProfile?.role === "owner" ? [{ name: "Staff", href: "/dashboard/staff", icon: UserCheck }] : []),
+  ...(userProfile?.role === "owner"
+    ? [{ name: "Staff", href: "/dashboard/staff", icon: UserCheck }]
+    : []),
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
-]
+];
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [branches, setBranches] = useState<Branches[]>([])
-  const [branchesLoading, setBranchesLoading] = useState(true)
-  const [branchesError, setBranchesError] = useState<string | null>(null)
-  const pathname = usePathname()
-  const { userProfile, loading: authLoading, signOut } = useAuth()
-  const { currentBranchId, setCurrentBranchId } = useBranch()
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [branches, setBranches] = useState<Branches[]>([]);
+  const [branchesLoading, setBranchesLoading] = useState(true);
+  const [branchesError, setBranchesError] = useState<string | null>(null);
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const { currentBranchId, setCurrentBranchId } = useBranch();
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { items, loading, error } = useSelector(
+    (state: RootState) => state.userReducer
+  );
 
   const fetchBranches = useCallback(async () => {
     try {
-      setBranchesLoading(true)
-      setBranchesError(null)
-      console.log("Starting to fetch branches...")
+      setBranchesLoading(true);
+      setBranchesError(null);
+      console.log("Starting to fetch branches...");
 
-      const data = await getBranchList()
-      console.log("Branch data received:", data)
+      const data = await getBranchList();
+      console.log("Branch data received:", data);
 
       if (data && data.length > 0) {
-        setBranches(data)
-        console.log("Branches set successfully:", data)
+        setBranches(data);
+        console.log("Branches set successfully:", data);
       } else {
-        console.log("No branches found or data is null")
-        setBranches([])
-        setBranchesError("No branches found")
+        console.log("No branches found or data is null");
+        setBranches([]);
+        setBranchesError("No branches found");
       }
     } catch (error) {
-      console.error("Error fetching branches:", error)
-      setBranchesError("Failed to load branches")
-      setBranches([])
+      console.error("Error fetching branches:", error);
+      setBranchesError("Failed to load branches");
+      setBranches([]);
     } finally {
-      setBranchesLoading(false)
+      setBranchesLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    if (userProfile) {
-      fetchBranches()
-    }
-  }, [userProfile, fetchBranches])
+    fetchBranches();
+  }, [fetchBranches]);
 
   useEffect(() => {
-    if (branches.length > 0 && !currentBranchId && userProfile) {
+    if (branches.length > 0 && !currentBranchId) {
       // Set first branch as default
-      setCurrentBranchId(branches[0].id)
-      console.log("Setting default branch:", branches[0])
+      setCurrentBranchId(branches[0].id);
+      console.log("Setting default branch:", branches[0]);
     }
-  }, [branches, currentBranchId, setCurrentBranchId, userProfile])
-
-  // Tampilkan loading jika data auth belum siap
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading...</span>
-      </div>
-    )
-  }
-
-  // Jika tidak ada userProfile (belum login), bisa redirect atau tampilkan pesan
-  if (!userProfile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="mb-4">Sesi Anda telah berakhir. Silakan login kembali.</p>
-          <Button onClick={() => (window.location.href = "/login")}>Login</Button>
-        </div>
-      </div>
-    )
-  }
+  }, [branches, currentBranchId, setCurrentBranchId]);
 
   const getInitials = (name: string | undefined) => {
-    if (!name) return "??"
+    if (!name) return "??";
     return name
       .split(" ")
       .map((n) => n[0])
       .join("")
-      .toUpperCase()
-  }
+      .toUpperCase();
+  };
 
-  const selectedBranch = branches.find((branch) => branch.id === currentBranchId)
+  const selectedBranch = branches.find(
+    (branch) => branch.id === currentBranchId
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar */}
       <div className="lg:hidden">
-        <div className={`fixed inset-0 z-50 flex ${sidebarOpen ? "block" : "hidden"}`}>
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div
+          className={`fixed inset-0 z-50 flex ${
+            sidebarOpen ? "block" : "hidden"
+          }`}
+        >
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-75"
+            onClick={() => setSidebarOpen(false)}
+          />
           <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white">
             <div className="absolute top-0 right-0 -mr-12 pt-2">
               <Button
@@ -155,7 +155,11 @@ export default function DashboardLayout({
                 <X className="h-6 w-6" />
               </Button>
             </div>
-            <SidebarContent navItems={navigation(userProfile)} pathname={pathname} userProfile={userProfile} />
+            <SidebarContent
+              navItems={navigation(items)}
+              pathname={pathname}
+              userProfile={items}
+            />
           </div>
         </div>
       </div>
@@ -163,7 +167,11 @@ export default function DashboardLayout({
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white border-r border-gray-200 px-6">
-          <SidebarContent navItems={navigation(userProfile)} pathname={pathname} userProfile={userProfile} />
+          <SidebarContent
+            navItems={navigation(items)}
+            pathname={pathname}
+            userProfile={items}
+          />
         </div>
       </div>
 
@@ -174,7 +182,11 @@ export default function DashboardLayout({
           <div className="flex items-center justify-between">
             {/* Mobile menu button */}
             <div className="lg:hidden">
-              <Button variant="outline" size="icon" onClick={() => setSidebarOpen(true)}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setSidebarOpen(true)}
+              >
                 <Menu className="h-6 w-6" />
               </Button>
             </div>
@@ -182,7 +194,9 @@ export default function DashboardLayout({
             {/* Page title */}
             <div className="flex-1 lg:flex-none">
               <h1 className="text-xl font-semibold text-gray-900">
-                {navigation(userProfile).find((item) => item.href === pathname)?.name || "Dashboard"}
+                {navigation(session?.user).find(
+                  (item) => item.href === pathname
+                )?.name || "Dashboard"}
               </h1>
             </div>
 
@@ -197,13 +211,20 @@ export default function DashboardLayout({
                   </div>
                 ) : branchesError ? (
                   <div className="px-3 py-2 border rounded-md bg-red-50 border-red-200">
-                    <span className="text-sm text-red-600">Error loading branches</span>
+                    <span className="text-sm text-red-600">
+                      Error loading branches
+                    </span>
                   </div>
                 ) : branches.length > 0 ? (
-                  <Select value={currentBranchId} onValueChange={setCurrentBranchId}>
+                  <Select
+                    value={currentBranchId}
+                    onValueChange={setCurrentBranchId}
+                  >
                     <SelectTrigger className="w-[170px]">
                       <SelectValue placeholder="Select Branch">
-                        {selectedBranch ? `${selectedBranch.name} (${selectedBranch.type})` : "Select Branch"}
+                        {selectedBranch
+                          ? `${selectedBranch.name} (${selectedBranch.type})`
+                          : "Select Branch"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -216,7 +237,9 @@ export default function DashboardLayout({
                   </Select>
                 ) : (
                   <div className="px-3 py-2 border rounded-md bg-yellow-50 border-yellow-200">
-                    <span className="text-sm text-yellow-600">No branches found</span>
+                    <span className="text-sm text-yellow-600">
+                      No branches found
+                    </span>
                   </div>
                 )}
               </div>
@@ -224,20 +247,31 @@ export default function DashboardLayout({
               {/* User menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Button
+                    variant="ghost"
+                    className="relative h-10 w-10 rounded-full"
+                  >
                     <Avatar className="h-10 w-10 border-[1px] border-gray-200">
                       <AvatarImage src="/avatar.png" alt="Avatar" />
-                      <AvatarFallback>{getInitials(userProfile?.full_name)}</AvatarFallback>
+                      <AvatarFallback>
+                        {getInitials(items?.full_name)}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{userProfile?.full_name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{userProfile?.email}</p>
+                      <p className="text-sm font-medium leading-none">
+                        {items?.full_name}
+                      </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {userProfile?.role.charAt(0).toUpperCase() + userProfile?.role.slice(1)}
+                        {items?.email}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {items?.role &&
+                          items?.role.charAt(0).toUpperCase() +
+                            items?.role.slice(1)}
                       </p>
                     </div>
                   </DropdownMenuLabel>
@@ -255,7 +289,9 @@ export default function DashboardLayout({
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut}>
+                  <DropdownMenuItem
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
@@ -269,7 +305,7 @@ export default function DashboardLayout({
         <main className="p-6">{children}</main>
       </div>
     </div>
-  )
+  );
 }
 
 function SidebarContent({
@@ -277,9 +313,9 @@ function SidebarContent({
   pathname,
   userProfile,
 }: {
-  navItems: any[]
-  pathname: string
-  userProfile: any
+  navItems: any[];
+  pathname: string;
+  userProfile: any;
 }) {
   return (
     <>
@@ -309,13 +345,15 @@ function SidebarContent({
                       pathname === item.href
                         ? "bg-blue-50 text-blue-700"
                         : "text-gray-700 hover:text-blue-700 hover:bg-blue-50",
-                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold",
+                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
                     )}
                   >
                     <item.icon
                       className={cn(
-                        pathname === item.href ? "text-blue-700" : "text-gray-400 group-hover:text-blue-700",
-                        "h-6 w-6 shrink-0",
+                        pathname === item.href
+                          ? "text-blue-700"
+                          : "text-gray-400 group-hover:text-blue-700",
+                        "h-6 w-6 shrink-0"
                       )}
                     />
                     {item.name}
@@ -327,5 +365,5 @@ function SidebarContent({
         </ul>
       </nav>
     </>
-  )
+  );
 }

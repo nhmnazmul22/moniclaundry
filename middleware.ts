@@ -1,11 +1,27 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
+import { getToken } from "next-auth/jwt";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function middleware(req: NextRequest) {
-  // DISABLE MIDDLEWARE FOR NOW - LET EVERYTHING THROUGH
-  return NextResponse.next()
+export async function middleware(request: NextRequest) {
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  const isPublicFile =
+    request.nextUrl.pathname.startsWith("/_next/") ||
+    request.nextUrl.pathname === "/favicon.ico";
+
+  if (!token && !isPublicFile) {
+    const loginUrl = new URL("/login", request.url);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: [],
-}
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|blogs-img/|login).*)",
+  ],
+};

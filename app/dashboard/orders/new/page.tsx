@@ -27,7 +27,7 @@ import { getBranchList } from "@/lib/branch-data";
 import { getCustomers, getServices } from "@/lib/data";
 import { supabase } from "@/lib/supabase/client";
 import { formatCurrency } from "@/lib/utils";
-import type { Branches, Customer, Service } from "@/types/database";
+import type { Branches, Customer, Service } from "@/types";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

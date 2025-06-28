@@ -27,7 +27,7 @@ import {
   formatDateTime,
   getOrderStatusColor,
 } from "@/lib/utils";
-import type { Order } from "@/types/database";
+import type { Order } from "@/types";
 import {
   AlertTriangle,
   Edit,

@@ -16,7 +16,7 @@ import type {
   DashboardStats,
   InventoryItem,
   Order as RecentOrderType,
-} from "@/types/database"; // Use existing types
+} from "@/types"; // Use existing types
 import {
   AlertTriangle,
   Clock,

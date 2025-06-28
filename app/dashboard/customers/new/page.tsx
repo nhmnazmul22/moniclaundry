@@ -21,7 +21,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { getBranchList } from "@/lib/branch-data";
 import { supabase } from "@/lib/supabase/client";
-import { Branches } from "@/types/database";
+import { Branches } from "@/types";
 import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";

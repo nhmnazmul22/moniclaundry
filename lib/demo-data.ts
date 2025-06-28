@@ -4,7 +4,7 @@ import type {
   DashboardStats,
   Order,
   Service,
-} from "@/types/database";
+} from "@/types";
 
 // Demo users
 export const demoUsers: AppUser[] = [

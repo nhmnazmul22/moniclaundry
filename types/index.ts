@@ -88,7 +88,7 @@ export interface Database {
 }
 
 export interface User {
-  id: string;
+  _id?: string;
   email: string;
   full_name: string;
   role: "owner" | "admin" | "kurir";
@@ -96,8 +96,8 @@ export interface User {
   address?: string;
   avatar_url?: string;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Customer {

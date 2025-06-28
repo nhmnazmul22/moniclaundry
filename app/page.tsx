@@ -1,21 +1,19 @@
 "use client";
 
-import { useAuth } from "@/contexts/auth-context";
 import { Loader2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function HomePage() {
-  const { user, loading } = useAuth();
+  const { data: session } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (user) {
-      router.push("/dashboard");
-    } else {
+    if (!session?.user) {
       router.push("/login");
     }
-  }, [user]);
+  }, [session]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

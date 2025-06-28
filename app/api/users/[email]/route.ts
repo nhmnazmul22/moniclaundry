@@ -1,21 +1,15 @@
 import { dbConnect } from "@/lib/config/db";
 import UsersModel from "@/lib/models/UsersModel";
-import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ email: string }> }
 ) {
   try {
     await dbConnect();
-    const userId = (await params).id;
-    const user = await UsersModel.findById(
-      {
-        _id: new mongoose.Types.ObjectId(userId),
-      },
-      { password: 0 }
-    );
+    const userEmail = (await params).email;
+    const user = await UsersModel.findOne({ email: userEmail });
 
     if (!user) {
       return NextResponse.json(
@@ -47,20 +41,17 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ email: string }> }
 ) {
   try {
     await dbConnect();
-    const userId = (await params).id;
+    const userEmail = (await params).email;
     const body = await request.json();
 
     // Update users data
-    const UpdatedUser = await UsersModel.findByIdAndUpdate(
-      userId,
-      {
-        ...body,
-      },
-      { new: true }
+    const UpdatedUser = await UsersModel.updateOne(
+      { email: userEmail },
+      { ...body }
     );
 
     if (!UpdatedUser) {

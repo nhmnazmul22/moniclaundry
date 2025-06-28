@@ -1,5 +1,5 @@
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import type { Order, OrderItem } from "@/types/database";
+import type { Order, OrderItem } from "@/types";
 import { QRCodeCanvas } from "qrcode.react";
 import React from "react";
 

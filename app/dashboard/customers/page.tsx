@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getBranchList } from "@/lib/branch-data";
 import { getCustomers } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
-import type { Branches, Customer } from "@/types/database";
+import type { Branches, Customer } from "@/types";
 import {
   Edit,
   Eye,

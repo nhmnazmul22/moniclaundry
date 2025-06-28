@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useAuth } from "@/contexts/auth-context"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,41 +9,43 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, LogOut, Settings, User } from "lucide-react"
-import Link from "next/link" // Import Link from next/link
-import type { User as AppUser } from "@/types/database"
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/auth-context";
+import type { User as AppUser } from "@/types";
+import { Bell, LogOut, Settings, User } from "lucide-react";
+import Link from "next/link"; // Import Link from next/link
 
 interface HeaderProps {
-  user: AppUser
+  user: AppUser;
 }
 
 export function Header({ user }: HeaderProps) {
-  const { signOut } = useAuth()
+  const { signOut } = useAuth();
 
   const getInitials = (name: string) => {
     return name
       .split(" ")
       .map((n) => n[0])
       .join("")
-      .toUpperCase()
-  }
+      .toUpperCase();
+  };
 
   const getRoleLabel = (role: string) => {
     const labels = {
       owner: "Owner",
       admin: "Admin",
       kurir: "Kurir",
-    }
-    return labels[role as keyof typeof labels] || role
-  }
+    };
+    return labels[role as keyof typeof labels] || role;
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-gray-900">Welcome, {user.full_name}!</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Welcome, {user.full_name}!
+          </h2>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -58,9 +60,15 @@ export function Header({ user }: HeaderProps) {
           {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full"
+              >
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={user.avatar_url || ""} alt={user.full_name} />
+                  <AvatarImage
+                    src={user.avatar_url || ""}
+                    alt={user.full_name}
+                  />
                   <AvatarFallback>{getInitials(user.full_name)}</AvatarFallback>
                 </Avatar>
               </Button>
@@ -68,16 +76,25 @@ export function Header({ user }: HeaderProps) {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user.full_name}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{getRoleLabel(user.role)}</p>
+                  <p className="text-sm font-medium leading-none">
+                    {user.full_name}
+                  </p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user.email}
+                  </p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {getRoleLabel(user.role)}
+                  </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               {/* Correct way to use Link with DropdownMenuItem */}
               <Link href="/dashboard/profile" passHref legacyBehavior>
                 <DropdownMenuItem asChild>
-                  <Button variant="ghost" className="w-full justify-start cursor-pointer">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start cursor-pointer"
+                  >
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </Button>
@@ -85,7 +102,10 @@ export function Header({ user }: HeaderProps) {
               </Link>
               <Link href="/dashboard/settings" passHref legacyBehavior>
                 <DropdownMenuItem asChild>
-                  <Button variant="ghost" className="w-full justify-start cursor-pointer">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start cursor-pointer"
+                  >
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </Button>
@@ -101,5 +121,5 @@ export function Header({ user }: HeaderProps) {
         </div>
       </div>
     </header>
-  )
+  );
 }
