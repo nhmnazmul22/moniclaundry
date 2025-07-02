@@ -45,13 +45,15 @@ export default function DashboardPage() {
   const fetchDashboardSummary = async () => {
     try {
       setLoading(true);
-      const res = await fetch(
-        `/api/reports/dashboard/?branch_id=${currentBranchId}&start_date=${formatDate(
-          dateRange?.from!
-        )}&end_date=${formatDate(dateRange?.to!)}`
-      );
-      const json = await res.json();
-      setDashboardData(json);
+      if (currentBranchId) {
+        const res = await fetch(
+          `/api/reports/dashboard/?branch_id=${currentBranchId}&start_date=${formatDate(
+            dateRange?.from!
+          )}&end_date=${formatDate(dateRange?.to!)}`
+        );
+        const json = await res.json();
+        setDashboardData(json);
+      }
     } catch (err: any) {
       console.error("Error fetching dashboard summary", err);
       setError(err.message || "Something went wrong");
