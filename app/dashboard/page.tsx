@@ -68,34 +68,41 @@ export default function DashboardPage() {
 
   // Sample data based on your structure
   const salesData = {
-    totalRevenue: dashboardData?.salesData.totalRevenue,
-    paidAmount: dashboardData?.salesData.paidAmount,
-    outstandingAmount: dashboardData?.salesData.outstandingAmount,
-    expenses: dashboardData?.salesData.expenses,
-    netCash: dashboardData?.salesData.netCash,
+    totalRevenue: dashboardData && dashboardData?.salesData.totalRevenue,
+    paidAmount: dashboardData && dashboardData?.salesData.paidAmount,
+    outstandingAmount:
+      dashboardData && dashboardData?.salesData.outstandingAmount,
+    expenses: dashboardData && dashboardData?.salesData.expenses,
+    netCash: dashboardData && dashboardData?.salesData.netCash,
   };
 
   const laundryData = {
-    totalKg: dashboardData?.laundryData.totalKg,
-    totalUnits: dashboardData?.laundryData.totalUnits,
+    totalKg: dashboardData && dashboardData?.laundryData.totalKg,
+    totalUnits: dashboardData && dashboardData?.laundryData.totalUnits,
   };
 
   const transactionData = {
-    totalTransactions: dashboardData?.transactionData.totalTransactions,
-    paymentMethods: dashboardData?.transactionData.paymentMethods,
-    regularTransactions: dashboardData?.transactionData.regularTransactions,
-    cancelledTransactions: dashboardData?.transactionData.cancelledTransactions,
+    totalTransactions:
+      dashboardData && dashboardData?.transactionData.totalTransactions,
+    paymentMethods:
+      dashboardData && dashboardData?.transactionData.paymentMethods,
+    regularTransactions:
+      dashboardData && dashboardData?.transactionData.regularTransactions,
+    cancelledTransactions:
+      dashboardData && dashboardData?.transactionData.cancelledTransactions,
   };
 
   const depositData = {
-    topUpCount: dashboardData?.depositData.topUpCount,
-    topUpUsers: dashboardData?.depositData.topUpUsers,
-    totalTopUpValue: dashboardData?.depositData.totalTopUpValue,
+    topUpCount: dashboardData && dashboardData?.depositData.topUpCount,
+    topUpUsers: dashboardData && dashboardData?.depositData.topUpUsers,
+    totalTopUpValue:
+      dashboardData && dashboardData?.depositData.totalTopUpValue,
   };
 
   const customerData = {
-    existingCustomers: dashboardData?.customerData.existingCustomers,
-    newCustomers: dashboardData?.customerData.newCustomers,
+    existingCustomers:
+      dashboardData && dashboardData?.customerData.existingCustomers,
+    newCustomers: dashboardData && dashboardData?.customerData.newCustomers,
   };
 
   const formatCurrency = (amount: number) => {
