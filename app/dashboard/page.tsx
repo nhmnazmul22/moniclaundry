@@ -61,7 +61,9 @@ export default function DashboardPage() {
       }
     };
 
-    fetchDashboardSummary();
+    if (currentBranchId) {
+      fetchDashboardSummary();
+    }
   }, [currentBranchId, dateRange]);
 
   // Sample data based on your structure
