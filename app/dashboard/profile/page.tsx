@@ -14,13 +14,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/contexts/auth-context";
-import { supabase } from "@/lib/supabase/client";
+import api from "@/lib/config/axios";
+import { AppDispatch, RootState } from "@/store";
+import { fetchUser } from "@/store/userSlice";
 import { Loader2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function ProfilePage() {
-  const { userProfile, loading: authLoading } = useAuth();
+  const { data: session } = useSession();
+  const dispatch = useDispatch<AppDispatch>();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -29,38 +33,37 @@ export default function ProfilePage() {
     address: "",
   });
 
+  const { items: user } = useSelector((state: RootState) => state.userReducer);
+
   useEffect(() => {
-    if (userProfile) {
+    if (session?.user) {
+      dispatch(fetchUser(session.user.email));
       setFormData({
-        full_name: userProfile.full_name || "",
-        phone: userProfile.phone || "",
-        address: userProfile.address || "",
+        full_name: user?.full_name || "",
+        phone: user?.phone || "",
+        address: user?.address || "",
       });
     }
-  }, [userProfile]);
+  }, [session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userProfile) return;
+    if (!session?.user) return;
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from("users")
-        .update({
-          full_name: formData.full_name,
-          phone: formData.phone,
-          address: formData.address,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", userProfile.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Sukses",
-        description: "Profile berhasil diperbarui.",
+      const res = await api.put(`/api/users/${session?.user.email}`, {
+        full_name: formData.full_name,
+        phone: formData.phone,
+        address: formData.address,
       });
+
+      if (res.status === 201) {
+        toast({
+          title: "Sukses",
+          description: "Profile berhasil diperbarui.",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -89,7 +92,7 @@ export default function ProfilePage() {
     return labels[role as keyof typeof labels] || role;
   };
 
-  if (authLoading) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin" />
@@ -97,7 +100,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!userProfile) {
+  if (!session?.user) {
     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
         <p>Data profile tidak tersedia</p>
@@ -118,20 +121,20 @@ export default function ProfilePage() {
           <CardContent className="flex flex-col items-center">
             <div className="relative">
               <Avatar className="h-32 w-32 mb-4 border-[2px] border-gray-200">
-                <AvatarImage src="/avatar.png" alt={userProfile.full_name} />
+                <AvatarImage src="/avatar.png" alt={user?.full_name} />
                 <AvatarFallback className="text-2xl">
-                  {getInitials(userProfile.full_name)}
+                  {getInitials(user?.full_name!)}
                 </AvatarFallback>
               </Avatar>
             </div>
-            <h2 className="text-xl font-semibold">{userProfile.full_name}</h2>
-            <p className="text-muted-foreground">{userProfile.email}</p>
+            <h2 className="text-xl font-semibold">{user?.full_name}</h2>
+            <p className="text-muted-foreground">{user?.email}</p>
             <div className="mt-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-              {getRoleLabel(userProfile.role)}
+              {getRoleLabel(user?.role!)}
             </div>
             <div className="mt-2 text-sm text-muted-foreground">
               Bergabung:{" "}
-              {new Date(userProfile.created_at).toLocaleDateString("id-ID")}
+              {new Date(user?.createdAt!).toLocaleDateString("id-ID")}
             </div>
           </CardContent>
         </Card>
@@ -160,7 +163,7 @@ export default function ProfilePage() {
                   <Input
                     id="email"
                     type="email"
-                    value={userProfile.email}
+                    value={user?.email}
                     disabled
                     className="bg-gray-100"
                   />
@@ -180,7 +183,7 @@ export default function ProfilePage() {
                   <Label htmlFor="role">Role</Label>
                   <Input
                     id="role"
-                    value={getRoleLabel(userProfile.role)}
+                    value={getRoleLabel(user?.role!)}
                     disabled
                     className="bg-gray-100"
                   />
