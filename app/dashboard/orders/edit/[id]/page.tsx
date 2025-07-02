@@ -14,23 +14,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/lib/supabase/client";
-import type { Customer, Order } from "@/types";
+import { useBranch } from "@/contexts/branch-context";
+import api from "@/lib/config/axios";
+import { AppDispatch, RootState } from "@/store";
+import { fetchCustomers } from "@/store/CustomerSlice";
+import type { Order } from "@/types";
 import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 
 export default function EditOrderPage() {
   const params = useParams();
-  const router = useRouter();
   const orderId = params.id as string;
-
+  const { currentBranchId } = useBranch();
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
   const [order, setOrder] = useState<Order | null>(null);
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { items: customers } = useSelector(
+    (state: RootState) => state.customerReducer
+  );
 
   const [formData, setFormData] = useState({
     customer_id: "",
@@ -46,33 +55,21 @@ export default function EditOrderPage() {
 
     try {
       // Fetch order
-      const { data: orderData, error: orderError } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", orderId)
-        .single();
-
-      if (orderError) throw orderError;
-
-      // Fetch customers
-      const { data: customersData, error: customersError } = await supabase
-        .from("customers")
-        .select("*")
-        .order("name");
-
-      if (customersError) throw customersError;
-
-      setOrder(orderData);
-      setCustomers(customersData || []);
+      const res = await api.get(`/api/orders/${orderId}`);
+      if (res.status === 200) {
+        setOrder(res.data.data);
+      }
 
       // Set form data
       setFormData({
-        customer_id: orderData.customer_id || "",
-        order_status: orderData.order_status,
-        payment_status: orderData.payment_status || "",
-        notes: orderData.notes || "",
-        estimated_completion: orderData.estimated_completion
-          ? new Date(orderData.estimated_completion).toISOString().slice(0, 16)
+        customer_id: res.data.data.customerDetails._id || "",
+        order_status: res.data.data.order_status,
+        payment_status: res.data.data.payment_status || "",
+        notes: res.data.data.notes || "",
+        estimated_completion: res.data.data.estimated_completion
+          ? new Date(res.data.data.estimated_completion)
+              .toISOString()
+              .slice(0, 16)
           : "",
       });
     } catch (err: any) {
@@ -87,6 +84,10 @@ export default function EditOrderPage() {
       fetchData();
     }
   }, [orderId]);
+
+  useEffect(() => {
+    dispatch(fetchCustomers(currentBranchId));
+  }, [currentBranchId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,61 +105,15 @@ export default function EditOrderPage() {
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase
-        .from("orders")
-        .update(updateData)
-        .eq("id", orderId);
+      const res = await api.put(`/api/orders/${orderId}`, updateData);
 
-      if (error) throw error;
+      if (res.status !== 201) throw new Error("Order update failed");
 
-      if (order?.payment_method === "deposit") {
-        const { data: customer, error: customerError } = await supabase
-          .from("customers")
-          .select("total_deposit")
-          .eq("id", order?.customer_id)
-          .single();
-
-        let totalDeposit = customer?.total_deposit;
-
-        if (
-          order?.payment_status === "paid" &&
-          order?.order_status !== "cancelled" &&
-          (updateData.order_status === "cancelled" ||
-            updateData.payment_status === "refunded" ||
-            updateData.payment_status === "pending")
-        ) {
-          totalDeposit = Number(customer?.total_deposit + order?.subtotal);
-        }
-
-        if (
-          order?.payment_status === "paid" &&
-          order?.order_status === "cancelled" &&
-          updateData.order_status !== "cancelled"
-        ) {
-          totalDeposit = Number(customer?.total_deposit - order?.subtotal);
-        }
-
-        if (
-          (order.payment_status === "refunded" ||
-            order.payment_status === "pending") &&
-          order.order_status !== "cancelled" &&
-          updateData.payment_status === "paid"
-        ) {
-          totalDeposit = Number(customer?.total_deposit - order?.subtotal);
-        }
-
-        await supabase
-          .from("customers")
-          .update({
-            total_deposit: totalDeposit,
-          })
-          .eq("id", order?.customer_id);
-      }
-
-      alert("Order berhasil diperbarui!");
+      toast.success("Order berhasil diperbarui!");
       router.push(`/dashboard/orders/${orderId}`);
     } catch (err: any) {
-      alert(`Gagal memperbarui order: ${err.message}`);
+      toast.error(`Gagal memperbarui order: ${err.message}`);
+      console.error(err);
     } finally {
       setSaving(false);
     }
@@ -225,11 +180,12 @@ export default function EditOrderPage() {
                     <SelectValue placeholder="Pilih customer" />
                   </SelectTrigger>
                   <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name} - {customer.phone}
-                      </SelectItem>
-                    ))}
+                    {customers &&
+                      customers.map((customer) => (
+                        <SelectItem key={customer._id} value={customer._id}>
+                          {customer.name} - {customer.phone}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -246,16 +202,9 @@ export default function EditOrderPage() {
                     <SelectValue placeholder="Pilih status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="received">Diterima</SelectItem>
-                    <SelectItem value="washing">Sedang Dicuci</SelectItem>
-                    <SelectItem value="drying">Sedang Dikeringkan</SelectItem>
-                    <SelectItem value="ironing">Sedang Disetrika</SelectItem>
-                    <SelectItem value="ready">Siap Diambil</SelectItem>
-                    <SelectItem value="out_for_delivery">
-                      Sedang Diantar
-                    </SelectItem>
-                    <SelectItem value="delivered">Selesai</SelectItem>
-                    <SelectItem value="cancelled">Dibatalkan</SelectItem>
+                    <SelectItem value="diterima">Diterima</SelectItem>
+                    <SelectItem value="diproses">Diproses</SelectItem>
+                    <SelectItem value="selesai">Selesai</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -272,10 +221,9 @@ export default function EditOrderPage() {
                     <SelectValue placeholder="Pilih status pembayaran" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="paid">Lunas</SelectItem>
-                    <SelectItem value="partial">Sebagian</SelectItem>
-                    <SelectItem value="refunded">Dikembalikan</SelectItem>
+                    <SelectItem value="belum lunas">Belum Lunas</SelectItem>
+                    <SelectItem value="lunas">Lunas</SelectItem>
+                    <SelectItem value="dp">DP</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

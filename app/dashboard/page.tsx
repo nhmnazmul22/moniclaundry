@@ -2,96 +2,106 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
-import { getDashboardStats } from "@/lib/data";
-import { formatCurrency } from "@/lib/utils"; // Ensure formatDateTime is imported if used for recentOrders
-import type {
-  DashboardStats,
-  InventoryItem,
-  Order as RecentOrderType,
-} from "@/types"; // Use existing types
+import { DashboardSummaryData } from "@/types";
+import { addDays } from "date-fns";
 import {
   AlertTriangle,
-  Clock,
-  DollarSign,
-  Eye,
+  CreditCard,
   Loader2,
-  Plus,
-  ShoppingCart,
+  Shirt,
+  TrendingDown,
+  TrendingUp,
   Users,
+  Wallet,
 } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { DateRange } from "react-day-picker";
 
 export default function DashboardPage() {
   const { currentBranchId } = useBranch();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [dashboardData, setDashboardData] = useState<DashboardSummaryData>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: addDays(new Date(), -30),
+    to: new Date(),
+  });
 
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  async function fetchStats() {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getDashboardStats(currentBranchId);
-      console.log(data);
-      setStats(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load dashboard data"
-      );
-      setStats(null); // Clear stats on error
-    } finally {
-      setLoading(false);
-    }
-  }
+  const formatDate = (date: Date) => date.toISOString().split("T")[0]; // 'YYYY-MM-DD'
 
   useEffect(() => {
-    fetchStats();
-  }, [currentBranchId]);
+    const fetchDashboardSummary = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(
+          `/api/reports/dashboard/?branch_id=${currentBranchId}&start_date=${formatDate(
+            dateRange?.from!
+          )}&end_date=${formatDate(dateRange?.to!)}`
+        );
+        const json = await res.json();
+        setDashboardData(json);
+      } catch (err: any) {
+        console.error("Error fetching dashboard summary", err);
+        setError(err.message || "Something went wrong");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Selamat Pagi";
-    if (hour < 17) return "Selamat Siang";
-    return "Selamat Malam";
+    fetchDashboardSummary();
+  }, [currentBranchId, dateRange]);
+
+  // Sample data based on your structure
+  const salesData = {
+    totalRevenue: dashboardData?.salesData.totalRevenue,
+    paidAmount: dashboardData?.salesData.paidAmount,
+    outstandingAmount: dashboardData?.salesData.outstandingAmount,
+    expenses: dashboardData?.salesData.expenses,
+    netCash: dashboardData?.salesData.netCash,
   };
 
-  const getOrderStatusLabel = (status: string) => {
-    const labels: { [key: string]: string } = {
-      received: "Diterima",
-      washing: "Dicuci",
-      drying: "Dikeringkan",
-      ironing: "Disetrika",
-      ready: "Siap Diambil",
-      out_for_delivery: "Diantar",
-      delivered: "Selesai",
-      cancelled: "Dibatalkan",
-    };
-    return (
-      labels[status] || status?.charAt(0)?.toUpperCase() + status?.slice(1)
-    );
+  const laundryData = {
+    totalKg: dashboardData?.laundryData.totalKg,
+    totalUnits: dashboardData?.laundryData.totalUnits,
   };
 
-  const getOrderStatusColor = (status: string) => {
-    const colors: { [key: string]: string } = {
-      received: "bg-blue-100 text-blue-800",
-      washing: "bg-yellow-100 text-yellow-800",
-      drying: "bg-orange-100 text-orange-800",
-      ironing: "bg-purple-100 text-purple-800",
-      ready: "bg-green-100 text-green-800",
-      delivered: "bg-gray-100 text-gray-800",
-      cancelled: "bg-red-100 text-red-800",
-    };
-    return colors[status] || "bg-gray-100 text-gray-800";
+  const transactionData = {
+    totalTransactions: dashboardData?.transactionData.totalTransactions,
+    paymentMethods: dashboardData?.transactionData.paymentMethods,
+    regularTransactions: dashboardData?.transactionData.regularTransactions,
+    cancelledTransactions: dashboardData?.transactionData.cancelledTransactions,
+  };
+
+  const depositData = {
+    topUpCount: dashboardData?.depositData.topUpCount,
+    topUpUsers: dashboardData?.depositData.topUpUsers,
+    totalTopUpValue: dashboardData?.depositData.totalTopUpValue,
+  };
+
+  const customerData = {
+    existingCustomers: dashboardData?.customerData.existingCustomers,
+    newCustomers: dashboardData?.customerData.newCustomers,
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(amount);
   };
 
   if (loading) {
@@ -110,20 +120,6 @@ export default function DashboardPage() {
             Monic Laundry POS
           </h2>
           <p className="text-muted-foreground">Dashboard</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Badge
-            variant="outline"
-            className="bg-green-50 text-green-700 border-green-200"
-          >
-            🟢 LIVE MODE
-          </Badge>
-          <Link href="/dashboard/orders/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Order Baru
-            </Button>
-          </Link>
         </div>
       </div>
 
@@ -148,242 +144,243 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {!error && !stats && !loading && (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Data Penjualan 1 Outlet
+          </h1>
+
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="grid gap-2">
+              <Label>Rentang Tanggal</Label>
+              <DatePickerWithRange
+                date={dateRange}
+                setDate={setDateRange}
+                className="w-full md:w-auto"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Revenue Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Rupiah
+              </CardTitle>
+              <Wallet className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatCurrency(salesData.totalRevenue!)}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Status Lunas
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {formatCurrency(salesData.paidAmount!)}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Status Piutang
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">
+                {formatCurrency(salesData.outstandingAmount!)}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pengeluaran</CardTitle>
+              <TrendingDown className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {formatCurrency(salesData.expenses!)}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Expenses */}
         <Card>
-          <CardContent className="py-10 text-center">
-            <p className="text-muted-foreground">
-              Tidak ada data statistik untuk ditampilkan saat ini.
+          <CardHeader className="flex flex-row items-center space-x-1 space-y-0 pb-2">
+            <Wallet className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium">Net Cash</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {formatCurrency(salesData.netCash!)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Transaksi Cash {formatCurrency(salesData.totalRevenue!)} -
+              Pengeluaran {formatCurrency(salesData.expenses!)}
             </p>
           </CardContent>
         </Card>
-      )}
 
-      {stats && (
-        <>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-2xl font-bold tracking-tight">
-                {getGreeting()}!
-              </h3>
-              <p className="text-muted-foreground">
-                Berikut adalah ringkasan bisnis Monic Laundry hari ini.
-              </p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Revenue
-                  </CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {formatCurrency(stats.totalRevenue)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Hari ini: {formatCurrency(stats.todayRevenue)}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Orders
-                  </CardTitle>
-                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalOrders}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Hari ini: {stats.todayOrders} orders
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Pending Orders
-                  </CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {stats.pendingOrders}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Perlu diproses
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Customers
-                  </CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {stats.totalCustomers}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Pelanggan terdaftar
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {stats.lowStockItems && stats.lowStockItems.length > 0 && (
-              <Card className="border-orange-300 bg-orange-50">
-                <CardHeader>
-                  <CardTitle className="text-orange-800 flex items-center">
-                    <AlertTriangle className="mr-2 h-5 w-5" />
-                    Peringatan Stok Rendah
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {stats.lowStockItems.map((item: InventoryItem) => (
-                      <div
-                        key={item.id}
-                        className="flex justify-between items-center text-sm"
-                      >
-                        <span className="text-orange-700">
-                          {item.item_name} - Sisa: {item.max_stock} {item.unit}{" "}
-                          (Min: {item.min_stock})
-                        </span>
-                        <Link
-                          href={`/dashboard/inventory?edit=${item.id}&action=restock`}
-                        >
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-orange-300 text-orange-700 hover:bg-orange-100"
-                          >
-                            Restock
-                          </Button>
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-              <Card className="col-span-full lg:col-span-4">
-                <CardHeader>
-                  <CardTitle>Order Terbaru</CardTitle>
-                  <div className="flex items-center justify-between">
-                    <CardDescription>
-                      Daftar 5 pesanan terbaru yang masuk
-                    </CardDescription>
-                    <Link href="/dashboard/orders">
-                      <Button variant="outline" size="sm">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Lihat Semua
-                      </Button>
-                    </Link>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {stats.recentOrders && stats.recentOrders.length > 0 ? (
-                      stats.recentOrders.map((order: RecentOrderType) => (
-                        <div
-                          key={order.id}
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                        >
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium">
-                              {order.order_number}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {order.customer?.name || "Customer N/A"}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium">
-                              {formatCurrency(order.total_amount || 0)}
-                            </p>
-                            <Badge
-                              className={`${getOrderStatusColor(
-                                order.order_status
-                              )} text-xs`}
-                            >
-                              {getOrderStatusLabel(order.order_status) || ""}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="text-muted-foreground">
-                          Belum ada pesanan terbaru
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="col-span-full lg:col-span-3">
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                  <CardDescription>
-                    Aksi cepat untuk operasional harian
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Link href="/dashboard/orders/new" className="block">
-                    <Button className="w-full justify-start">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Buat Order Baru
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard/customers/new" className="block">
-                    <Button variant="outline" className="w-full justify-start">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Tambah Customer Baru
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard/services" className="block">
-                    <Button variant="outline" className="w-full justify-start">
-                      Kelola Layanan
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard/reports" className="block">
-                    <Button variant="outline" className="w-full justify-start">
-                      Lihat Laporan
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-          <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        {/* Laundry Data */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shirt className="h-5 w-5" />
+                Jenis Laundry
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Jumlah Kilo</span>
+                <Badge variant="secondary">{laundryData.totalKg} kg</Badge>
               </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-green-800">
-                  🎉 DASHBOARD BERHASIL DIMUAT!
-                </p>
-                <p className="text-sm text-green-700">
-                  Semua data ditampilkan secara live dari database Supabase
-                  Anda.
-                </p>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Jumlah Satuan</span>
+                <Badge variant="secondary">{laundryData.totalUnits} buah</Badge>
               </div>
-            </div>
-          </div>
-        </>
-      )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Ringkasan Transaksi
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Total Transaksi</span>
+                <Badge variant="default">
+                  {transactionData.totalTransactions} transaksi
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Transaksi Reguler</span>
+                <Badge variant="secondary">
+                  {transactionData.regularTransactions}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">
+                  Transaksi Dibatalkan
+                </span>
+                <Badge variant="destructive">
+                  {transactionData.cancelledTransactions}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Payment Methods */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Jenis Transaksi & Pembayaran</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Jenis Pembayaran</TableHead>
+                  <TableHead className="text-center">
+                    Jumlah Transaksi
+                  </TableHead>
+                  <TableHead className="text-right">Nominal</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactionData?.paymentMethods?.map((method, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{method.type}</TableCell>
+                    <TableCell className="text-center">
+                      {method.count}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(method.amount)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Deposit & Customer Data */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Data Deposit</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">
+                  Jumlah Top Up Deposit
+                </span>
+                <Badge variant="secondary">{depositData.topUpCount}</Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">
+                  Pengguna yang Melakukan Deposit
+                </span>
+                <Badge variant="secondary">{depositData.topUpUsers}</Badge>
+              </div>
+              <Separator />
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Total Nilai Nominal</span>
+                <span className="text-lg font-bold">
+                  {formatCurrency(depositData.totalTopUpValue!)}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Status Customer
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Customer Lama</span>
+                <Badge variant="secondary">
+                  {customerData.existingCustomers} transaksi
+                </Badge>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Dilihat dari data customer yang sudah terdaftar
+              </div>
+              <Separator />
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Customer Baru</span>
+                <Badge variant="default">
+                  {customerData.newCustomers} transaksi
+                </Badge>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Dilihat dari data customer yang baru terdaftar
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

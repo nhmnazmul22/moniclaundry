@@ -26,28 +26,37 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
-import { getOrders, getPayments } from "@/lib/data";
 import { createDummyData, exportSalesReport } from "@/lib/exportToExcel";
 import { type ReportData } from "@/lib/pdf-generator";
 import { ReportDataProcessor } from "@/lib/report-data-processor";
 import { formatCurrency } from "@/lib/utils";
+import { AppDispatch, RootState } from "@/store";
+import { fetchOrders } from "@/store/orderSlice";
+import { fetchPayments } from "@/store/PaymentSlice";
 import { addDays, format } from "date-fns";
 import { AlertTriangle, Download, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { DateRange } from "react-day-picker";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function ReportsPage() {
   const { currentBranchId } = useBranch();
-  console.log("Current Branch ID:", currentBranchId);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const dispatch = useDispatch<AppDispatch>();
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date(),
   });
   const [reportType, setReportType] = useState<string>("revenue_summary");
+
+  const { items: ordersData } = useSelector(
+    (state: RootState) => state.orderReducer
+  );
+  const { items: paymentsData } = useSelector(
+    (state: RootState) => state.paymentsReducer
+  );
 
   const generateReport = useCallback(async () => {
     if (!dateRange?.from || !dateRange?.to) {
@@ -57,22 +66,12 @@ export default function ReportsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [ordersData, paymentsData] = await Promise.all([
-        getOrders(currentBranchId),
-        getPayments(currentBranchId),
-      ]);
-
-      if (!ordersData || !paymentsData) {
-        throw new Error("Gagal mengambil data untuk laporan.");
-      }
-
       // Use the flexible processor that works with your actual data structure
       const processedData = ReportDataProcessor.createMockDataFromActual(
-        ordersData,
-        paymentsData,
+        ordersData!,
+        paymentsData!,
         dateRange
       );
-      console.log(processedData);
       setReportData(processedData);
     } catch (e) {
       setError(
@@ -85,7 +84,12 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [dateRange, reportType, currentBranchId]);
+  }, [dateRange, reportType, ordersData, paymentsData, currentBranchId]);
+
+  useEffect(() => {
+    dispatch(fetchOrders(currentBranchId));
+    dispatch(fetchPayments(currentBranchId));
+  }, [currentBranchId]);
 
   useEffect(() => {
     generateReport();

@@ -51,7 +51,7 @@ export const CashTransferReceiptTemplate = React.forwardRef<
             Nota Customer
           </div>
           <div className="text-center font-semibold text-[10px]">
-            {order.customer?.name}
+            {order.customerDetails?.name}
           </div>
           <div className="text-center font-semibold text-[7px]">
             Nota : {order.order_number}
@@ -77,16 +77,24 @@ export const CashTransferReceiptTemplate = React.forwardRef<
           <table className="w-full text-left">
             <tbody>
               {orderItems.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.service?.name}</td>
+                <tr key={item._id}>
+                  <td>
+                    {(!Array.isArray(item.serviceDetails?.services) &&
+                      item.serviceDetails?.services?.servicename!) ||
+                      "N/A"}
+                  </td>
                   <td colSpan={3}></td>
-                  <td className="text-right">{item.service?.min_weight} kg</td>
+                  <td className="text-right">{item.quantity}kg</td>
                   <td className="text-center">x</td>
-                  <td className="text-right">{item.service?.price_per_kg}</td>
                   <td className="text-right">
-                    {item.service?.price ||
-                      Number(item.service?.min_weight) *
-                        Number(item.service?.price_per_kg)}
+                    {!Array.isArray(item.serviceDetails?.services) &&
+                      formatCurrency(item.serviceDetails?.services?.price)}
+                  </td>
+                  <td className="text-right">
+                    {!Array.isArray(item.serviceDetails?.services) &&
+                      formatCurrency(
+                        item.quantity * item?.serviceDetails?.services?.price!
+                      )}
                   </td>
                 </tr>
               ))}
@@ -94,7 +102,9 @@ export const CashTransferReceiptTemplate = React.forwardRef<
               <tr>
                 <td>Total Harga</td>
                 <td colSpan={6}></td>
-                <td className="text-right">{order.total_amount}</td>
+                <td className="text-right">
+                  {formatCurrency(order.total_amount)}
+                </td>
               </tr>
               <tr>
                 <td>Diskon</td>
@@ -107,7 +117,7 @@ export const CashTransferReceiptTemplate = React.forwardRef<
                 <td className="text-right">Harus dibayar</td>
                 <td colSpan={2}></td>
                 <td className="text-right font-semibold">
-                  {order.total_amount}
+                  {formatCurrency(order.total_amount - order.discount)}
                 </td>
               </tr>
             </tbody>
@@ -119,7 +129,7 @@ export const CashTransferReceiptTemplate = React.forwardRef<
           <div className="flex justify-start ">
             <span className="w-28">Tanggal Masuk</span>
             <span className="font-bold ms-2">
-              {formatDateTime(order.created_at)}
+              {formatDateTime(order.createdAt)}
             </span>
           </div>
           <div className="flex justify-start">
@@ -204,7 +214,7 @@ export const DepositReceiptTemplate = React.forwardRef<
             Nota Customer
           </div>
           <div className="text-center font-semibold text-[10px]">
-            {order.customer?.name}
+            {order.customerDetails?.name}
           </div>
           <div className="text-center font-semibold text-[7px]">
             Nota : {order.order_number}
@@ -230,16 +240,25 @@ export const DepositReceiptTemplate = React.forwardRef<
           <table className="w-full text-left">
             <tbody>
               {orderItems.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.service?.name}</td>
+                <tr key={item._id}>
+                  <td>
+                    {(!Array.isArray(item.serviceDetails?.services) &&
+                      item.serviceDetails?.services?.servicename!) ||
+                      "N/A"}
+                  </td>
                   <td colSpan={3}></td>
-                  <td className="text-right">{item.service?.min_weight} kg</td>
+                  <td className="text-right">{item.quantity}kg</td>
                   <td className="text-center">x</td>
-                  <td className="text-right">{item.service?.price_per_kg}</td>
                   <td className="text-right">
-                    {item.service?.price ||
-                      Number(item.service?.min_weight) *
-                        Number(item.service?.price_per_kg)}
+                    {!Array.isArray(item.serviceDetails?.services) &&
+                      formatCurrency(item.serviceDetails?.services?.price!)}
+                  </td>
+                  <td className="text-right">
+                    {!Array.isArray(item.serviceDetails?.services) &&
+                      formatCurrency(
+                        Number(item.quantity) *
+                          Number(item.serviceDetails.services?.price)
+                      )}
                   </td>
                 </tr>
               ))}
@@ -247,7 +266,9 @@ export const DepositReceiptTemplate = React.forwardRef<
               <tr>
                 <td>Total Harga</td>
                 <td colSpan={6}></td>
-                <td className="text-right">{order.total_amount}</td>
+                <td className="text-right">
+                  {formatCurrency(order.total_amount)}
+                </td>
               </tr>
               <tr>
                 <td>Diskon</td>
@@ -260,7 +281,7 @@ export const DepositReceiptTemplate = React.forwardRef<
                 <td className="text-right">Harus dibayar</td>
                 <td colSpan={2}></td>
                 <td className="text-right font-semibold">
-                  {order.total_amount}
+                  {formatCurrency(order.total_amount)}
                 </td>
               </tr>
             </tbody>
@@ -272,7 +293,7 @@ export const DepositReceiptTemplate = React.forwardRef<
           <div className="flex justify-start ">
             <span className="w-28">Tanggal Masuk</span>
             <span className="font-bold ms-2">
-              {formatDateTime(order.created_at)}
+              {formatDateTime(order.createdAt)}
             </span>
           </div>
           <div className="flex justify-start">
@@ -365,7 +386,7 @@ export const InternalReceiptTemplate = React.forwardRef<
             Nota Customer
           </div>
           <div className="text-center font-semibold text-[10px]">
-            {order.customer?.name}
+            {order.customerDetails?.name}
           </div>
           <div className="text-center font-semibold text-[7px]">
             Nota : {order.order_number}
@@ -378,11 +399,12 @@ export const InternalReceiptTemplate = React.forwardRef<
           <table className="w-full text-left">
             <tbody>
               {orderItems.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.service?.name}</td>
-                  <td className="text-left font-bold">
-                    {item.service?.min_weight} kg
+                <tr key={item._id}>
+                  <td>
+                    {!Array.isArray(item.serviceDetails.services) &&
+                      item.serviceDetails.services?.servicename}
                   </td>
+                  <td className="text-left font-bold">{item.quantity} kg</td>
                   <td></td>
                   <td></td>
                   <td></td>
@@ -399,7 +421,7 @@ export const InternalReceiptTemplate = React.forwardRef<
           <div className="flex justify-start ">
             <span className="w-28">Tanggal Masuk</span>
             <span className="font-bold ms-2">
-              {formatDateTime(order.created_at)}
+              {formatDateTime(order.createdAt)}
             </span>
           </div>
           <div className="flex justify-start">
@@ -430,15 +452,16 @@ export const ReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps
 >(({ order, orderItems, businessInfo }, ref) => {
-  const totalPaid = order.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+  // const totalPaid = order.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+  const totalPaid = order.total_amount;
   const change =
     totalPaid > order.total_amount ? totalPaid - order.total_amount : 0;
   const paymentMethod = order.payment_method || "N/A";
 
   // QR Code data string (could be plain or a URL)
   const qrData = `Order: ${order.order_number} | Customer: ${
-    order.customer?.name || "N/A"
-  } | Date: ${new Date(order.created_at).toLocaleDateString(
+    order.customerDetails?.name || "N/A"
+  } | Date: ${new Date(order.createdAt!).toLocaleDateString(
     "id-ID"
   )} | Status: ${order.order_status}`;
 
@@ -467,7 +490,7 @@ export const ReceiptTemplate = React.forwardRef<
         </div>
         <div className="flex justify-between">
           <span>Terima</span>
-          <span>{formatDateTime(order.created_at)}</span>
+          <span>{formatDateTime(order.createdAt)}</span>
         </div>
         {order.estimated_completion && (
           <div className="flex justify-between">
@@ -486,26 +509,31 @@ export const ReceiptTemplate = React.forwardRef<
       </div>
 
       {/* Customer Info */}
-      <div className="mb-4">
-        <p className="font-bold">Untuk Customer:</p>
-        <p>{order.customer?.name || "N/A"}</p>
-        <p>Total Lunas: {formatCurrency(order.total_amount)}</p>
+      <div className="mb-4 flex flex-col gap-1">
+        <span className="font-bold">Untuk Customer:</span>
+        <span>{order.customerDetails?.name || "N/A"}</span>
+        <span>Total Lunas: {formatCurrency(order.total_amount)}</span>
       </div>
 
       {/* Items */}
       <div className="border-t border-b border-dashed py-2 mb-2">
         {orderItems.map((item) => (
-          <div key={item.id} className="mb-2">
-            <p className="font-bold">{item.service?.name || "N/A"}</p>
-            <p>
-              {item.quantity} {item.service?.min_weight || "kg"} x{" "}
-              {formatCurrency(item.unit_price)}
-            </p>
-            <p className="text-right">
+          <div key={item._id} className="mb-2 flex flex-col gap-1">
+            <span className="font-bold block">
+              {(!Array.isArray(item.serviceDetails.services) &&
+                item?.serviceDetails?.services?.servicename) ||
+                "N/A"}
+            </span>
+            <span className="block">
+              {item.quantity}kg x {formatCurrency(item.unit_price)}
+            </span>
+            <span className="text-right block">
               Subtotal: {formatCurrency(item.subtotal)}
-            </p>
+            </span>
             {item.notes && (
-              <p className="text-xs italic">Catatan: {item.notes}</p>
+              <span className="text-xs italic block">
+                Catatan: {item.notes}
+              </span>
             )}
           </div>
         ))}

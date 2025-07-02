@@ -1,3 +1,4 @@
+import { Customer } from "@/types";
 import mongoose, { Document, Model, ObjectId, Schema } from "mongoose";
 
 export interface DeliverySchedule extends Document {
@@ -7,11 +8,25 @@ export interface DeliverySchedule extends Document {
   scheduled_time: Date;
   actual_time?: Date;
   status?: string;
-  customer_address?: string;
+  customer?: any;
   delivery_fee?: number;
   notes?: string;
   current_branch_id: ObjectId;
 }
+const CustomerSchema: Schema<Customer> = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    phone: { type: String },
+    email: { type: String },
+    address: { type: String },
+    loyalty_points: { type: Number, default: 0 },
+    total_orders: { type: Number, default: 0 },
+    total_spent: { type: Number, default: 0 },
+    total_deposit: { type: Number, default: 0 },
+    current_branch_id: { type: mongoose.Types.ObjectId, required: true },
+  },
+  { timestamps: true, versionKey: false }
+);
 
 const DeliveryScheduleSchema: Schema<DeliverySchedule> = new mongoose.Schema(
   {
@@ -25,7 +40,7 @@ const DeliveryScheduleSchema: Schema<DeliverySchedule> = new mongoose.Schema(
       enum: ["scheduled", "in_progress", "completed", "failed", "cancelled"],
       default: "scheduled",
     },
-    customer_address: { type: String },
+    customer: { type: CustomerSchema },
     delivery_fee: { type: Number, default: 0 },
     notes: { type: String },
     current_branch_id: { type: mongoose.Types.ObjectId, required: true },
@@ -34,7 +49,7 @@ const DeliveryScheduleSchema: Schema<DeliverySchedule> = new mongoose.Schema(
 );
 
 const DeliveryScheduleModel: Model<DeliverySchedule> =
-  mongoose.models.delivery ||
-  mongoose.model<DeliverySchedule>("delivery", DeliveryScheduleSchema);
+  mongoose.models.deliveries ||
+  mongoose.model<DeliverySchedule>("deliveries", DeliveryScheduleSchema);
 
 export default DeliveryScheduleModel;

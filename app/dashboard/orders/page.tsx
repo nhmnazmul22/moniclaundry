@@ -20,87 +20,71 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
-import { getOrders } from "@/lib/data";
-import { supabase } from "@/lib/supabase/client";
+import api from "@/lib/config/axios";
 import {
   formatCurrency,
   formatDateTime,
   getOrderStatusColor,
 } from "@/lib/utils";
-import type { Order } from "@/types";
-import {
-  AlertTriangle,
-  Edit,
-  Eye,
-  Loader2,
-  Plus,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { AppDispatch, RootState } from "@/store";
+import { fetchOrders } from "@/store/orderSlice";
+import { Edit, Eye, Loader2, Plus, Search, Trash2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 export default function OrdersPage() {
+  const { data: session } = useSession();
   const router = useRouter();
   const { currentBranchId } = useBranch();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
-  const fetchOrdersData = async (currentBranchId: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getOrders(currentBranchId);
-      if (data) {
-        setOrders(data);
-      }
-    } catch (err: any) {
-      setError("Gagal memuat data order.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const dispatch = useDispatch<AppDispatch>();
+  const { items: orders, loading: ordersLoading } = useSelector(
+    (state: RootState) => state.orderReducer
+  );
 
   useEffect(() => {
-    fetchOrdersData(currentBranchId);
-  }, [currentBranchId]);
+    dispatch(fetchOrders(currentBranchId));
+  }, []);
 
   // 1. First filter by status
-  const statusFilteredOrders = orders.filter((order) => {
+  const statusFilteredOrders = orders?.filter((order) => {
     return statusFilter === "all" || order.order_status === statusFilter;
   });
 
   // 2. Then filter by search term
-  const filteredOrders = statusFilteredOrders.filter((order) => {
+  const filteredOrders = statusFilteredOrders?.filter((order) => {
     const search = searchTerm.toLowerCase();
     return (
       order.order_number?.toLowerCase().includes(search) ||
-      order.customer?.name?.toLowerCase().includes(search) ||
-      order.customer?.phone?.includes(search)
+      order.customerDetails?.name?.toLowerCase().includes(search) ||
+      order.customerDetails?.phone?.includes(search)
     );
   });
 
   const getStatusLabel = (status: string) => {
     const labels: { [key: string]: string } = {
-      received: "Diterima",
-      washing: "Dicuci",
-      ready: "Siap Diambil/Dikirim",
-      delivered: "Selesai",
-      cancelled: "Dibatalkan",
+      diterima: "diterima",
+      diproses: "diproses",
+      selesai: "selesai",
     };
-    return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
+    return (
+      labels[status].charAt(0).toUpperCase() + status.slice(1) ||
+      status.charAt(0).toUpperCase() + status.slice(1)
+    );
   };
 
   const getPaymentStatusColor = (status: string | undefined) => {
     if (!status) return "bg-gray-100 text-gray-800";
     const colors: { [key: string]: string } = {
-      pending: "bg-yellow-100 text-yellow-800",
-      paid: "bg-green-100 text-green-800",
-      partial: "bg-orange-100 text-orange-800",
-      refunded: "bg-red-100 text-red-800",
+      "belum lunas":
+        "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800",
+      lunas:
+        "bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800",
+      dp: "bg-orange-100 text-orange-800 hover:bg-orange-100 hover:text-orange-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
   };
@@ -114,63 +98,42 @@ export default function OrdersPage() {
   };
 
   const handleDeleteOrder = async (orderId: string) => {
-    if (
-      confirm(
-        "Apakah Anda yakin ingin menghapus order ini? Tindakan ini tidak dapat diurungkan."
-      )
-    ) {
-      try {
-        // Delete order items first
-        const { error: itemsError } = await supabase
-          .from("order_items")
-          .delete()
-          .eq("order_id", orderId);
-        if (itemsError) throw itemsError;
+    try {
+      const orderItemRes = await api.delete(
+        `/api/order-items?order_id=${orderId}`
+      );
 
-        // Delete order
-        const { error: orderError } = await supabase
-          .from("orders")
-          .delete()
-          .eq("id", orderId);
-        if (orderError) throw orderError;
-
-        alert("Order berhasil dihapus.");
-        fetchOrdersData(currentBranchId); // Refresh data
-      } catch (err: any) {
-        alert(`Gagal menghapus order: ${err.message}`);
+      if (orderItemRes.status !== 200) {
+        toast.error("Order items delete failed");
+        return;
       }
+
+      const orderRes = await api.delete(`/api/orders/${orderId}`);
+
+      if (orderRes.status !== 200) {
+        toast.error("Order items delete failed");
+        return;
+      }
+
+      alert("Order berhasil dihapus.");
+      fetchOrders(currentBranchId); // Refresh data
+    } catch (err: any) {
+      alert(`Gagal menghapus order: ${err.message}`);
     }
   };
 
   const stats = {
-    total: orders.length,
-    pending: orders.filter((o) =>
-      ["received", "washing"].includes(o.order_status)
-    ).length,
-    ready: orders.filter((o) => o.order_status === "ready").length,
-    delivered: orders.filter((o) => o.order_status === "delivered").length,
+    total: orders?.length,
+    accepted: orders?.filter((o) => o.order_status === "diterima").length,
+    pending: orders?.filter((o) => o.order_status === "diproses").length,
+    delivered: orders?.filter((o) => o.order_status === "selesai").length,
   };
 
-  if (loading) {
+  if (ordersLoading) {
     return (
       <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
         <p>Memuat data order...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
-        <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
-        <p className="text-red-500 text-lg">{error}</p>
-        <Button
-          onClick={() => fetchOrdersData(currentBranchId)}
-          className="mt-4"
-        >
-          Coba Lagi
-        </Button>
       </div>
     );
   }
@@ -203,6 +166,16 @@ export default function OrdersPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Diterima</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.accepted}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Sedang Diproses
             </CardTitle>
@@ -210,16 +183,6 @@ export default function OrdersPage() {
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
               {stats.pending}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Siap Diambil</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {stats.ready}
             </div>
           </CardContent>
         </Card>
@@ -271,7 +234,7 @@ export default function OrdersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Orders ({orders.length})</CardTitle>
+          <CardTitle>Daftar Orders ({orders?.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -287,18 +250,18 @@ export default function OrdersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredOrders.map((order) => (
-                <TableRow key={order.id}>
+              {filteredOrders?.map((order) => (
+                <TableRow key={order._id}>
                   <TableCell className="font-medium">
                     {order.order_number}
                   </TableCell>
                   <TableCell>
                     <div>
                       <div className="font-medium">
-                        {order.customer?.name || "N/A"}
+                        {order.customerDetails?.name || "N/A"}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {order.customer?.phone || "N/A"}
+                        {order.customerDetails?.phone || "N/A"}
                       </div>
                     </div>
                   </TableCell>
@@ -325,25 +288,30 @@ export default function OrdersPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleViewOrder(order.id)}
+                        onClick={() => handleViewOrder(order._id)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditOrder(order.id)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteOrder(order.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {(session?.user.role === "owner" ||
+                        session?.user.role === "admin") && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditOrder(order._id)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDeleteOrder(order._id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

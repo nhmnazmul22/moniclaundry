@@ -1,11 +1,22 @@
 import { dbConnect } from "@/lib/config/db";
 import PaymentsModel from "@/lib/models/PaymentsModel";
+import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await dbConnect();
+
+    const { searchParams } = new URL(request.url);
+    const branch_id = searchParams.get("branch_id");
+
+    const matchStage: any = {};
+    if (branch_id) {
+      matchStage.current_branch_id = new mongoose.Types.ObjectId(branch_id);
+    }
+
     const payments = await PaymentsModel.aggregate([
+      { $match: matchStage },
       {
         $lookup: {
           from: "orders",

@@ -1,11 +1,22 @@
 import { dbConnect } from "@/lib/config/db";
 import CustomerModel from "@/lib/models/CustomersModel";
+import { Customer } from "@/types";
+import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-    const customers = await CustomerModel.find({});
+
+    const { searchParams } = new URL(request.url);
+    const branch_id = searchParams.get("branch_id");
+
+    const matchStage: any = {};
+    let customers: Customer[] = [];
+    if (branch_id) {
+      matchStage.current_branch_id = new mongoose.Types.ObjectId(branch_id);
+      customers = await CustomerModel.find(matchStage);
+    }
 
     if (customers.length === 0 || !customers) {
       return NextResponse.json(
@@ -39,7 +50,7 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
-
+    console.log(body);
     const { name, phone, email, current_branch_id } = body;
 
     if (!name || !phone || !email || !current_branch_id) {

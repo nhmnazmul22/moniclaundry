@@ -1,29 +1,48 @@
 import { dbConnect } from "@/lib/config/db";
 import DeliveryScheduleModel from "@/lib/models/DeliveryModel";
+import { Delivery } from "@/types";
+import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-    const deliveries = await DeliveryScheduleModel.aggregate([
-      {
-        $lookup: {
-          from: "orders",
-          localField: "order_id",
-          foreignField: "_id",
-          as: "orderDetails",
+
+    const { searchParams } = new URL(request.url);
+    const branch_id = searchParams.get("branch_id");
+
+    const matchStage: any = {};
+    let deliveries: Delivery[] = [];
+
+    if (branch_id) {
+      matchStage.current_branch_id = new mongoose.Types.ObjectId(branch_id);
+      deliveries = await DeliveryScheduleModel.aggregate([
+        { $match: matchStage },
+        {
+          $lookup: {
+            from: "orders",
+            localField: "order_id",
+            foreignField: "_id",
+            as: "orderDetails",
+          },
         },
-      },
-      {
-        $unwind: "$orderDetails",
-      },
-      {
-        $project: {
-          order_id: 0,
+        {
+          $lookup: {
+            from: "users",
+            localField: "kurir_id",
+            foreignField: "_id",
+            as: "kurirDetails",
+          },
         },
-      },
-      { $sort: { createdAt: -1 } },
-    ]);
+        {
+          $unwind: "$orderDetails",
+        },
+        {
+          $unwind: "$kurirDetails",
+        },
+        { $sort: { createdAt: -1 } },
+      ]);
+    }
 
     if (deliveries.length === 0 || !deliveries) {
       return NextResponse.json(

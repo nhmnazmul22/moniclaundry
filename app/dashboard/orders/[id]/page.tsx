@@ -33,10 +33,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { getBranchList } from "@/lib/branch-data";
-import { supabase } from "@/lib/supabase/client";
+import api from "@/lib/config/axios";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import { Branches, type Customer, type Order, type OrderItem } from "@/types";
+import { AppDispatch, RootState } from "@/store";
+import { fetchOrderItems } from "@/store/OrderItemSlice";
+import { Branches, type Customer, type Order } from "@/types";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
@@ -54,14 +55,14 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
   const orderId = params.id as string;
-  const [branches, setBranches] = useState<Branches[]>([]);
   const [order, setOrder] = useState<Order | null>(null);
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [branch, setBranch] = useState<Branches | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -85,55 +86,26 @@ export default function OrderDetailPage() {
     null
   ) as React.RefObject<HTMLDivElement>;
 
+  const { items: branches } = useSelector(
+    (state: RootState) => state.branchReducer
+  );
+  const { items: orderItems } = useSelector(
+    (state: RootState) => state.orderItemsReducer
+  );
+
   const fetchOrderData = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Fetch order with customer data
-      const { data: orderData, error: orderError } = await supabase
-        .from("orders")
-        .select(
-          `
-          *,
-          customer:customers(*)
-        `
-        )
-        .eq("id", orderId)
-        .single();
-
-      if (orderError) throw orderError;
-
-      // Fetch order items with service data
-      const { data: itemsData, error: itemsError } = await supabase
-        .from("order_items")
-        .select(
-          `
-          *,
-          service:services(*)
-        `
-        )
-        .eq("order_id", orderId);
-
-      if (itemsError) throw itemsError;
-
-      // Fetch the branching data for the order
-      const branches = await getBranchList();
-      if (!branches) {
-        throw new Error("Branches not found for this order.");
-      }
-
-      const branch = branches.find((b) => b.id === orderData.current_branch_id);
-
-      if (!branch) {
-        throw new Error("Branch not found for this order.");
-      }
-
+      const res = await api.get(`/api/orders/${orderId}`);
+      const branch = branches?.find(
+        (b) => b._id === res.data.data.current_branch_id
+      );
       setBranch(branch);
-      setOrder(orderData);
-      setOrderItems(itemsData || []);
-      setCustomer(orderData.customer);
-      setCurrentStatus(orderData.order_status);
+      setOrder(res.data.data);
+      setCustomer(res.data.data.customerDetails);
+      setCurrentStatus(res.data.data.order_status);
     } catch (err: any) {
       setError(err.message || "Gagal memuat data order.");
       toast({
@@ -146,47 +118,36 @@ export default function OrderDetailPage() {
     }
   };
 
-  const fetchBranches = () => {
-    getBranchList().then((data) => {
-      if (data) setBranches(data);
-    });
-  };
-
   useEffect(() => {
     if (orderId) {
+      dispatch(fetchOrderItems(orderId));
       fetchOrderData();
     }
   }, [orderId]);
 
-  useEffect(() => {
-    fetchBranches();
-  }, []);
-
   const handleDeleteOrder = async () => {
-    if (
-      !confirm(
-        "Apakah Anda yakin ingin menghapus order ini? Tindakan ini tidak dapat diurungkan."
-      )
-    ) {
-      return;
-    }
-
     try {
       // Delete order items first
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .delete()
-        .eq("order_id", orderId);
+      const res = await api.delete(`/api/order-items?order_id=${orderId}`);
 
-      if (itemsError) throw itemsError;
+      if (res.status !== 200) {
+        toast({
+          title: "Order items delete filed",
+          description: `${res.statusText}`,
+        });
+        return;
+      }
 
       // Delete order
-      const { error: orderError } = await supabase
-        .from("orders")
-        .delete()
-        .eq("id", orderId);
+      const orderRes = await api.delete(`/api/orders/${orderId}`);
 
-      if (orderError) throw orderError;
+      if (orderRes.status !== 200) {
+        toast({
+          title: "Order delete filed",
+          description: `${res.statusText}`,
+        });
+        return;
+      }
 
       toast({ title: "Sukses", description: "Order berhasil dihapus." });
       router.push("/dashboard/orders");
@@ -202,15 +163,14 @@ export default function OrderDetailPage() {
   const handleStatusChange = async (newStatus: Order["order_status"]) => {
     if (!order) return;
 
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update({ order_status: newStatus, updated_at: new Date().toISOString() })
-      .eq("id", order.id);
+    const res = await api.put(`/api/orders/${orderId}`, {
+      order_status: newStatus,
+    });
 
-    if (updateError) {
+    if (res.status !== 201) {
       toast({
         title: "Error",
-        description: `Gagal memperbarui status: ${updateError.message}`,
+        description: `Gagal memperbarui status: ${res.statusText}`,
         variant: "destructive",
       });
     } else {
@@ -296,6 +256,7 @@ export default function OrderDetailPage() {
       setPdfLoading(false);
     }
   };
+
   const handlePrintReceipt = async () => {
     await generatePDF(receiptTemplate!, "nota-original", true);
   };
@@ -340,11 +301,9 @@ export default function OrderDetailPage() {
 
   const getStatusLabel = (status: string) => {
     const labels: { [key: string]: string } = {
-      received: "Diterima",
-      washing: "Dicuci",
-      ready: "Siap Diambil/Dikirim",
-      delivered: "Selesai",
-      cancelled: "Dibatalkan",
+      diterima: "Diterima",
+      diproses: "Diproses",
+      selesai: "Selesai",
     };
     return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
   };
@@ -352,16 +311,15 @@ export default function OrderDetailPage() {
   const getPaymentStatusColor = (status: string | undefined) => {
     if (!status) return "bg-gray-100 text-gray-800";
     const colors: { [key: string]: string } = {
-      pending: "bg-yellow-100 text-yellow-800",
-      paid: "bg-green-100 text-green-800",
-      partial: "bg-orange-100 text-orange-800",
-      refunded: "bg-red-100 text-red-800",
+      "belum lunas": "bg-yellow-100 text-yellow-800",
+      lunas: "bg-green-100 text-green-800",
+      dp: "bg-orange-100 text-orange-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
   const selectedBranch = (id: string) => {
-    const branch = branches.find((b) => b.id === id);
+    const branch = branches?.find((b) => b._id === id);
     return branch || null;
   };
 
@@ -402,37 +360,6 @@ export default function OrderDetailPage() {
     phone:
       selectedBranch(order.current_branch_id || "")?.phone || "+6287710108075",
   };
-
-  // Add dummy order items if none exist
-  const displayOrderItems: OrderItem[] =
-    orderItems.length > 0
-      ? orderItems
-      : [
-          {
-            id: "dummy-1",
-            order_id: orderId,
-            service_id: "dummy-service",
-            quantity: 3.5,
-            unit_price: 8000,
-            subtotal: 28000,
-            notes: "",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            service: {
-              id: "dummy-service",
-              name: "Cuci Kering Setrika",
-              description: "Layanan cuci, kering, dan setrika",
-              price: 8000,
-              price_per_kg: 8000,
-              category: "regular",
-              min_weight: 1,
-              estimated_hours: 24,
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          },
-        ];
 
   return (
     <div className="space-y-6">
@@ -485,7 +412,7 @@ export default function OrderDetailPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Link href={`/dashboard/orders/edit/${order.id}`}>
+          <Link href={`/dashboard/orders/edit/${order._id}`}>
             <Button variant="outline">
               <Edit className="mr-2 h-4 w-4" />
               Edit
@@ -519,15 +446,13 @@ export default function OrderDetailPage() {
                   <SelectValue placeholder="Pilih Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="received">Diterima</SelectItem>
-                  <SelectItem value="washing">Dicuci</SelectItem>
-                  <SelectItem value="ready">Siap Diambil/Dikirim</SelectItem>
-                  <SelectItem value="delivered">Selesai</SelectItem>
-                  <SelectItem value="cancelled">Dibatalkan</SelectItem>
+                  <SelectItem value="diterima">Diterima</SelectItem>
+                  <SelectItem value="diproses">Diproses</SelectItem>
+                  <SelectItem value="selesai">Selesai</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            {order.order_status === "delivered" && customer?.phone && (
+            {order.order_status === "selesai" && customer?.phone && (
               <Button
                 onClick={handleWhatsAppNotification}
                 className="w-full bg-green-500 hover:bg-green-600 text-white"
@@ -550,7 +475,7 @@ export default function OrderDetailPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-sm font-medium">Tanggal Order:</span>
-              <span>{formatDateTime(order.created_at)}</span>
+              <span>{formatDateTime(order.createdAt)}</span>
             </div>
             {order.estimated_completion && (
               <div className="flex justify-between">
@@ -620,26 +545,24 @@ export default function OrderDetailPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayOrderItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <div>
+              {orderItems &&
+                orderItems.map((item) => (
+                  <TableRow key={item._id}>
+                    <TableCell>
                       <div className="font-medium">
-                        {item.service?.name || "N/A"}
+                        {(!Array.isArray(item.serviceDetails?.services) &&
+                          item.serviceDetails?.services?.servicename!) ||
+                          "N/A"}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {item.service?.description || ""}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{item.quantity} kg</TableCell>
-                  <TableCell>{formatCurrency(item.unit_price)}</TableCell>
-                  <TableCell className="font-semibold">
-                    {formatCurrency(item.subtotal)}
-                  </TableCell>
-                  <TableCell>{item.notes || "-"}</TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>{item.quantity} kg</TableCell>
+                    <TableCell>{formatCurrency(item.unit_price)}</TableCell>
+                    <TableCell className="font-semibold">
+                      {formatCurrency(item.subtotal)}
+                    </TableCell>
+                    <TableCell>{item.notes || "-"}</TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -652,25 +575,25 @@ export default function OrderDetailPage() {
             <ReceiptTemplate
               ref={receiptTemplate}
               order={order}
-              orderItems={orderItems}
+              orderItems={orderItems!}
               businessInfo={businessInfo}
             />
             <CashTransferReceiptTemplate
               ref={cashTransferRef}
               order={order}
-              orderItems={displayOrderItems}
+              orderItems={orderItems!}
               businessInfo={businessInfo}
             />
             <DepositReceiptTemplate
               ref={depositRef}
               order={order}
-              orderItems={displayOrderItems}
+              orderItems={orderItems!}
               businessInfo={businessInfo}
             />
             <InternalReceiptTemplate
               ref={internalRef}
               order={order}
-              orderItems={displayOrderItems}
+              orderItems={orderItems!}
               businessInfo={businessInfo}
             />
           </>

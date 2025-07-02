@@ -1,11 +1,22 @@
 import { dbConnect } from "@/lib/config/db";
 import OrdersModel from "@/lib/models/OrdersModel";
+import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await dbConnect();
+
+    const { searchParams } = new URL(request.url);
+    const branch_id = searchParams.get("branch_id");
+
+    const matchStage: any = {};
+    if (branch_id) {
+      matchStage.current_branch_id = new mongoose.Types.ObjectId(branch_id);
+    }
+
     const orders = await OrdersModel.aggregate([
+      { $match: matchStage },
       {
         $lookup: {
           from: "customers",
@@ -14,32 +25,20 @@ export async function GET() {
           as: "customerDetails",
         },
       },
-      {
-        $unwind: "$customerDetails",
-      },
-      {
-        $project: {
-          customer_id: 0,
-        },
-      },
+      { $unwind: "$customerDetails" },
+      { $project: { customer_id: 0 } },
       { $sort: { createdAt: -1 } },
     ]);
 
     if (orders.length === 0) {
       return NextResponse.json(
-        {
-          status: "Failed",
-          message: "Failed to fetching orders",
-        },
-        { status: 500 }
+        { status: "Failed", message: "No orders found" },
+        { status: 404 }
       );
     }
 
     return NextResponse.json(
-      {
-        status: "Successful",
-        data: orders,
-      },
+      { status: "Successful", data: orders },
       { status: 200 }
     );
   } catch (error) {

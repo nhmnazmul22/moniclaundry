@@ -19,27 +19,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { getBranchList } from "@/lib/branch-data";
-import { supabase } from "@/lib/supabase/client";
-import { Branches } from "@/types";
+import api from "@/lib/config/axios";
+import { RootState } from "@/store";
 import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useSelector } from "react-redux";
 
 export default function NewCustomerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const [branches, setBranches] = useState<Branches[]>([]);
   const [branchId, setBranchId] = useState<string>("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { items: branches } = useSelector(
+    (state: RootState) => state.branchReducer
+  );
 
   const handleSubmitCustomer = async () => {
-    if (!name || !phone) {
+    if (!name || !phone || !branchId) {
       toast({
         title: "Error",
         description: "Nama dan Nomor Telepon harus diisi.",
@@ -47,55 +49,42 @@ export default function NewCustomerPage() {
       });
       return;
     }
-    setIsSubmitting(true);
+    try {
+      setIsSubmitting(true);
+      const customerData = {
+        name,
+        phone,
+        email: email || null,
+        address: address || null,
+        current_branch_id: branchId || null,
+      };
 
-    const customerData = {
-      name,
-      phone,
-      email: email || null,
-      address: address || null,
-      current_branch_id: branchId || null,
-      // Default values for loyalty_points, total_orders, total_spent will be set by DB or triggers if any
-    };
+      const result = await api.post("/api/customer", customerData);
 
-    const { data: newCustomer, error } = await supabase
-      .from("customers")
-      .insert(customerData)
-      .select()
-      .single();
-
-    if (error || !newCustomer) {
+      if (result.status === 201) {
+        toast({
+          title: "Sukses",
+          description: `Pelanggan ${customerData.name} berhasil ditambahkan.`,
+        });
+        const redirectUrl = searchParams.get("redirect");
+        if (redirectUrl) {
+          router.push(redirectUrl);
+        } else {
+          router.push("/dashboard/customers");
+        }
+      }
+    } catch (err: any) {
       toast({
         title: "Error",
         description: `Gagal menambah pelanggan: ${
-          error?.message || "Unknown error"
+          err?.message || "Unknown error"
         }`,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Sukses",
-        description: `Pelanggan ${newCustomer.name} berhasil ditambahkan.`,
-      });
-      const redirectUrl = searchParams.get("redirect");
-      if (redirectUrl) {
-        router.push(redirectUrl);
-      } else {
-        router.push("/dashboard/customers");
-      }
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
-
-  const fetchBranches = () => {
-    getBranchList().then((data) => {
-      if (data) setBranches(data);
-    });
-  };
-
-  useEffect(() => {
-    fetchBranches();
-  }, []);
 
   return (
     <div className="space-y-6">
@@ -155,9 +144,10 @@ export default function NewCustomerPage() {
                 <SelectValue placeholder="Select Branch" />
               </SelectTrigger>
               <SelectContent>
-                {branches.length > 0 &&
+                {branches &&
+                  branches.length > 0 &&
                   branches.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
+                    <SelectItem key={branch._id} value={branch._id}>
                       {branch.name} - {`(${branch.type})`}
                     </SelectItem>
                   ))}

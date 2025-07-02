@@ -708,6 +708,4 @@ export const exportSalesReport = async (data: SalesReportData) => {
   saveAs(blob, "laporan-penjualan.xlsx");
 };
 
-// Example usage (for testing/demonstration)
-// const dummyData = createDummyData();
-// exportSalesReport(dummyData);
+

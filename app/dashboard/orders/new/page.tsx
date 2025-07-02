@@ -23,14 +23,17 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useBranch } from "@/contexts/branch-context";
-import { getBranchList } from "@/lib/branch-data";
-import { getCustomers, getServices } from "@/lib/data";
-import { supabase } from "@/lib/supabase/client";
+import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
-import type { Branches, Customer, Service } from "@/types";
+import { AppDispatch, RootState } from "@/store";
+import { fetchCustomers, updateCustomerBalance } from "@/store/CustomerSlice";
+import { fetchServices } from "@/store/ServiceSlice";
+import { processLaundryTransaction } from "@/store/transactionsSlice";
+import type { Branches } from "@/types";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 interface OrderItemForm {
   service_id: string;
@@ -43,58 +46,35 @@ interface OrderItemForm {
 export default function NewOrderPage() {
   const { currentBranchId } = useBranch();
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
   const { toast } = useToast();
-  const [branches, setBranches] = useState<Branches[]>([]);
   const [branchId, setBranchId] = useState<string>("");
-
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [loadingDependencies, setLoadingDependencies] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { items: branches } = useSelector(
+    (state: RootState) => state.branchReducer
+  );
+  const { items: customers } = useSelector(
+    (state: RootState) => state.customerReducer
+  );
+  const { items: services } = useSelector(
+    (state: RootState) => state.serviceReducer
+  );
 
   // Form state
   const [customerId, setCustomerId] = useState<string>("");
   const [orderItems, setOrderItems] = useState<OrderItemForm[]>([]);
   const [notes, setNotes] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
-  const [paymentStatus, setPaymentStatus] = useState<string>("pending"); // Default to pending
-
-  const fetchDependencies = async () => {
-    try {
-      setLoadingDependencies(true);
-      const [customersData, servicesData] = await Promise.all([
-        getCustomers(currentBranchId, ""),
-        getServices(currentBranchId),
-      ]);
-      if (customersData) setCustomers(customersData);
-      if (servicesData) setServices(servicesData.filter((s) => s.is_active)); // Only active services
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Gagal memuat data customer atau layanan.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingDependencies(false);
-    }
-  };
-
-  const fetchBranches = () => {
-    getBranchList().then((data) => {
-      if (data) setBranches(data);
-    });
-  };
+  const [paymentStatus, setPaymentStatus] = useState<string>("belum lunas");
 
   useEffect(() => {
-    fetchBranches();
-  }, []);
-
-  useEffect(() => {
-    fetchDependencies();
+    dispatch(fetchCustomers(currentBranchId));
+    dispatch(fetchServices(currentBranchId));
   }, [currentBranchId]);
 
   const handleAddOrderItem = () => {
-    const defaultService = services[0];
+    const defaultService =
+      Array.isArray(services?.services) && services.services[0];
     if (!defaultService) {
       toast({
         title: "Info",
@@ -130,10 +110,12 @@ export default function NewOrderPage() {
     item[field] = value;
 
     if (field === "service_id") {
-      const selectedService = services.find((s) => s.id === value);
+      const selectedService =
+        Array.isArray(services?.services) &&
+        services?.services?.find((s) => s._id === value);
       if (selectedService) {
-        item.unit_price = selectedService.price_per_kg; // Assuming price_per_kg for now
-        item.service_name = selectedService.name;
+        item.unit_price = selectedService.price; // Assuming price_per_kg for now
+        item.service_name = selectedService.servicename;
       } else {
         item.unit_price = 0;
         item.service_name = "";
@@ -170,6 +152,59 @@ export default function NewOrderPage() {
 
   const { subtotal, discount, tax, totalAmount, totalWeight } =
     calculateTotals();
+
+  const handleProcessLaundryTransaction = async () => {
+    const customer = customers.find((c: any) => c._id === customerId);
+    if (!customer || !subtotal) return;
+
+    try {
+      const transactionData: any = {
+        customer_id: customer._id,
+        branch_id: branchId,
+        amount: subtotal,
+        payment_method: "deposit",
+        description: "Laundry service payment",
+      };
+
+      if (customer.deposit_balance! >= subtotal) {
+        // Full payment with deposit
+        transactionData.payment_method = "deposit";
+        transactionData.deposit_amount = subtotal;
+      } else {
+        // Mixed payment
+        const depositUsed = customer.deposit_balance!;
+        const cashNeeded = subtotal - depositUsed;
+
+        if (!paymentMethod) {
+          toast({
+            title: "Please select payment method for the remaining amount",
+          });
+          return;
+        }
+
+        transactionData.payment_method = "mixed";
+        transactionData.deposit_amount = depositUsed;
+        transactionData.cash_amount = cashNeeded;
+      }
+      const result = await dispatch(
+        processLaundryTransaction(transactionData)
+      ).unwrap();
+
+      // Update customer balance in Redux state
+      dispatch(
+        updateCustomerBalance({
+          customerId: customer._id!,
+          newBalance: result.customer.deposit_balance,
+        })
+      );
+
+      toast({
+        title: "Transaction processed successfully",
+      });
+    } catch (error) {
+      toast({ title: "Failed to process transaction" });
+    }
+  };
 
   const handleSubmitOrder = async () => {
     if (!customerId) {
@@ -231,23 +266,19 @@ export default function NewOrderPage() {
       tax: tax,
       total_amount: totalAmount,
       payment_method: paymentMethod,
-      payment_status: paymentMethod === "deposit" ? "paid" : paymentStatus,
-      order_status: "received",
+      payment_status: paymentMethod === "deposit" ? "lunas" : paymentStatus,
+      order_status: "diterima",
       notes: notes,
       current_branch_id: branchId,
     };
 
-    const { data: newOrder, error: orderError } = await supabase
-      .from("orders")
-      .insert(orderData)
-      .select()
-      .single();
+    const result = await api.post("/api/orders", orderData);
 
-    if (orderError || !newOrder) {
+    if (result.data.data.status === "Failed") {
       toast({
-        title: "Error",
+        title: "Successful",
         description: `Gagal membuat order: ${
-          orderError?.message || "Unknown error"
+          result.statusText || "Unknown error"
         }`,
         variant: "destructive",
       });
@@ -257,23 +288,22 @@ export default function NewOrderPage() {
 
     // Insert order items
     const orderItemsData = orderItems.map((item) => ({
-      order_id: newOrder.id,
+      order_id: result.data.data._id,
       service_id: item.service_id,
       quantity: item.quantity,
       unit_price: item.unit_price,
       subtotal: item.subtotal,
+      current_branch_id: branchId,
     }));
 
-    const { error: itemsError } = await supabase
-      .from("order_items")
-      .insert(orderItemsData);
+    const response = await api.post("/api/order-items", orderItemsData);
 
-    if (itemsError) {
+    if (response.data.data.status === "Failed") {
       // Optionally, delete the created order if items fail to insert (rollback logic)
-      await supabase.from("orders").delete().eq("id", newOrder.id);
+      await api.delete(`/api/orders/${result.data.data._id}`);
       toast({
         title: "Error",
-        description: `Gagal menyimpan item order: ${itemsError.message}. Order dibatalkan.`,
+        description: `Gagal menyimpan item order: ${response.statusText}. Order dibatalkan.`,
         variant: "destructive",
       });
       setIsSubmitting(false);
@@ -282,65 +312,35 @@ export default function NewOrderPage() {
 
     // Deposit payment handling
     if (paymentMethod === "deposit") {
-      const { data: customer, error: customerError } = await supabase
-        .from("customers")
-        .select("total_deposit")
-        .eq("id", customerId)
-        .single();
-
-      if (customer?.total_deposit > 0 && customer?.total_deposit >= subtotal) {
-        await supabase
-          .from("customers")
-          .update({
-            total_deposit: Number(customer?.total_deposit - subtotal),
-          })
-          .eq("id", customerId);
-
-        setPaymentStatus("paid"); // Set payment status to paid if deposit covers the total
-      } else {
-        await supabase.from("orders").delete().eq("id", newOrder.id);
-        toast({
-          title: "Error",
-          description: "Deposit pelanggan tidak cukup untuk menutupi total.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
+      handleProcessLaundryTransaction();
     }
 
     // If payment is made directly (e.g. cash, deposit and paid)
     if (
-      (paymentStatus === "paid" || paymentMethod === "deposit") &&
+      (paymentStatus === "lunas" ||
+        paymentMethod === "dp" ||
+        paymentMethod === "deposit") &&
       totalAmount > 0
     ) {
       const paymentData = {
-        order_id: newOrder.id,
+        order_id: result.data.data._id,
         amount: totalAmount,
         payment_method: paymentMethod,
         payment_date: new Date().toISOString(),
         status: "completed",
-        // created_by
+        current_branch_id: branchId,
       };
 
-      await supabase.from("payments").insert(paymentData);
+      await api.post("/api/payments", paymentData);
     }
 
     toast({
       title: "Sukses",
-      description: `Order ${newOrder.order_number} berhasil dibuat.`,
+      description: `Order ${result.data.data.order_number} berhasil dibuat.`,
     });
     setIsSubmitting(false);
-    router.push("/dashboard/orders"); // Redirect to orders list
+    router.push("/dashboard/orders");
   };
-
-  if (loadingDependencies) {
-    return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
-        <Loader2 className="h-12 w-12 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -358,11 +358,12 @@ export default function NewOrderPage() {
                 <SelectValue placeholder="Pilih Pelanggan" />
               </SelectTrigger>
               <SelectContent>
-                {customers.map((customer) => (
-                  <SelectItem key={customer.id} value={customer.id}>
-                    {customer.name} ({customer.phone || "No Phone"})
-                  </SelectItem>
-                ))}
+                {customers &&
+                  customers.map((customer) => (
+                    <SelectItem key={customer._id} value={customer._id}>
+                      {customer.name} ({customer.phone || "No Phone"})
+                    </SelectItem>
+                  ))}
                 <Link
                   href="/dashboard/customers/new?redirect=/dashboard/orders/new"
                   className="block p-2 text-sm text-blue-600 hover:bg-gray-100"
@@ -407,12 +408,13 @@ export default function NewOrderPage() {
                         <SelectValue placeholder="Pilih Layanan" />
                       </SelectTrigger>
                       <SelectContent>
-                        {services.map((service) => (
-                          <SelectItem key={service.id} value={service.id}>
-                            {service.name} (
-                            {formatCurrency(service.price_per_kg)}/kg)
-                          </SelectItem>
-                        ))}
+                        {Array.isArray(services?.services) &&
+                          services.services.map((service) => (
+                            <SelectItem key={service._id} value={service._id!}>
+                              {service.servicename} (
+                              {formatCurrency(service.price)}/kg)
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -484,10 +486,9 @@ export default function NewOrderPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cash">Tunai</SelectItem>
-                  <SelectItem value="transfer">Transfer Bank</SelectItem>
-                  <SelectItem value="ewallet">E-Wallet</SelectItem>
-                  <SelectItem value="cod">COD (Bayar di Tempat)</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="transfer">Transfer</SelectItem>
+                  <SelectItem value="qris">Qris</SelectItem>
                   <SelectItem value="deposit">Deposit</SelectItem>
                 </SelectContent>
               </Select>
@@ -503,9 +504,9 @@ export default function NewOrderPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="paid">Lunas</SelectItem>
-                  {/* <SelectItem value="partial">Bayar Sebagian</SelectItem> */}
+                  <SelectItem value="belum lunas">Belum Lunas</SelectItem>
+                  <SelectItem value="lunas">Lunas</SelectItem>
+                  <SelectItem value="dp">DP</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -532,9 +533,10 @@ export default function NewOrderPage() {
                 <SelectValue placeholder="Select Branch" />
               </SelectTrigger>
               <SelectContent>
-                {branches.length > 0 &&
-                  branches.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
+                {branches &&
+                  branches.length > 0 &&
+                  branches.map((branch: Branches) => (
+                    <SelectItem key={branch._id} value={branch._id}>
                       {branch.name} - {`(${branch.type})`}
                     </SelectItem>
                   ))}

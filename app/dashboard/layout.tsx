@@ -18,10 +18,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useBranch } from "@/contexts/branch-context";
-import { getBranchList } from "@/lib/branch-data";
 import { cn } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
-import type { Branches } from "@/types";
+import { fetchBranches } from "@/store/BranchSlice";
+import { fetchUser } from "@/store/userSlice";
 import {
   BarChart3,
   CreditCard,
@@ -43,23 +43,26 @@ import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 const navigation = (userProfile: any) => [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Orders", href: "/dashboard/orders", icon: ShoppingCart },
-  { name: "Customers", href: "/dashboard/customers", icon: Users },
-  { name: "Services", href: "/dashboard/services", icon: Shirt },
-  { name: "Inventory", href: "/dashboard/inventory", icon: Package },
-  { name: "Deliveries", href: "/dashboard/deliveries", icon: Truck },
-  { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
-  { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
-  // Only show Staff menu for Owner role
+  { name: "Dashboar", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Order", href: "/dashboard/orders", icon: ShoppingCart },
+  { name: "Customer", href: "/dashboard/customers", icon: Users },
+  { name: "Layanan", href: "/dashboard/services", icon: Shirt },
+  { name: "Pengeluaran", href: "/dashboard/expenses", icon: Package },
+  { name: "Antar Jemput", href: "/dashboard/deliveries", icon: Truck },
+  { name: "Laporan", href: "/dashboard/reports", icon: BarChart3 },
+  { name: "Deposit", href: "/dashboard/deposit", icon: CreditCard },
+  // Only show Staff menu and setting for Owner role
   ...(userProfile?.role === "owner"
-    ? [{ name: "Staff", href: "/dashboard/staff", icon: UserCheck }]
+    ? [
+        { name: "Staff", href: "/dashboard/staff", icon: UserCheck },
+        { name: "Settings", href: "/dashboard/settings", icon: Settings },
+      ]
     : []),
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  ,
 ];
 
 export default function DashboardLayout({
@@ -68,55 +71,37 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [branches, setBranches] = useState<Branches[]>([]);
-  const [branchesLoading, setBranchesLoading] = useState(true);
-  const [branchesError, setBranchesError] = useState<string | null>(null);
   const pathname = usePathname();
-  const { data: session } = useSession();
   const { currentBranchId, setCurrentBranchId } = useBranch();
+  const { data: session } = useSession();
   const dispatch = useDispatch<AppDispatch>();
+  const { items: user } = useSelector((state: RootState) => state.userReducer);
+  const {
+    items: branchList,
+    loading: branchesLoading,
+    error: branchesError,
+  } = useSelector((state: RootState) => state.branchReducer);
 
-  const { items, loading, error } = useSelector(
-    (state: RootState) => state.userReducer
-  );
+  useEffect(() => {
+    dispatch(fetchUser(session?.user.email!));
+  }, [session]);
 
-  const fetchBranches = useCallback(async () => {
-    try {
-      setBranchesLoading(true);
-      setBranchesError(null);
-      console.log("Starting to fetch branches...");
-
-      const data = await getBranchList();
-      console.log("Branch data received:", data);
-
-      if (data && data.length > 0) {
-        setBranches(data);
-        console.log("Branches set successfully:", data);
-      } else {
-        console.log("No branches found or data is null");
-        setBranches([]);
-        setBranchesError("No branches found");
-      }
-    } catch (error) {
-      console.error("Error fetching branches:", error);
-      setBranchesError("Failed to load branches");
-      setBranches([]);
-    } finally {
-      setBranchesLoading(false);
-    }
+  useEffect(() => {
+    dispatch(fetchBranches());
   }, []);
 
   useEffect(() => {
-    fetchBranches();
-  }, [fetchBranches]);
-
-  useEffect(() => {
-    if (branches.length > 0 && !currentBranchId) {
-      // Set first branch as default
-      setCurrentBranchId(branches[0].id);
-      console.log("Setting default branch:", branches[0]);
+    if (
+      !branchesLoading &&
+      branchList &&
+      branchList.length > 0 &&
+      !currentBranchId
+    ) {
+      console.log(branchList);
+      console.log(currentBranchId);
+      setCurrentBranchId(branchList[0]._id);
     }
-  }, [branches, currentBranchId, setCurrentBranchId]);
+  }, [branchesLoading, branchList, currentBranchId, setCurrentBranchId]);
 
   const getInitials = (name: string | undefined) => {
     if (!name) return "??";
@@ -127,8 +112,8 @@ export default function DashboardLayout({
       .toUpperCase();
   };
 
-  const selectedBranch = branches.find(
-    (branch) => branch.id === currentBranchId
+  const selectedBranch = branchList?.find(
+    (branch) => branch._id === currentBranchId
   );
 
   return (
@@ -156,9 +141,9 @@ export default function DashboardLayout({
               </Button>
             </div>
             <SidebarContent
-              navItems={navigation(items)}
+              navItems={navigation(user)}
               pathname={pathname}
-              userProfile={items}
+              userProfile={user}
             />
           </div>
         </div>
@@ -168,9 +153,9 @@ export default function DashboardLayout({
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white border-r border-gray-200 px-6">
           <SidebarContent
-            navItems={navigation(items)}
+            navItems={navigation(user)}
             pathname={pathname}
-            userProfile={items}
+            userProfile={user}
           />
         </div>
       </div>
@@ -194,9 +179,8 @@ export default function DashboardLayout({
             {/* Page title */}
             <div className="flex-1 lg:flex-none">
               <h1 className="text-xl font-semibold text-gray-900">
-                {navigation(session?.user).find(
-                  (item) => item.href === pathname
-                )?.name || "Dashboard"}
+                {navigation(user).find((item) => item?.href === pathname)
+                  ?.name || "Dashboard"}
               </h1>
             </div>
 
@@ -215,7 +199,7 @@ export default function DashboardLayout({
                       Error loading branches
                     </span>
                   </div>
-                ) : branches.length > 0 ? (
+                ) : branchList && branchList.length > 0 ? (
                   <Select
                     value={currentBranchId}
                     onValueChange={setCurrentBranchId}
@@ -228,8 +212,8 @@ export default function DashboardLayout({
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.id}>
+                      {branchList.map((branch) => (
+                        <SelectItem key={branch._id} value={branch._id}>
                           {branch.name} - ({branch.type})
                         </SelectItem>
                       ))}
@@ -254,7 +238,7 @@ export default function DashboardLayout({
                     <Avatar className="h-10 w-10 border-[1px] border-gray-200">
                       <AvatarImage src="/avatar.png" alt="Avatar" />
                       <AvatarFallback>
-                        {getInitials(items?.full_name)}
+                        {getInitials(user?.full_name)}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -263,15 +247,15 @@ export default function DashboardLayout({
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {items?.full_name}
+                        {user?.full_name}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {items?.email}
+                        {user?.email}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {items?.role &&
-                          items?.role.charAt(0).toUpperCase() +
-                            items?.role.slice(1)}
+                        {user?.role &&
+                          user?.role.charAt(0).toUpperCase() +
+                            user?.role.slice(1)}
                       </p>
                     </div>
                   </DropdownMenuLabel>

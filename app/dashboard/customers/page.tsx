@@ -1,5 +1,6 @@
 "use client";
 
+import CustomerReport from "@/components/customerReport";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -28,10 +29,11 @@ import {
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
 import { useToast } from "@/hooks/use-toast";
-import { getBranchList } from "@/lib/branch-data";
-import { getCustomers } from "@/lib/data";
+import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
-import type { Branches, Customer } from "@/types";
+import { AppDispatch, RootState } from "@/store";
+import { fetchCustomers } from "@/store/CustomerSlice";
+import type { Customer } from "@/types";
 import {
   Edit,
   Eye,
@@ -43,19 +45,18 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
-import { addCustomer, deleteCustomer, updateCustomer } from "./actions";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function CustomersPage() {
+  const { data: session } = useSession();
+
   const { currentBranchId } = useBranch();
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [branches, setBranches] = useState<Branches[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const [loading, setLoading] = useState(false);
   const [branchId, setBranchId] = useState<string>("");
   const { toast } = useToast();
-
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -63,89 +64,115 @@ export default function CustomersPage() {
     null
   );
 
-  const fetchCustomers = () => {
-    setIsLoading(true);
-    getCustomers(currentBranchId, searchTerm)
-      .then((data) => {
-        if (data) setCustomers(data);
-      })
-      .finally(() => setIsLoading(false));
-  };
-
-  const fetchBranches = () => {
-    getBranchList().then((data) => {
-      if (data) setBranches(data);
-    });
-  };
+  const dispatch = useDispatch<AppDispatch>();
+  const { items: customers, loading: customerLoading } = useSelector(
+    (state: RootState) => state.customerReducer
+  );
+  const { items: branches } = useSelector(
+    (state: RootState) => state.branchReducer
+  );
 
   useEffect(() => {
-    fetchCustomers();
-  }, [searchTerm, currentBranchId]);
-
-  useEffect(() => {
-    fetchBranches();
-  }, []);
+    dispatch(fetchCustomers(currentBranchId));
+  }, [currentBranchId]);
 
   const handleAddSubmit = async (formData: FormData) => {
-    startTransition(async () => {
-      const result = await addCustomer(formData, branchId);
-      if (result.success) {
+    try {
+      setLoading(true);
+      const data = {
+        name: formData.get("name") as string,
+        phone: formData.get("phone") as string,
+        email: formData.get("email") as string,
+        address: formData.get("address") as string,
+        total_deposit: Number(formData.get("total_deposit")) as number,
+        current_branch_id: currentBranchId as string,
+      };
+
+      const result = await api.post("/api/customer", data);
+      if (result.status === 201) {
         toast({
           title: "Success",
           description: "Customer added successfully.",
         });
         setIsAddDialogOpen(false);
-        fetchCustomers(); // Refresh data
-      } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
+        dispatch(fetchCustomers(currentBranchId)); // Refresh data
       }
-    });
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: err.message || "Something went wrong!!",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEditSubmit = async (formData: FormData) => {
-    if (!selectedCustomer) return;
-    startTransition(async () => {
-      const result = await updateCustomer(selectedCustomer.id, formData);
-      if (result.success) {
+    if (!selectedCustomer) {
+      toast({
+        title: "Selected Customer not found",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const data = {
+        name: formData.get("name") as string,
+        phone: formData.get("phone") as string,
+        email: formData.get("email") as string,
+        address: formData.get("address") as string,
+        total_deposit: Number(formData.get("total_deposit")) as number,
+      };
+
+      const result = await api.put(
+        `/api/customer/${selectedCustomer._id}`,
+        data
+      );
+      if (result.status === 201 || result.status === 200) {
         toast({
           title: "Success",
           description: "Customer updated successfully.",
         });
         setIsEditDialogOpen(false);
         setSelectedCustomer(null);
-        fetchCustomers(); // Refresh data
-      } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
+        dispatch(fetchCustomers(currentBranchId)); // Refresh data
       }
-    });
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: err.message || "Something went wrong!!",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this customer?")) return;
-    startTransition(async () => {
-      const result = await deleteCustomer(id);
-      if (result.success) {
+    try {
+      setLoading(true);
+      const result = await api.delete(`/api/customer/${id}`);
+      if (result.status === 200 || result.status === 201) {
         toast({
           title: "Success",
           description: "Customer deleted successfully.",
         });
-        fetchCustomers(); // Refresh data
-      } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        });
+        dispatch(fetchCustomers(currentBranchId)); // Refresh data
       }
-    });
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: err.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleViewCustomer = (customer: Customer) => {
@@ -154,14 +181,14 @@ export default function CustomersPage() {
   };
 
   const stats = {
-    total: customers.length,
-    active: customers.length,
+    total: customers?.length,
+    active: customers?.length,
     vip: 0,
-    totalRevenue: customers.reduce((sum, c) => sum + (c.total_spent || 0), 0),
+    totalRevenue: customers?.reduce((sum, c) => sum + (c.total_spent || 0), 0),
   };
 
   const selectedBranch = (id: string) => {
-    const branch = branches.find((b) => b.id === id);
+    const branch = branches?.find((b) => b._id === id);
     return branch || null;
   };
 
@@ -203,10 +230,6 @@ export default function CustomersPage() {
                 <Input id="address" name="address" />
               </div>
               <div>
-                <Label htmlFor="total_deposit">Deposit</Label>
-                <Input type="number" id="total_deposit" name="total_deposit" />
-              </div>
-              <div>
                 <Select
                   name="current_branch_id"
                   value={branchId}
@@ -216,9 +239,10 @@ export default function CustomersPage() {
                     <SelectValue placeholder="Select Branch" />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.length > 0 &&
+                    {branches &&
+                      branches.length > 0 &&
                       branches.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.id}>
+                        <SelectItem key={branch._id} value={branch._id}>
                           {branch.name} - {`(${branch.type})`}
                         </SelectItem>
                       ))}
@@ -233,10 +257,8 @@ export default function CustomersPage() {
                 >
                   Batal
                 </Button>
-                <Button type="submit" disabled={isPending}>
-                  {isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
+                <Button type="submit" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Simpan
                 </Button>
               </div>
@@ -255,7 +277,7 @@ export default function CustomersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {isLoading ? (
+              {customerLoading ? (
                 <Loader2 className="h-6 w-6 animate-spin" />
               ) : (
                 stats.total
@@ -270,7 +292,7 @@ export default function CustomersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {isLoading ? (
+              {customerLoading ? (
                 <Loader2 className="h-6 w-6 animate-spin" />
               ) : (
                 formatCurrency(stats.totalRevenue)
@@ -279,10 +301,12 @@ export default function CustomersPage() {
           </CardContent>
         </Card>
       </div>
+      {/* Customer Reports */}
+      <CustomerReport />
 
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Customers ({customers.length})</CardTitle>
+          <CardTitle>Daftar Customers ({customers?.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="relative mb-4">
@@ -294,7 +318,7 @@ export default function CustomersPage() {
               className="pl-8"
             />
           </div>
-          {isLoading ? (
+          {customerLoading ? (
             <div className="flex justify-center items-center h-64">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
@@ -308,87 +332,91 @@ export default function CustomersPage() {
                   <TableHead>Orders</TableHead>
                   <TableHead>Total Spent</TableHead>
                   <TableHead>Total Deposit</TableHead>
-                  <TableHead>Loyalty Points</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {customers.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{customer.name}</div>
-                        <div className="text-sm text-gray-500">
-                          ID: {customer.id.substring(0, 8)}...
+                {customers &&
+                  customers.map((customer) => (
+                    <TableRow key={customer._id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{customer.name}</div>
+                          <div className="text-sm text-gray-500">
+                            ID: {customer._id.substring(0, 8)}...
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {customer.phone && (
-                          <div className="flex items-center text-sm">
-                            <Phone className="mr-1 h-3 w-3" />
-                            {customer.phone}
-                          </div>
-                        )}
-                        {customer.email && (
-                          <div className="flex items-center text-sm">
-                            <Mail className="mr-1 h-3 w-3" />
-                            {customer.email}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-start text-sm">
-                        <MapPin className="mr-1 h-3 w-3 mt-0.5 flex-shrink-0" />
-                        <span className="line-clamp-2">{customer.address}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {customer.total_orders}
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(customer.total_spent)}
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(customer.total_deposit)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {customer.loyalty_points}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewCustomer(customer)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedCustomer(customer);
-                            setIsEditDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => handleDelete(customer.id)}
-                          disabled={isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {customer.phone && (
+                            <div className="flex items-center text-sm">
+                              <Phone className="mr-1 h-3 w-3" />
+                              {customer.phone}
+                            </div>
+                          )}
+                          {customer.email && (
+                            <div className="flex items-center text-sm">
+                              <Mail className="mr-1 h-3 w-3" />
+                              {customer.email}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-start text-sm">
+                          <MapPin className="mr-1 h-3 w-3 mt-0.5 flex-shrink-0" />
+                          <span className="line-clamp-2">
+                            {customer.address}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {customer.total_orders}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(customer.total_spent)}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(customer.deposit_balance)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewCustomer(customer)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {(session?.user.role === "owner" ||
+                            session?.user.role === "admin") && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedCustomer(customer);
+                                  setIsEditDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => handleDelete(customer._id)}
+                                disabled={loading}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           )}
@@ -414,7 +442,7 @@ export default function CustomersPage() {
                   <Label className="text-sm font-medium text-gray-500">
                     ID Customer
                   </Label>
-                  <p className="text-sm font-mono">{selectedCustomer.id}</p>
+                  <p className="text-sm font-mono">{selectedCustomer._id}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">
@@ -468,21 +496,15 @@ export default function CustomersPage() {
                     Total Deposit
                   </Label>
                   <p className="text-sm">
-                    {formatCurrency(selectedCustomer.total_deposit)}
+                    {formatCurrency(selectedCustomer.deposit_balance)}
                   </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">
-                    Loyalty Points
-                  </Label>
-                  <p className="text-sm">{selectedCustomer.loyalty_points}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">
                     Member Since
                   </Label>
                   <p className="text-sm">
-                    {new Date(selectedCustomer.created_at).toLocaleDateString(
+                    {new Date(selectedCustomer.createdAt).toLocaleDateString(
                       "id-ID"
                     )}
                   </p>
@@ -535,14 +557,6 @@ export default function CustomersPage() {
                   defaultValue={selectedCustomer.address || ""}
                 />
               </div>
-              <div>
-                <Label htmlFor="edit-deposit">Deposit</Label>
-                <Input
-                  id="edit-deposit"
-                  name="total_deposit"
-                  defaultValue={selectedCustomer.total_deposit || ""}
-                />
-              </div>
               <div className="flex justify-end space-x-2">
                 <Button
                   type="button"
@@ -551,10 +565,8 @@ export default function CustomersPage() {
                 >
                   Batal
                 </Button>
-                <Button type="submit" disabled={isPending}>
-                  {isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
+                <Button type="submit" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Update
                 </Button>
               </div>

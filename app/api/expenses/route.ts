@@ -5,7 +5,7 @@ import { type NextRequest, NextResponse } from "next/server";
 export async function GET() {
   try {
     await dbConnect();
-    const expenses = await ExpenseModel.find({});
+    const expenses = await ExpenseModel.find({}).sort({ createdAt: -1 });
 
     if (expenses.length === 0 || !expenses) {
       return NextResponse.json(
@@ -39,8 +39,7 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
-
-    const { category, amount, description, current_branch_id } = body;
+    const { category, amount, description, current_branch_id, date } = body;
 
     if (!category || !amount || !description || !current_branch_id) {
       return NextResponse.json(
@@ -52,8 +51,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new expenses data
-    const expenses = await ExpenseModel.create(body);
+    // Create new expenses data with date
+    const expenseData = {
+      ...body,
+      date: date || new Date().toISOString(),
+    };
+
+    const expenses = await ExpenseModel.create(expenseData);
 
     if (!expenses) {
       return NextResponse.json(

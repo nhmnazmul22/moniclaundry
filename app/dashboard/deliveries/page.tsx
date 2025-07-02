@@ -31,12 +31,13 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { useBranch } from "@/contexts/branch-context";
-import { getBranchList } from "@/lib/branch-data";
-import { getOrders } from "@/lib/data";
-import { getStaffList } from "@/lib/staff-data";
-import { supabase } from "@/lib/supabase/client";
+import api from "@/lib/config/axios";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import { Branches } from "@/types";
+import { AppDispatch, RootState } from "@/store";
+import { fetchDelivery } from "@/store/DeliverySlice";
+import { fetchOrders } from "@/store/orderSlice";
+import { fetchUsers } from "@/store/StaffSlice";
+import { Customer, Delivery, Order, User } from "@/types";
 import {
   AlertTriangle,
   Edit,
@@ -46,121 +47,75 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
-
-type DeliveryWithDetails = {
-  id: string;
-  order_id: string;
-  kurir_id: string;
-  delivery_type: "pickup" | "delivery";
-  scheduled_time: string;
-  actual_time?: string;
-  status: string;
-  customer_address?: string;
-  delivery_fee: number;
-  notes?: string;
-  created_at: string;
-  order?: {
-    order_number: string;
-    customer?: {
-      name: string;
-      phone: string;
-      address: string;
-    };
-    current_branch_id?: string;
-  };
-  kurir?: {
-    full_name: string;
-    email: string;
-  };
-};
+import { useDispatch, useSelector } from "react-redux";
 
 export default function DeliveriesPage() {
+  const { data: session } = useSession();
   const { currentBranchId } = useBranch();
-  const [branches, setBranches] = useState<Branches[]>([]);
   const [branchId, setBranchId] = useState<string>("");
-  const [deliveries, setDeliveries] = useState<DeliveryWithDetails[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [kurirList, setKurirList] = useState<any[]>([]);
-  const [orderList, setOrderList] = useState<any[]>([]);
+  const [kurirList, setKurirList] = useState<User[]>([]);
+  const [orderList, setOrderList] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<string>("");
   const [selectedKurir, setSelectedKurir] = useState<string>("");
   const [deliveryType, setDeliveryType] = useState<"pickup" | "delivery">(
     "delivery"
   );
+  const [deliveryStatus, setDeliveryStatus] = useState<string>("scheduled");
   const [scheduledTime, setScheduledTime] = useState<string>("");
   const [deliveryFee, setDeliveryFee] = useState<number>(5000);
-  const [customerAddress, setCustomerAddress] = useState<string>("");
-  const [selectedDelivery, setSelectedDelivery] =
-    useState<DeliveryWithDetails | null>(null);
-
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(
+    null
+  );
   const { toast } = useToast();
+  const dispatch = useDispatch<AppDispatch>();
 
-  const fetchDeliveries = useCallback(async () => {
-    try {
-      console.log("Fetching deliveries...");
+  const { items: deliveries } = useSelector(
+    (state: RootState) => state.deliveryReducer
+  );
+  const { items: staffData } = useSelector(
+    (state: RootState) => state.staffsReducer
+  );
+  const { items: ordersData } = useSelector(
+    (state: RootState) => state.orderReducer
+  );
 
-      // Simple query first to check if table exists
-      let query = supabase
-        .from("deliveries")
-        .select("*")
-        .order("created_at", { ascending: false });
+  useEffect(() => {
+    dispatch(fetchDelivery(currentBranchId));
+    dispatch(fetchOrders(currentBranchId));
+  }, [currentBranchId]);
 
-      if (currentBranchId) {
-        query = query.eq("current_branch_id", currentBranchId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Supabase error:", error);
-        return [];
-      }
-
-      console.log("Deliveries data:", data);
-      return data || [];
-    } catch (error) {
-      console.error("Error fetching deliveries:", error);
-      return [];
-    }
-  }, [searchTerm, statusFilter, currentBranchId]);
+  useEffect(() => {
+    dispatch(fetchUsers());
+  }, []);
 
   const fetchPageData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      console.log("Starting to fetch page data...");
-
-      const [deliveriesData, staffData, ordersData] = await Promise.all([
-        fetchDeliveries(),
-        getStaffList("", "kurir"), // Get kurir from staff table using the correct function
-        getOrders(currentBranchId), // Get all orders
-      ]);
-
-      console.log("Raw orders data:", ordersData);
-      console.log("Staff data:", staffData);
-
       // Filter orders that can be delivered (completed or ready)
-      const availableOrders = ordersData.filter((o: any) => {
-        const validStatuses = ["delivered", "ready", "completed"];
+      const availableOrders = ordersData?.filter((o: any) => {
+        const validStatuses = ["selesai"];
         return validStatuses.includes(o.order_status);
       });
 
       console.log("Available orders for delivery:", availableOrders);
 
-      setDeliveries(deliveriesData as DeliveryWithDetails[]);
-      setKurirList(staffData.filter((s: any) => s.role === "kurir"));
-      setOrderList(availableOrders);
+      setKurirList(staffData?.filter((s: any) => s.role === "kurir") || []);
+      setOrderList(availableOrders || []);
 
       console.log(
         "Final kurir list:",
-        staffData.filter((s: any) => s.role === "kurir")
+        staffData?.filter((s: any) => s.role === "kurir")
       );
       console.log("Final order list:", availableOrders);
     } catch (e) {
@@ -169,17 +124,7 @@ export default function DeliveriesPage() {
     } finally {
       setLoading(false);
     }
-  }, [fetchDeliveries, currentBranchId]);
-
-  const fetchBranches = () => {
-    getBranchList().then((data) => {
-      if (data) setBranches(data);
-    });
-  };
-
-  useEffect(() => {
-    fetchBranches();
-  }, []);
+  }, [staffData, ordersData, currentBranchId]);
 
   useEffect(() => {
     fetchPageData();
@@ -187,15 +132,12 @@ export default function DeliveriesPage() {
 
   useEffect(() => {
     if (selectedOrder) {
-      const order = orderList.find((o) => o.id === selectedOrder);
-      if (
-        order &&
-        (order.customer?.address || order.customer?.current_branch_id)
-      ) {
-        setCustomerAddress(order.customer.address);
-        setBranchId(order.customer.current_branch_id);
+      const order = orderList.find((o) => o._id === selectedOrder);
+      if (order && order.customerDetails) {
+        setCustomer(order.customerDetails || null);
+        setBranchId(order.customerDetails.current_branch_id || "");
       } else {
-        setCustomerAddress("");
+        setCustomer(null);
         setBranchId("");
       }
     }
@@ -225,20 +167,20 @@ export default function DeliveriesPage() {
     return colors[status] || "bg-gray-200 text-gray-800";
   };
 
-  const handleViewDelivery = (delivery: DeliveryWithDetails) => {
+  const handleViewDelivery = (delivery: Delivery) => {
     setSelectedDelivery(delivery);
     setIsViewDialogOpen(true);
   };
 
-  const handleEditDelivery = (delivery: DeliveryWithDetails) => {
+  const handleEditDelivery = (delivery: Delivery) => {
     setSelectedDelivery(delivery);
     setSelectedOrder(delivery.order_id);
     setSelectedKurir(delivery.kurir_id);
     setDeliveryType(delivery.delivery_type);
     setScheduledTime(delivery.scheduled_time.slice(0, 16)); // Format for datetime-local
-    setCustomerAddress(delivery.customer_address || "");
+    setCustomer(delivery.customer || null);
     setDeliveryFee(delivery.delivery_fee || 0);
-    setBranchId(delivery.order?.current_branch_id || "");
+    setBranchId(delivery.orderDetails?.current_branch_id || "");
     setIsEditDialogOpen(true);
   };
 
@@ -261,25 +203,25 @@ export default function DeliveriesPage() {
       const updatedDelivery = {
         order_id: selectedOrder,
         kurir_id: selectedKurir,
+        status: deliveryStatus,
         delivery_type: deliveryType,
         scheduled_time: new Date(scheduledTime).toISOString(),
-        customer_address: deliveryType === "delivery" ? customerAddress : null,
         delivery_fee: deliveryType === "delivery" ? deliveryFee : 0,
         notes: `${
           deliveryType === "delivery" ? "Pengiriman" : "Pickup"
         } diupdate`,
       };
 
-      const { error: updateError } = await supabase
-        .from("deliveries")
-        .update(updatedDelivery)
-        .eq("id", selectedDelivery.id);
+      const res = await api.put(
+        `/api/deliveries/${selectedDelivery._id}`,
+        updatedDelivery
+      );
 
-      if (updateError) {
-        console.error("Update error:", updateError);
+      if (res.status !== 201) {
+        console.error("Update error:", res.statusText);
         toast({
           title: "Error",
-          description: `Gagal mengupdate pengiriman: ${updateError.message}`,
+          description: `Gagal mengupdate pengiriman: ${res.statusText}`,
           variant: "destructive",
         });
       } else {
@@ -289,14 +231,14 @@ export default function DeliveriesPage() {
         });
         setIsEditDialogOpen(false);
         setSelectedDelivery(null);
-        fetchPageData(); // Refresh data
-        // Reset form
+        fetchPageData();
+        dispatch(fetchDelivery(currentBranchId));
         setSelectedOrder("");
         setSelectedKurir("");
         setDeliveryType("delivery");
         setScheduledTime("");
         setDeliveryFee(5000);
-        setCustomerAddress("");
+        setCustomer(null);
       }
     } catch (error) {
       console.error("Unexpected error:", error);
@@ -309,36 +251,24 @@ export default function DeliveriesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus jadwal pengiriman ini?"))
-      return;
+    setLoading(true);
+    const res = await api.delete(`/api/deliveries/${id}`);
 
-    const { error: deleteError } = await supabase
-      .from("deliveries")
-      .delete()
-      .eq("id", id);
-
-    if (deleteError) {
+    if (res.status !== 200) {
       toast({
         title: "Error",
-        description: `Gagal menghapus pengiriman: ${deleteError.message}`,
+        description: `Gagal menghapus pengiriman: ${res.statusText}`,
         variant: "destructive",
       });
     } else {
       toast({ title: "Sukses", description: "Pengiriman berhasil dihapus." });
       fetchPageData();
+      dispatch(fetchDelivery(currentBranchId));
+      setLoading(false);
     }
   };
 
   const handleCreateDelivery = async () => {
-    console.log("Creating delivery with data:", {
-      selectedOrder,
-      selectedKurir,
-      scheduledTime,
-      deliveryType,
-      customerAddress,
-      deliveryFee,
-    });
-
     if (!selectedOrder || !selectedKurir || !scheduledTime) {
       console.log("Validation failed:", {
         selectedOrder,
@@ -359,8 +289,8 @@ export default function DeliveriesPage() {
         kurir_id: selectedKurir,
         delivery_type: deliveryType,
         scheduled_time: new Date(scheduledTime).toISOString(),
-        status: "scheduled",
-        customer_address: deliveryType === "delivery" ? customerAddress : null,
+        status: deliveryStatus || "scheduled",
+        customer: deliveryType === "delivery" ? customer : null,
         delivery_fee: deliveryType === "delivery" ? deliveryFee : 0,
         notes: `${
           deliveryType === "delivery" ? "Pengiriman" : "Pickup"
@@ -368,36 +298,33 @@ export default function DeliveriesPage() {
         current_branch_id: branchId,
       };
 
+      console.log(customer);
       console.log("Inserting delivery:", newDelivery);
 
-      const { data, error: insertError } = await supabase
-        .from("deliveries")
-        .insert(newDelivery)
-        .select()
-        .single();
+      const res = await api.post("/api/deliveries", newDelivery);
 
-      if (insertError) {
-        console.error("Insert error:", insertError);
+      if (res.status !== 201) {
+        console.error("Insert error:", res.statusText);
         toast({
           title: "Error",
-          description: `Gagal membuat jadwal pengiriman: ${insertError.message}`,
+          description: `Gagal membuat jadwal pengiriman: ${res.statusText}`,
           variant: "destructive",
         });
       } else {
-        console.log("Delivery created successfully:", data);
+        console.log("Delivery created successfully:", res.data);
         toast({
           title: "Sukses",
           description: "Jadwal pengiriman berhasil dibuat.",
         });
         setIsModalOpen(false);
-        fetchPageData(); // Refresh data
-        // Reset form
+        dispatch(fetchDelivery(currentBranchId));
+        fetchPageData();
         setSelectedOrder("");
         setSelectedKurir("");
         setDeliveryType("delivery");
         setScheduledTime("");
         setDeliveryFee(5000);
-        setCustomerAddress("");
+        setCustomer(null);
       }
     } catch (error) {
       console.error("Unexpected error:", error);
@@ -409,7 +336,7 @@ export default function DeliveriesPage() {
     }
   };
 
-  if (loading && deliveries.length === 0) {
+  if (loading && deliveries?.length === 0) {
     return (
       <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
@@ -431,11 +358,11 @@ export default function DeliveriesPage() {
   }
 
   const stats = {
-    total: deliveries.length,
-    scheduled: deliveries.filter((d) => d.status === "scheduled").length,
-    in_progress: deliveries.filter((d) => d.status === "in_progress").length,
-    completed: deliveries.filter((d) => d.status === "completed").length,
-    failed: deliveries.filter((d) => d.status === "failed").length,
+    total: deliveries?.length,
+    scheduled: deliveries?.filter((d) => d.status === "scheduled").length,
+    in_progress: deliveries?.filter((d) => d.status === "in_progress").length,
+    completed: deliveries?.filter((d) => d.status === "completed").length,
+    failed: deliveries?.filter((d) => d.status === "failed").length,
   };
 
   return (
@@ -474,8 +401,8 @@ export default function DeliveriesPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {orderList.map((order) => (
-                      <SelectItem key={order.id} value={order.id}>
-                        {order.order_number} - {order.customer?.name}
+                      <SelectItem key={order._id} value={order._id}>
+                        {order.order_number} - {order.customerDetails?.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -491,7 +418,7 @@ export default function DeliveriesPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {kurirList.map((kurir) => (
-                      <SelectItem key={kurir.id} value={kurir.id}>
+                      <SelectItem key={kurir._id} value={kurir._id!}>
                         {kurir.full_name}
                       </SelectItem>
                     ))}
@@ -520,6 +447,26 @@ export default function DeliveriesPage() {
                 </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="deliveryStatus" className="text-right">
+                  Status
+                </Label>
+                <Select
+                  onValueChange={setDeliveryStatus}
+                  value={deliveryStatus}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Pilih Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="in_progress">In progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="scheduledTime" className="text-right">
                   Waktu Dijadwalkan
                 </Label>
@@ -531,20 +478,9 @@ export default function DeliveriesPage() {
                   className="col-span-3"
                 />
               </div>
+
               {deliveryType === "delivery" && (
                 <>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="customerAddress" className="text-right">
-                      Alamat Customer
-                    </Label>
-                    <Input
-                      id="customerAddress"
-                      value={customerAddress}
-                      onChange={(e) => setCustomerAddress(e.target.value)}
-                      className="col-span-3"
-                      placeholder="Alamat pengiriman"
-                    />
-                  </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="deliveryFee" className="text-right">
                       Ongkir
@@ -665,7 +601,7 @@ export default function DeliveriesPage() {
       {/* Deliveries Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Deliveries ({deliveries.length})</CardTitle>
+          <CardTitle>Daftar Deliveries ({deliveries?.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -683,92 +619,106 @@ export default function DeliveriesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {deliveries.map((delivery) => (
-                <TableRow key={delivery.id}>
-                  <TableCell>
-                    <div>
+              {deliveries ? (
+                <div className="flex justify-center items-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : (
+                deliveries!.map((delivery) => (
+                  <TableRow key={delivery._id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">
+                          {delivery.orderDetails?.order_number ||
+                            delivery.order_id}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          ID: {delivery._id.substring(0, 8)}...
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">
+                          {delivery.customer?.name || "N/A"}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {delivery.customer?.phone || "N/A"}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <div className="font-medium">
-                        {delivery.order?.order_number || delivery.order_id}
+                        {delivery.kurirDetails?.full_name || "N/A"}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        ID: {delivery.id.substring(0, 8)}...
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">
-                        {delivery.order?.customer?.name || "N/A"}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {delivery.order?.customer?.phone || "N/A"}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium">
-                      {delivery.kurir?.full_name || "N/A"}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        delivery.delivery_type === "delivery"
-                          ? "default"
-                          : "secondary"
-                      }
-                    >
-                      {delivery.delivery_type === "delivery"
-                        ? "Pengiriman"
-                        : "Pickup"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {formatDateTime(delivery.scheduled_time)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {delivery.actual_time
-                        ? formatDateTime(delivery.actual_time)
-                        : "N/A"}
-                    </div>
-                  </TableCell>
-                  <TableCell>{formatCurrency(delivery.delivery_fee)}</TableCell>
-                  <TableCell>
-                    <Badge className={getDeliveryStatusColor(delivery.status)}>
-                      {getStatusLabel(delivery.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewDelivery(delivery)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          delivery.delivery_type === "delivery"
+                            ? "default"
+                            : "secondary"
+                        }
                       >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditDelivery(delivery)}
+                        {delivery.delivery_type === "delivery"
+                          ? "Pengiriman"
+                          : "Pickup"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {formatDateTime(delivery.scheduled_time)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {delivery.actual_time
+                          ? formatDateTime(delivery.actual_time)
+                          : "N/A"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {formatCurrency(delivery.delivery_fee)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={getDeliveryStatusColor(delivery.status)}
                       >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDelete(delivery.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        {getStatusLabel(delivery.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDelivery(delivery)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditDelivery(delivery)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        {(session?.user.role === "owner" ||
+                          session?.user.role === "admin") && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDelete(delivery._id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -788,7 +738,7 @@ export default function DeliveriesPage() {
                     Order Number
                   </Label>
                   <p className="text-sm">
-                    {selectedDelivery.order?.order_number ||
+                    {selectedDelivery.orderDetails?.order_number ||
                       selectedDelivery.order_id}
                   </p>
                 </div>
@@ -797,7 +747,7 @@ export default function DeliveriesPage() {
                     Customer
                   </Label>
                   <p className="text-sm">
-                    {selectedDelivery.order?.customer?.name || "N/A"}
+                    {selectedDelivery.customer?.name || "N/A"}
                   </p>
                 </div>
                 <div>
@@ -805,7 +755,7 @@ export default function DeliveriesPage() {
                     Kurir
                   </Label>
                   <p className="text-sm">
-                    {selectedDelivery.kurir?.full_name || "N/A"}
+                    {selectedDelivery.kurirDetails?.full_name || "N/A"}
                   </p>
                 </div>
                 <div>
@@ -854,13 +804,13 @@ export default function DeliveriesPage() {
                     {formatCurrency(selectedDelivery.delivery_fee)}
                   </p>
                 </div>
-                {selectedDelivery.customer_address && (
+                {selectedDelivery.customer?.address && (
                   <div className="col-span-2">
                     <Label className="text-sm font-medium text-gray-500">
                       Alamat Pengiriman
                     </Label>
                     <p className="text-sm">
-                      {selectedDelivery.customer_address}
+                      {selectedDelivery.customer.address}
                     </p>
                   </div>
                 )}
@@ -898,8 +848,8 @@ export default function DeliveriesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {orderList.map((order) => (
-                    <SelectItem key={order.id} value={order.id}>
-                      {order.order_number} - {order.customer?.name}
+                    <SelectItem key={order._id} value={order._id}>
+                      {order.order_number} - {order.customerDetails?.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -915,7 +865,7 @@ export default function DeliveriesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {kurirList.map((kurir) => (
-                    <SelectItem key={kurir.id} value={kurir.id}>
+                    <SelectItem key={kurir._id} value={kurir._id!}>
                       {kurir.full_name}
                     </SelectItem>
                   ))}
@@ -944,6 +894,23 @@ export default function DeliveriesPage() {
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="deliveryStatus" className="text-right">
+                Status
+              </Label>
+              <Select onValueChange={setDeliveryStatus} value={deliveryStatus}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Pilih Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="scheduled">Scheduled</SelectItem>
+                  <SelectItem value="in_progress">In progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-scheduledTime" className="text-right">
                 Waktu Dijadwalkan
               </Label>
@@ -957,18 +924,6 @@ export default function DeliveriesPage() {
             </div>
             {deliveryType === "delivery" && (
               <>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-customerAddress" className="text-right">
-                    Alamat Customer
-                  </Label>
-                  <Input
-                    id="edit-customerAddress"
-                    value={customerAddress}
-                    onChange={(e) => setCustomerAddress(e.target.value)}
-                    className="col-span-3"
-                    placeholder="Alamat pengiriman"
-                  />
-                </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-deliveryFee" className="text-right">
                     Ongkir

@@ -1,5 +1,6 @@
 import { dbConnect } from "@/lib/config/db";
 import CustomerModel from "@/lib/models/CustomersModel";
+import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -10,7 +11,10 @@ export async function GET(
     await dbConnect();
     const customerId = (await params).id;
 
-    const customer = await CustomerModel.findById(customerId);
+    const customer = await CustomerModel.findOne({
+      _id: new mongoose.Types.ObjectId(customerId),
+    });
+
 
     if (!customer) {
       return NextResponse.json(

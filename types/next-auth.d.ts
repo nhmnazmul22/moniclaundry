@@ -7,7 +7,7 @@ declare module "next-auth" {
     email: string;
     role?: string;
     is_active?: string;
-    current_branch_id?: [string] | string;
+    current_branch_id?: [string];
   }
   interface Session {
     user: {
@@ -15,7 +15,7 @@ declare module "next-auth" {
       email: string;
       role?: string;
       is_active?: string;
-      current_branch_id?: [string] | string;
+      current_branch_id?: [string];
     } & DefaultSession["user"];
   }
 }
@@ -26,6 +26,6 @@ declare module "next-auth/jwt" {
     email: string;
     role?: string;
     is_active?: string;
-    current_branch_id?: [string] | string;
+    current_branch_id?: [string];
   }
 }

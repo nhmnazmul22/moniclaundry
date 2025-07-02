@@ -17,6 +17,7 @@ export interface Orders extends Document {
   delivery_date?: Date;
   estimated_completion?: Date;
   notes?: string;
+  created_by?: ObjectId;
   special_instructions?: string;
   current_branch_id: ObjectId;
 }
@@ -38,7 +39,7 @@ const OrderSchema: Schema<Orders> = new mongoose.Schema(
     payment_status: {
       type: String,
       enum: ["lunas", "belum lunas", "dp"],
-      default: "pending",
+      default: "belum lunas",
     },
     order_status: {
       type: String,
@@ -49,6 +50,7 @@ const OrderSchema: Schema<Orders> = new mongoose.Schema(
     delivery_date: { type: Date },
     estimated_completion: { type: Date },
     notes: { type: String },
+    created_by: { type: mongoose.Types.ObjectId },
     special_instructions: { type: String },
     current_branch_id: { type: mongoose.Types.ObjectId, required: true },
   },

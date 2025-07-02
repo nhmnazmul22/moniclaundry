@@ -1,71 +1,67 @@
 "use server";
 
-import { supabase } from "@/lib/supabase/client";
-import { revalidatePath } from "next/cache";
+import api from "@/lib/config/axios";
+import { Service } from "@/types";
 
-const parseServiceFormData = (formData: FormData) => ({
-  name: formData.get("name") as string,
-  description: formData.get("description") as string,
-  price_per_kg: Number(formData.get("price_per_kg")),
-  min_weight: Number(formData.get("min_weight")),
-  estimated_hours: Number(formData.get("estimated_hours")),
-  category: formData.get("category") as string,
-  is_active: formData.get("is_active") === "on",
-  current_branch_id: formData.get("current_branch_id") as string,
-});
-
-export async function addService(formData: FormData) {
+// Simple JSON import function
+export async function importServicesJSON(formData: FormData, branchId: string) {
   try {
-    const serviceData = parseServiceFormData(formData);
-    const { error } = await supabase.from("services").insert([serviceData]);
+    const jsonFile = formData.get("jsonFile") as File;
 
-    if (error) {
-      console.error("Error adding service:", error);
-      return { success: false, message: error.message };
+    if (!jsonFile) {
+      return { success: false, message: "No file provided" };
     }
 
-    revalidatePath("/dashboard/services");
-    return { success: true, message: "Service berhasil ditambahkan." };
+    const jsonText = await jsonFile.text();
+    const servicesData: Service = JSON.parse(jsonText);
+
+    const result = await saveServicesToDatabase(servicesData, branchId);
+
+    if (result?.success) {
+      return {
+        success: true,
+        message: "Services imported successfully",
+        count:
+          Array.isArray(servicesData.services) && servicesData.services?.length,
+      };
+    } else {
+      return { success: false, message: result?.error };
+    }
   } catch (error) {
-    console.error("Unexpected error:", error);
-    return { success: false, message: "Terjadi kesalahan yang tidak terduga." };
+    console.error("JSON import error:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Import failed",
+    };
   }
 }
 
-export async function updateService(id: string, formData: FormData) {
+async function saveServicesToDatabase(
+  servicesData: Service,
+  branchId?: string
+) {
   try {
-    const serviceData = parseServiceFormData(formData);
-    const { error } = await supabase
-      .from("services")
-      .update(serviceData)
-      .eq("id", id);
+    const serviceData = {
+      name: servicesData.name || "",
+      branch_name: servicesData.branch_name || "",
+      type: servicesData.type || "",
+      current_branch_id: servicesData.current_branch_id || [],
+      services: servicesData.services || [],
+    };
 
-    if (error) {
-      console.error("Error updating service:", error);
-      return { success: false, message: error.message };
+    const res = await api.post(
+      `/api/services?branch_id=${branchId}`,
+      serviceData
+    );
+
+    if (res.status === 201) {
+      console.log("Saving services:", servicesData);
+      return { success: true };
     }
-
-    revalidatePath("/dashboard/services");
-    return { success: true, message: "Service berhasil diperbarui." };
   } catch (error) {
-    console.error("Unexpected error:", error);
-    return { success: false, message: "Terjadi kesalahan yang tidak terduga." };
-  }
-}
-
-export async function deleteService(id: string) {
-  try {
-    const { error } = await supabase.from("services").delete().eq("id", id);
-
-    if (error) {
-      console.error("Error deleting service:", error);
-      return { success: false, message: error.message };
-    }
-
-    revalidatePath("/dashboard/services");
-    return { success: true, message: "Service berhasil dihapus." };
-  } catch (error) {
-    console.error("Unexpected error:", error);
-    return { success: false, message: "Terjadi kesalahan yang tidak terduga." };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Database error",
+    };
   }
 }

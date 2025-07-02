@@ -1,44 +1,13 @@
+import { Customer, Order, Payment } from "@/types";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import type { ReportData } from "./pdf-generator";
 
-// Use your actual data types - adjust these interfaces to match your real data structure
-interface ActualOrder {
-  id: string;
-  created_at: string;
-  total_amount?: number;
-  amount?: number; // Alternative field name
-  customer_id?: string;
-  status?: string;
-  // Add other fields that exist in your actual Order type
-  [key: string]: any; // Allow additional properties
-}
-
-interface ActualPayment {
-  id: string;
-  payment_date: string;
-  amount: number;
-  payment_method?: string;
-  method?: string; // Alternative field name
-  status: "completed" | "pending" | "failed" | string;
-  order_id?: string;
-  // Add other fields that exist in your actual Payment type
-  [key: string]: any; // Allow additional properties
-}
-
-interface ActualCustomer {
-  id: string;
-  created_at?: string;
-  first_order_date?: string;
-  // Add other fields that exist in your actual Customer type
-  [key: string]: any; // Allow additional properties
-}
-
 export class ReportDataProcessor {
   static processReportData(
-    ordersData: ActualOrder[],
-    paymentsData: ActualPayment[],
-    customersData: ActualCustomer[] = [],
+    ordersData: Order[],
+    paymentsData: Payment[],
+    customersData: Customer[] = [],
     dateRange: DateRange | undefined
   ): ReportData {
     if (!dateRange?.from || !dateRange?.to) {
@@ -47,14 +16,14 @@ export class ReportDataProcessor {
 
     // Filter data by date range
     const filteredOrders = ordersData.filter((o) => {
-      const orderDate = new Date(o.created_at);
+      const orderDate = new Date(o.createdAt!);
       return orderDate >= dateRange.from! && orderDate <= dateRange.to!;
     });
 
     const filteredPayments = paymentsData.filter((p) => {
       const paymentDate = new Date(p.payment_date);
       return (
-        (p.status === "completed" || p.status === "success") &&
+        p.status === "completed" &&
         paymentDate >= dateRange.from! &&
         paymentDate <= dateRange.to!
       );
@@ -81,7 +50,7 @@ export class ReportDataProcessor {
     });
 
     filteredOrders.forEach((o) => {
-      const dateStr = format(new Date(o.created_at), "yyyy-MM-dd");
+      const dateStr = format(new Date(o.createdAt!), "yyyy-MM-dd");
       if (!dailyBreakdownMap[dateStr])
         dailyBreakdownMap[dateStr] = { revenue: 0, orders: 0 };
       dailyBreakdownMap[dateStr].orders++;
@@ -103,8 +72,8 @@ export class ReportDataProcessor {
     };
 
     // Payment breakdown - adapt this based on your actual payment method field
-    const getPaymentMethod = (payment: ActualPayment): string => {
-      return payment.payment_method || payment.method || "cash";
+    const getPaymentMethod = (payment: Payment): string => {
+      return payment.payment_method || payment.payment_method || "cash";
     };
 
     const paymentBreakdown = {
@@ -148,8 +117,8 @@ export class ReportDataProcessor {
 
     // Transaction counts (mock data - replace with actual service type logic)
     const transactionCounts = {
-      kilo: Math.floor(totalOrders * 0.7),
-      satuan: Math.floor(totalOrders * 0.3),
+      kilo: totalOrders,
+      satuan: totalOrders,
     };
 
     // Deposit data (mock - replace with actual deposit transaction data)
@@ -285,8 +254,8 @@ export class ReportDataProcessor {
 
   // Helper method to adapt your data structure
   static createMockDataFromActual(
-    ordersData: ActualOrder[],
-    paymentsData: ActualPayment[],
+    ordersData: Order[],
+    paymentsData: Payment[],
     dateRange: DateRange | undefined
   ): ReportData {
     // This method creates realistic mock data based on your actual data
@@ -297,14 +266,14 @@ export class ReportDataProcessor {
     }
 
     const filteredOrders = ordersData.filter((o) => {
-      const orderDate = new Date(o.created_at);
+      const orderDate = new Date(o.createdAt!);
       return orderDate >= dateRange.from! && orderDate <= dateRange.to!;
     });
 
     const filteredPayments = paymentsData.filter((p) => {
       const paymentDate = new Date(p.payment_date);
       return (
-        (p.status === "completed" || p.status === "success") &&
+        p.status === "completed" &&
         paymentDate >= dateRange.from! &&
         paymentDate <= dateRange.to!
       );
