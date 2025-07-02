@@ -83,7 +83,9 @@ export default function DashboardLayout({
   } = useSelector((state: RootState) => state.branchReducer);
 
   useEffect(() => {
-    dispatch(fetchUser(session?.user.email!));
+    if (session?.user.email) {
+      dispatch(fetchUser(session?.user.email!));
+    }
   }, [session]);
 
   useEffect(() => {
