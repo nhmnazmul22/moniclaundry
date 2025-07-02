@@ -4,7 +4,6 @@ import TransactionModel from "@/lib/models/TransactionModel";
 import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 
-
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
@@ -124,7 +123,7 @@ export async function POST(request: NextRequest) {
           {
             customer_id,
             order_id,
-            branch_id,
+            current_branch_id: branch_id,
             amount,
             type: "laundry",
             payment_method,

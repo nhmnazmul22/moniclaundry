@@ -66,7 +66,6 @@ export default function DashboardPage() {
     }
   }, [currentBranchId, dateRange]);
 
-  // Sample data based on your structure
   const salesData = {
     totalRevenue: dashboardData && dashboardData?.salesData.totalRevenue,
     paidAmount: dashboardData && dashboardData?.salesData.paidAmount,

@@ -3,6 +3,7 @@ import CustomerModel from "@/lib/models/CustomersModel";
 import ExpenseModel from "@/lib/models/ExpnesesModel";
 import OrderModel from "@/lib/models/OrdersModel";
 import TransactionModel from "@/lib/models/TransactionModel";
+import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -15,7 +16,8 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get("end_date");
 
     const matchBranch: any = {};
-    if (branchId) matchBranch.current_branch_id = branchId;
+    if (branchId)
+      matchBranch.current_branch_id = new mongoose.Types.ObjectId(branchId);
 
     // ✅ Build date filter
     const dateFilter: any = {};
@@ -101,7 +103,7 @@ export async function GET(request: NextRequest) {
     const allCustomers = await CustomerModel.find({ ...matchBranch }).lean();
     const existingCustomers = allCustomers.length;
 
-    const newCustomers = allCustomers.filter((c:any) => {
+    const newCustomers = allCustomers.filter((c: any) => {
       const created = new Date(c.createdAt);
       if (dateFilter.$gte && created < dateFilter.$gte) return false;
       if (dateFilter.$lte && created > dateFilter.$lte) return false;
