@@ -1,11 +1,22 @@
 import { dbConnect } from "@/lib/config/db";
 import ExpenseModel from "@/lib/models/ExpnesesModel";
+import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-    const expenses = await ExpenseModel.find({}).sort({ createdAt: -1 });
+
+    const { searchParams } = new URL(request.url);
+    const branch_id = searchParams.get("branch_id");
+
+    const matchStage: any = {};
+    let expenses = [];
+
+    if (branch_id) {
+      matchStage.current_branch_id = new mongoose.Types.ObjectId(branch_id);
+      expenses = await ExpenseModel.find({}).sort({ createdAt: -1 });
+    }
 
     if (expenses.length === 0 || !expenses) {
       return NextResponse.json(
