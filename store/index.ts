@@ -12,6 +12,7 @@ import serviceSlice from "@/store/ServiceSlice";
 import staffsSlice from "@/store/StaffSlice";
 import transactionsReducer from "@/store/transactionsSlice";
 import userSlice from "@/store/userSlice";
+import expensesSlice from "@/store/ExpensesSlice"
 import { configureStore } from "@reduxjs/toolkit";
 
 export const store = configureStore({
@@ -30,6 +31,7 @@ export const store = configureStore({
     depositReport: depositReportSlice,
     customerReportReducer: customerReportSlice,
     paymentsReducer: paymentsSlice,
+    expensesReducer: expensesSlice
   },
 });
 

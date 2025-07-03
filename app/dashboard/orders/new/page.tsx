@@ -26,9 +26,8 @@ import { useBranch } from "@/contexts/branch-context";
 import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
-import { fetchCustomers, updateCustomerBalance } from "@/store/CustomerSlice";
+import { fetchCustomers } from "@/store/CustomerSlice";
 import { fetchServices } from "@/store/ServiceSlice";
-import { processLaundryTransaction } from "@/store/transactionsSlice";
 import type { Branches } from "@/types";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -153,59 +152,6 @@ export default function NewOrderPage() {
   const { subtotal, discount, tax, totalAmount, totalWeight } =
     calculateTotals();
 
-  const handleProcessLaundryTransaction = async () => {
-    const customer = customers.find((c: any) => c._id === customerId);
-    if (!customer || !subtotal) return;
-
-    try {
-      const transactionData: any = {
-        customer_id: customer._id,
-        branch_id: branchId,
-        amount: subtotal,
-        payment_method: "deposit",
-        description: "Laundry service payment",
-      };
-
-      if (customer.deposit_balance! >= subtotal) {
-        // Full payment with deposit
-        transactionData.payment_method = "deposit";
-        transactionData.deposit_amount = subtotal;
-      } else {
-        // Mixed payment
-        const depositUsed = customer.deposit_balance!;
-        const cashNeeded = subtotal - depositUsed;
-
-        if (!paymentMethod) {
-          toast({
-            title: "Please select payment method for the remaining amount",
-          });
-          return;
-        }
-
-        transactionData.payment_method = "mixed";
-        transactionData.deposit_amount = depositUsed;
-        transactionData.cash_amount = cashNeeded;
-      }
-      const result = await dispatch(
-        processLaundryTransaction(transactionData)
-      ).unwrap();
-
-      // Update customer balance in Redux state
-      dispatch(
-        updateCustomerBalance({
-          customerId: customer._id!,
-          newBalance: result.customer.deposit_balance,
-        })
-      );
-
-      toast({
-        title: "Transaction processed successfully",
-      });
-    } catch (error) {
-      toast({ title: "Failed to process transaction" });
-    }
-  };
-
   const handleSubmitOrder = async () => {
     if (!customerId) {
       toast({
@@ -310,14 +256,11 @@ export default function NewOrderPage() {
       return;
     }
 
-    // Deposit payment handling
-    if (paymentMethod === "deposit") {
-      handleProcessLaundryTransaction();
-    }
-
     // If payment is made directly (e.g. cash, deposit and paid)
     if (
-      (paymentStatus === "lunas" || paymentStatus === "dp") &&
+      (paymentStatus === "lunas" ||
+        paymentStatus === "dp" ||
+        paymentMethod === "deposit") &&
       totalAmount > 0
     ) {
       const paymentData = {
@@ -329,7 +272,12 @@ export default function NewOrderPage() {
         current_branch_id: branchId,
       };
 
-      await api.post("/api/payments", paymentData);
+      const res = await api.post("/api/payments", paymentData);
+      if (res.status !== 201) {
+        await api.delete(`/api/orders/${result.data.data._id}`);
+        console.log(res.data);
+        return;
+      }
     }
 
     toast({

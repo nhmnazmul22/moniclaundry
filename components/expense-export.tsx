@@ -12,9 +12,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { formatDate } from "@/lib/utils";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Download, FileSpreadsheet, FileText } from "lucide-react";
+import { Download, FileSpreadsheet } from "lucide-react";
 import { useState } from "react";
 
 interface Expense {
@@ -68,58 +69,26 @@ export function ExpenseExport({ expenses }: ExpenseExportProps) {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Laporan Pengeluaran");
 
-      // Add title
-      const titleRow = worksheet.addRow(["LAPORAN PENGELUARAN HARIAN"]);
-      titleRow.font = { bold: true, size: 16 };
-      titleRow.alignment = { horizontal: "center" };
-      worksheet.mergeCells("A1:C1");
+      worksheet.columns = [
+        { header: "Tanggal (otomatis harian)", key: "date", width: 25 },
+        { header: "Jenis Pengeluaran", key: "category", width: 30 },
+        { header: "Rp", key: "amount", width: 15 },
+      ];
 
-      // Add date range if filtered
-      if (dateRange.startDate || dateRange.endDate) {
-        const dateRangeText = `Periode: ${dateRange.startDate || "Awal"} - ${
-          dateRange.endDate || "Akhir"
-        }`;
-        const dateRangeRow = worksheet.addRow([dateRangeText]);
-        dateRangeRow.font = { italic: true };
-        worksheet.mergeCells("A2:C2");
-        worksheet.addRow([]); // Empty row
-      } else {
-        worksheet.addRow([]); // Empty row
-      }
-
-      // Set column headers
-      const headerRow = worksheet.addRow([
-        "Tanggal (otomatis harian)",
-        "Jenis Pengeluaran",
-        "Rp",
-      ]);
-
+      // Style header row
+      const headerRow = worksheet.getRow(1);
       for (let col = 1; col <= 3; col++) {
         const cell = headerRow.getCell(col);
         cell.font = { bold: true, color: { argb: "000000" } };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
         cell.border = {
           top: { style: "thin" },
           left: { style: "thin" },
           bottom: { style: "thin" },
           right: { style: "thin" },
         };
-        cell.alignment = { horizontal: "center", vertical: "middle" };
       }
 
-      // Set column widths
-      worksheet.columns = [{ width: 25 }, { width: 20 }, { width: 15 }];
-
-      // Group expenses by category and sum amounts
-      const categoryTotals: { [key: string]: number } = {};
-      filteredExpenses.forEach((expense) => {
-        if (categoryTotals[expense.category]) {
-          categoryTotals[expense.category] += expense.amount;
-        } else {
-          categoryTotals[expense.category] = expense.amount;
-        }
-      });
-
-      // All possible categories
       const allCategories = [
         "Aqua",
         "Bensin Kurir",
@@ -134,41 +103,67 @@ export function ExpenseExport({ expenses }: ExpenseExportProps) {
         "Uang Training",
       ];
 
-      // Add rows for each category
-      allCategories.forEach((category) => {
-        const amount = categoryTotals[category] || "";
-        const row = worksheet.addRow(["", category, amount]);
-
-        if (amount) {
-          const amountCell = row.getCell(3);
-          amountCell.numFmt = "#,##0";
-          amountCell.alignment = { horizontal: "right" };
-        }
+      // Group expenses by date
+      const expensesByDate: Record<string, typeof filteredExpenses> = {};
+      filteredExpenses.forEach((expense) => {
+        const date = formatDate(expense.date || expense.createdAt); // format to "DD/MM/YYYY"
+        if (!expensesByDate[date]) expensesByDate[date] = [];
+        expensesByDate[date].push(expense);
       });
 
-      // Add total row
-      const totalAmount = Object.values(categoryTotals).reduce(
-        (sum, amount) => sum + amount,
-        0
-      );
-      const totalRow = worksheet.addRow(["", "TOTAL", totalAmount]);
+      let grandTotal = 0;
+
+      for (const date of Object.keys(expensesByDate).sort()) {
+        const expenses = expensesByDate[date];
+
+        const usedCategories = new Set<string>();
+        let dailyTotal = 0;
+
+        // Insert used expenses
+        expenses.forEach((exp) => {
+          usedCategories.add(exp.category);
+          worksheet
+            .addRow({
+              date: date,
+              category: exp.category,
+              amount: exp.amount,
+            })
+            .getCell(3).numFmt = "#,##0";
+          dailyTotal += exp.amount;
+        });
+
+        // Insert unused categories with empty values
+        allCategories.forEach((category) => {
+          if (!usedCategories.has(category)) {
+            worksheet.addRow({
+              date: "",
+              category,
+              amount: "",
+            });
+          }
+        });
+
+        grandTotal += dailyTotal;
+      }
+
+      // Add final TOTAL row
+      worksheet.addRow({});
+      const totalRow = worksheet.addRow({
+        category: "TOTAL",
+        amount: grandTotal,
+      });
       totalRow.font = { bold: true };
+      totalRow.getCell(3).numFmt = "#,##0";
+      totalRow.getCell(3).alignment = { horizontal: "right" };
       totalRow.fill = {
         type: "pattern",
         pattern: "solid",
         fgColor: { argb: "F2F2F2" },
       };
 
-      const totalAmountCell = totalRow.getCell(3);
-      totalAmountCell.numFmt = "#,##0";
-      totalAmountCell.alignment = { horizontal: "right" };
-
-      // Add borders to all data cells
-      const startRow = dateRange.startDate || dateRange.endDate ? 4 : 3;
-      const endRow = worksheet.rowCount;
-
-      for (let i = startRow; i <= endRow; i++) {
-        const row = worksheet.getRow(i);
+      // Add borders to all data rows
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return; // skip header
         row.eachCell((cell) => {
           cell.border = {
             top: { style: "thin" },
@@ -177,108 +172,32 @@ export function ExpenseExport({ expenses }: ExpenseExportProps) {
             right: { style: "thin" },
           };
         });
-      }
+      });
 
-      // Generate and save file
+      // Export
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
 
       const today = new Date().toISOString().split("T")[0];
-      const filename = `Laporan_Pengeluaran_${today}.xlsx`;
-      saveAs(blob, filename);
+      saveAs(blob, `Laporan_Pengeluaran_${today}.xlsx`);
 
       toast({
-        title: "Export Successful",
-        description: `File ${filename} has been downloaded`,
+        title: "Export Berhasil",
+        description: `File Laporan_Pengeluaran_${today}.xlsx telah diunduh.`,
       });
     } catch (error) {
+      console.error(error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export expense report",
+        title: "Export Gagal",
+        description: "Gagal melakukan export data.",
         variant: "destructive",
       });
     } finally {
       setIsExporting(false);
     }
   };
-
-  const exportToCSV = () => {
-    setIsExporting(true);
-    try {
-      const filteredExpenses = filterExpensesByDate();
-
-      // Group expenses by category
-      const categoryTotals: { [key: string]: number } = {};
-      filteredExpenses.forEach((expense) => {
-        if (categoryTotals[expense.category]) {
-          categoryTotals[expense.category] += expense.amount;
-        } else {
-          categoryTotals[expense.category] = expense.amount;
-        }
-      });
-
-      // Create CSV content
-      let csvContent = "Tanggal (otomatis harian),Jenis Pengeluaran,Rp\n";
-
-      const allCategories = [
-        "Aqua",
-        "Bensin Kurir",
-        "Bensin Mobil",
-        "Gas",
-        "Kasbon",
-        "Kebutuhan Laundry",
-        "Lainnya",
-        "Lembur",
-        "Medis",
-        "Traktir Karyawan",
-        "Uang Training",
-      ];
-
-      allCategories.forEach((category) => {
-        const amount = categoryTotals[category] || "";
-        csvContent += `,${category},${amount}\n`;
-      });
-
-      // Add total
-      const totalAmount = Object.values(categoryTotals).reduce(
-        (sum, amount) => sum + amount,
-        0
-      );
-      csvContent += `,TOTAL,${totalAmount}\n`;
-      csvContent += ",,\n";
-      csvContent += ",Dibuat drop down list,\n";
-
-      // Create and download file
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const today = new Date().toISOString().split("T")[0];
-      const filename = `Laporan_Pengeluaran_${today}.csv`;
-      saveAs(blob, filename);
-
-      toast({
-        title: "Export Successful",
-        description: `File ${filename} has been downloaded`,
-      });
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "Failed to export CSV report",
-        variant: "destructive",
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleExport = () => {
-    if (exportFormat === "excel") {
-      exportToExcel();
-    } else {
-      exportToCSV();
-    }
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -300,12 +219,6 @@ export function ExpenseExport({ expenses }: ExpenseExportProps) {
                   <div className="flex items-center gap-2">
                     <FileSpreadsheet className="h-4 w-4" />
                     Excel (.xlsx)
-                  </div>
-                </SelectItem>
-                <SelectItem value="csv">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    CSV (.csv)
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -336,7 +249,7 @@ export function ExpenseExport({ expenses }: ExpenseExportProps) {
         </div>
 
         <Button
-          onClick={handleExport}
+          onClick={exportToExcel}
           disabled={isExporting}
           className="w-full"
         >

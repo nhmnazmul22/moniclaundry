@@ -202,7 +202,7 @@ export interface DepositType {
   name: string;
   purchase_price: number;
   deposit_value: number;
-  branch_id: string;
+  current_branch_id: string;
   description?: string;
   is_active?: boolean;
 }
@@ -210,7 +210,7 @@ export interface DepositType {
 export interface Transaction {
   _id?: string;
   customer_id: string;
-  branch_id: string;
+  current_branch_id: string;
   amount: number;
   type: "laundry" | "deposit_purchase" | "refund" | "adjustment";
   payment_method: "deposit" | "cash" | "transfer" | "qris" | "mixed";
@@ -277,4 +277,26 @@ export interface CustomerTransactionReport {
   nilaiTransaksi: number;
   jumlahTransaksiKiloan: number;
   jumlahTransaksiSatuan: number;
+}
+
+export interface Expense {
+  _id?: string;
+  category:
+    | "Aqua"
+    | "Bensin Kurir"
+    | "Bensin Mobil"
+    | "Gas"
+    | "Kasbon"
+    | "Kebutuhan Laundry"
+    | "Lainnya"
+    | "Lembur"
+    | "Medis"
+    | "Traktir Karyawan"
+    | "Uang Training";
+  amount: number;
+  description: string;
+  date: string;
+  current_branch_id: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

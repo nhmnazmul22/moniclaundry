@@ -109,6 +109,28 @@ export default function EditOrderPage() {
 
       if (res.status !== 201) throw new Error("Order update failed");
 
+      if (
+        order?.payment_status === "belum lunas" &&
+        (formData.payment_status === "lunas" ||
+          formData.payment_status === "dp")
+      ) {
+        const paymentData = {
+          order_id: order._id,
+          amount: order.total_amount,
+          payment_method: order.payment_method,
+          payment_date: new Date().toISOString(),
+          status: "completed",
+          current_branch_id: currentBranchId,
+        };
+
+        const res = await api.post("/api/payments", paymentData);
+        if (res.status !== 201) {
+          await api.delete(`/api/orders/${order._id}`);
+          console.log(res.data);
+          return;
+        }
+      }
+
       toast.success("Order berhasil diperbarui!");
       router.push(`/dashboard/orders/${orderId}`);
     } catch (err: any) {

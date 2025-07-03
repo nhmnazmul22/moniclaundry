@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       customer_id,
-      order_id,
       branch_id,
       amount,
       payment_method,
@@ -21,7 +20,7 @@ export async function POST(request: NextRequest) {
       processed_by,
     } = body;
 
-    if (!customer_id || !branch_id || !order_id || !amount || !payment_method) {
+    if (!customer_id || !branch_id  || !amount || !payment_method) {
       return NextResponse.json(
         {
           status: "Failed",
@@ -122,7 +121,6 @@ export async function POST(request: NextRequest) {
         [
           {
             customer_id,
-            order_id,
             current_branch_id: branch_id,
             amount,
             type: "laundry",

@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         [
           {
             customer_id,
-            branch_id: customer.current_branch_id,
+            current_branch_id: customer.current_branch_id,
             amount: depositType.deposit_value,
             type: "deposit_purchase",
             payment_method: "cash",

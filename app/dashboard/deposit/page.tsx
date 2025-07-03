@@ -147,7 +147,7 @@ export default function DepositManagement() {
         await dispatch(
           createDepositType({
             ...newDepositType,
-            branch_id: branchId,
+            current_branch_id: branchId,
             is_active: true,
           })
         ).unwrap();

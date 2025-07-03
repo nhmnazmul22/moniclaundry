@@ -31,6 +31,8 @@ import { type ReportData } from "@/lib/pdf-generator";
 import { ReportDataProcessor } from "@/lib/report-data-processor";
 import { formatCurrency } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
+import { fetchCustomers } from "@/store/CustomerSlice";
+import { fetchExpenses } from "@/store/ExpensesSlice";
 import { fetchOrders } from "@/store/orderSlice";
 import { fetchPayments } from "@/store/PaymentSlice";
 import { addDays, format } from "date-fns";
@@ -57,6 +59,13 @@ export default function ReportsPage() {
   const { items: paymentsData } = useSelector(
     (state: RootState) => state.paymentsReducer
   );
+  const { items: expensesData } = useSelector(
+    (state: RootState) => state.expensesReducer
+  );
+
+  const { items: customerData } = useSelector(
+    (state: RootState) => state.customerReducer
+  );
 
   const generateReport = useCallback(async () => {
     if (!dateRange?.from || !dateRange?.to) {
@@ -67,12 +76,15 @@ export default function ReportsPage() {
     setError(null);
     try {
       // Use the flexible processor that works with your actual data structure
-      const processedData = ReportDataProcessor.createMockDataFromActual(
+      const processedData = ReportDataProcessor.processReportData(
         ordersData!,
         paymentsData!,
+        expensesData!,
+        customerData,
         dateRange
       );
       setReportData(processedData);
+      console.log(processedData);
     } catch (e) {
       setError(
         e instanceof Error
@@ -84,11 +96,21 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [dateRange, reportType, ordersData, paymentsData, currentBranchId]);
+  }, [
+    dateRange,
+    reportType,
+    ordersData,
+    paymentsData,
+    customerData,
+    expensesData,
+    currentBranchId,
+  ]);
 
   useEffect(() => {
     dispatch(fetchOrders(currentBranchId));
     dispatch(fetchPayments(currentBranchId));
+    dispatch(fetchExpenses(currentBranchId));
+    dispatch(fetchCustomers(currentBranchId));
   }, [currentBranchId]);
 
   useEffect(() => {
@@ -133,10 +155,10 @@ export default function ReportsPage() {
                 <SelectItem value="revenue_summary">
                   Ringkasan Pendapatan
                 </SelectItem>
-                <SelectItem value="order_details" disabled>
+                <SelectItem value="order_details">
                   Detail Pesanan (Segera Hadir)
                 </SelectItem>
-                <SelectItem value="customer_insights" disabled>
+                <SelectItem value="customer_insights">
                   Wawasan Pelanggan (Segera Hadir)
                 </SelectItem>
               </SelectContent>

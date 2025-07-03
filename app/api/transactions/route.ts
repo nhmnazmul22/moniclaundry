@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const matchStage: any = {};
 
     if (branch_id) {
-      matchStage.branch_id = new mongoose.Types.ObjectId(branch_id);
+      matchStage.current_branch_id = new mongoose.Types.ObjectId(branch_id);
     }
 
     if (customer_id) {
