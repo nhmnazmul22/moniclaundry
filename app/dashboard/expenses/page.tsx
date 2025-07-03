@@ -3,23 +3,26 @@
 import { ExpenseExport } from "@/components/expense-export";
 import { ExpenseForm } from "@/components/expense-form";
 import { ExpenseTable } from "@/components/expense-table";
+import { useBranch } from "@/contexts/branch-context";
+import api from "@/lib/config/axios";
 import { useEffect, useState } from "react";
 
 export default function ExpensesPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [expenses, setExpenses] = useState([]);
 
-  // You can get this from your auth context or props
-  const currentBranchId = "your-branch-id-here";
+  const { currentBranchId } = useBranch();
 
   const handleExpenseAdded = async () => {
     setRefreshTrigger((prev) => prev + 1);
-    // Fetch expenses for export component
+
     try {
-      const response = await fetch("/api/expenses");
-      const result = await response.json();
-      if (response.ok) {
-        setExpenses(result.data || []);
+      const response = await api.get(
+        `/api/expenses?branch_id=${currentBranchId}`
+      );
+
+      if (response.status === 200) {
+        setExpenses(response.data.data || []);
       }
     } catch (error) {
       console.error("Failed to fetch expenses for export:", error);
@@ -28,7 +31,7 @@ export default function ExpensesPage() {
 
   useEffect(() => {
     handleExpenseAdded();
-  }, []);
+  }, [currentBranchId]);
 
   return (
     <div className="container mx-auto py-8 space-y-8">

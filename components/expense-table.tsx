@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useBranch } from "@/contexts/branch-context";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
@@ -35,11 +36,14 @@ export function ExpenseTable({ refreshTrigger }: ExpenseTableProps) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { currentBranchId } = useBranch();
 
   const fetchExpenses = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/expenses");
+      const response = await fetch(
+        `/api/expenses?branch_id=${currentBranchId}`
+      );
       const result = await response.json();
 
       if (response.ok) {

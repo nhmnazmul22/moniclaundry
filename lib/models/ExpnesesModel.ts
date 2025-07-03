@@ -33,7 +33,7 @@ const ExpenseSchema = new mongoose.Schema(
       default: Date.now,
     },
     current_branch_id: {
-      type: String,
+      type: mongoose.Types.ObjectId,
       required: true,
     },
   },

@@ -49,8 +49,8 @@ import { useDispatch, useSelector } from "react-redux";
 const navigation = (userProfile: any) => [
   { name: "Dashboar", href: "/dashboard", icon: LayoutDashboard },
   { name: "Order", href: "/dashboard/orders", icon: ShoppingCart },
-  { name: "Customer", href: "/dashboard/customers", icon: Users },
   { name: "Layanan", href: "/dashboard/services", icon: Shirt },
+  { name: "Customer", href: "/dashboard/customers", icon: Users },
   { name: "Pengeluaran", href: "/dashboard/expenses", icon: Package },
   { name: "Antar Jemput", href: "/dashboard/deliveries", icon: Truck },
   { name: "Laporan", href: "/dashboard/reports", icon: BarChart3 },

@@ -7,7 +7,7 @@ import mongoose, {
 
 export interface Transaction extends Document {
   customer_id: ObjectId;
-  branch_id: ObjectId;
+  current_branch_id: ObjectId;
   order_id: ObjectId;
   amount: number;
   type: "laundry" | "deposit_purchase" | "refund" | "adjustment";
@@ -27,7 +27,7 @@ const TransactionSchema: Schema<Transaction> = new mongoose.Schema(
       required: true,
       ref: "customers",
     },
-    branch_id: {
+    current_branch_id: {
       type: mongoose.Types.ObjectId,
       required: true,
       ref: "branches",

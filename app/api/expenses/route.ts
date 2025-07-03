@@ -15,10 +15,10 @@ export async function GET(request: NextRequest) {
 
     if (branch_id) {
       matchStage.current_branch_id = new mongoose.Types.ObjectId(branch_id);
-      expenses = await ExpenseModel.find({}).sort({ createdAt: -1 });
+      expenses = await ExpenseModel.find(matchStage);
     }
 
-    if (expenses.length === 0 || !expenses) {
+    if (expenses.length === 0) {
       return NextResponse.json(
         {
           status: "Failed",
