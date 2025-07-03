@@ -48,7 +48,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     dispatch(fetchOrders(currentBranchId));
-  }, []);
+  }, [currentBranchId]);
 
   // 1. First filter by status
   const statusFilteredOrders = orders?.filter((order) => {
@@ -116,7 +116,7 @@ export default function OrdersPage() {
       }
 
       alert("Order berhasil dihapus.");
-      fetchOrders(currentBranchId); // Refresh data
+      dispatch(fetchOrders(currentBranchId)); // Refresh data
     } catch (err: any) {
       alert(`Gagal menghapus order: ${err.message}`);
     }
@@ -221,11 +221,9 @@ export default function OrdersPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Status</SelectItem>
-                <SelectItem value="received">Diterima</SelectItem>
-                <SelectItem value="washing">Dicuci</SelectItem>
-                <SelectItem value="ready">Siap Diambil/Dikirim</SelectItem>
-                <SelectItem value="delivered">Selesai</SelectItem>
-                <SelectItem value="cancelled">Dibatalkan</SelectItem>
+                <SelectItem value="diterima">Diterima</SelectItem>
+                <SelectItem value="diproses">Diproses</SelectItem>
+                <SelectItem value="selesai">Selesai</SelectItem>
               </SelectContent>
             </Select>
           </div>
