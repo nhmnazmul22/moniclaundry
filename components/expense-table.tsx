@@ -113,13 +113,18 @@ export function ExpenseTable({ refreshTrigger }: ExpenseTableProps) {
 
     // Style the header row
     const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true, color: { argb: "FFFFFF" } };
-    headerRow.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "366092" },
-    };
-    headerRow.alignment = { horizontal: "center", vertical: "middle" };
+
+    for (let col = 1; col <= 3; col++) {
+      const cell = headerRow.getCell(col);
+      cell.font = { bold: true, color: { argb: "000000" } };
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+    }
 
     // Add expense data
     expenses.forEach((expense) => {
@@ -192,14 +197,6 @@ export function ExpenseTable({ refreshTrigger }: ExpenseTableProps) {
         };
       });
     });
-
-    // Add note about dropdown list
-    const noteRow = worksheet.addRow({
-      date: "",
-      category: "Dibuat drop down list",
-      amount: "",
-    });
-    noteRow.font = { italic: true, color: { argb: "666666" } };
 
     // Generate Excel file
     const buffer = await workbook.xlsx.writeBuffer();

@@ -317,9 +317,7 @@ export default function NewOrderPage() {
 
     // If payment is made directly (e.g. cash, deposit and paid)
     if (
-      (paymentStatus === "lunas" ||
-        paymentMethod === "dp" ||
-        paymentMethod === "deposit") &&
+      (paymentStatus === "lunas" || paymentStatus === "dp") &&
       totalAmount > 0
     ) {
       const paymentData = {

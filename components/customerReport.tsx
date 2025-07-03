@@ -69,14 +69,18 @@ export default function CustomerReport() {
 
       // Style the header row
       const headerRow = worksheet.getRow(1);
-      headerRow.font = { bold: true, color: { argb: "FFFFFF" } };
-      headerRow.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "366092" },
-      };
-      headerRow.alignment = { horizontal: "center", vertical: "middle" };
       headerRow.height = 25;
+      for (let col = 1; col <= 9; col++) {
+        const cell = headerRow.getCell(col);
+        cell.font = { bold: true, color: { argb: "000000" } };
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+      }
 
       // Add data rows
       dataToExport?.forEach((item) => {
@@ -184,7 +188,6 @@ export default function CustomerReport() {
     }
   };
 
-  console.log(data);
   return (
     <div className="space-y-6">
       <Card>

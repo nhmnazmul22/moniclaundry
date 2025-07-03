@@ -76,6 +76,19 @@ export default function CustomersPage() {
     dispatch(fetchCustomers(currentBranchId));
   }, [currentBranchId]);
 
+  // 2. Then filter by search term
+  const filteredCustomer = customers?.filter((customer) => {
+    const search = searchTerm.toLowerCase();
+    if (searchTerm) {
+      return (
+        customer?.name?.toLowerCase().includes(search) ||
+        customer?.phone?.includes(search)
+      );
+    } else {
+      return true;
+    }
+  });
+
   const handleAddSubmit = async (formData: FormData) => {
     try {
       setLoading(true);
@@ -337,7 +350,7 @@ export default function CustomersPage() {
               </TableHeader>
               <TableBody>
                 {customers &&
-                  customers.map((customer) => (
+                  filteredCustomer.map((customer) => (
                     <TableRow key={customer._id}>
                       <TableCell>
                         <div>
