@@ -72,8 +72,7 @@ export default function NewOrderPage() {
   }, [currentBranchId]);
 
   const handleAddOrderItem = () => {
-    const defaultService =
-      Array.isArray(services?.services) && services.services[0];
+    const defaultService = Array.isArray(services) && services[0];
     if (!defaultService) {
       toast({
         title: "Info",
@@ -110,10 +109,9 @@ export default function NewOrderPage() {
 
     if (field === "service_id") {
       const selectedService =
-        Array.isArray(services?.services) &&
-        services?.services?.find((s) => s._id === value);
+        Array.isArray(services) && services?.find((s) => s._id === value);
       if (selectedService) {
-        item.unit_price = selectedService.price; // Assuming price_per_kg for now
+        item.unit_price = selectedService.price;
         item.service_name = selectedService.servicename;
       } else {
         item.unit_price = 0;
@@ -354,8 +352,8 @@ export default function NewOrderPage() {
                         <SelectValue placeholder="Pilih Layanan" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Array.isArray(services?.services) &&
-                          services.services.map((service) => (
+                        {services &&
+                          services.map((service) => (
                             <SelectItem key={service._id} value={service._id!}>
                               {service.servicename} (
                               {formatCurrency(service.price)}/kg)

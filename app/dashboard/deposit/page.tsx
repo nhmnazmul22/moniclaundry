@@ -324,6 +324,8 @@ export default function DepositManagement() {
     transactions.loading ||
     dashboard.loading;
 
+  console.log(isLoading);
+
   if (isLoading && customers.items.length === 0) {
     return (
       <div className="container mx-auto p-6 flex items-center justify-center min-h-screen">

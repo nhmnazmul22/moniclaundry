@@ -50,7 +50,9 @@ export async function GET(request: NextRequest) {
       customerMatchStage.current_branch_id = new mongoose.Types.ObjectId(
         branch_id
       );
-      transactionMatchStage.branch_id = new mongoose.Types.ObjectId(branch_id);
+      transactionMatchStage.current_branch_id = new mongoose.Types.ObjectId(
+        branch_id
+      );
     }
 
     // Add date filtering if provided
@@ -106,6 +108,7 @@ export async function GET(request: NextRequest) {
     const todayTransactions = await TransactionModel.countDocuments(
       todayTransactionMatchStage
     );
+    console.log(todayTransactions);
 
     // Expiring deposits (within 2 weeks)
     const twoWeeksFromNow = new Date();

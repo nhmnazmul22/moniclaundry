@@ -3,18 +3,18 @@ import { Service } from "@/types";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface InitialState {
-  items?: Service;
+  items?: Service[];
   loading: boolean;
   error: string | null;
 }
 
 const initialState: InitialState = {
-  items: {},
+  items: [],
   loading: false,
   error: null,
 };
 
-export const fetchServices = createAsyncThunk<Service, string>(
+export const fetchServices = createAsyncThunk<Service[], string>(
   "service/fetchServices",
   async (branchId) => {
     const response = await api.get(`/api/services?branch_id=${branchId}`);
@@ -34,7 +34,7 @@ const servicesSlice = createSlice({
       })
       .addCase(
         fetchServices.fulfilled,
-        (state, action: PayloadAction<Service>) => {
+        (state, action: PayloadAction<Service[]>) => {
           state.loading = false;
           state.items = action.payload;
         }

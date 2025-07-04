@@ -31,25 +31,8 @@ export async function GET(request: NextRequest) {
         {
           $lookup: {
             from: "services",
-            let: { serviceId: "$service_id" },
-            pipeline: [
-              { $unwind: "$services" },
-              {
-                $match: {
-                  $expr: {
-                    $eq: ["$services._id", "$$serviceId"],
-                  },
-                },
-              },
-              {
-                $project: {
-                  _id: 0,
-                  services: "$services",
-                  branch_name: 1,
-                  name: 1,
-                },
-              },
-            ],
+            localField: "service_id",
+            foreignField: "_id",
             as: "serviceDetails",
           },
         },

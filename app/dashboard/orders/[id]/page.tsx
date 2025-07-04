@@ -550,9 +550,7 @@ export default function OrderDetailPage() {
                   <TableRow key={item._id}>
                     <TableCell>
                       <div className="font-medium">
-                        {(!Array.isArray(item.serviceDetails?.services) &&
-                          item.serviceDetails?.services?.servicename!) ||
-                          "N/A"}
+                        {item.serviceDetails?.servicename! || "N/A"}
                       </div>
                     </TableCell>
                     <TableCell>{item.quantity} kg</TableCell>

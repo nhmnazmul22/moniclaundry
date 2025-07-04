@@ -47,8 +47,7 @@ export async function PUT(
     await dbConnect();
     const serviceId = (await params).id;
     const body = await request.json();
-
-    // Update service data
+    
     const UpdatedService = await ServiceModel.findByIdAndUpdate(
       serviceId,
       {

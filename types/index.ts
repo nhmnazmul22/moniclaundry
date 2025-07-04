@@ -32,20 +32,13 @@ export interface Customer {
   updatedAt: string;
 }
 
-export interface BranchService {
+export interface Service {
   _id?: string;
+  type?: string;
   category: string;
   servicename: string;
   price: number;
-}
-
-export interface Service {
-  _id?: string;
-  name?: string;
-  branch_name?: string;
-  type?: string;
-  current_branch_id?: [string];
-  services?: BranchService | BranchService[];
+  current_branch_id: [string];
   createdAt?: string;
   updatedAt?: string;
 }

@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -24,11 +32,22 @@ import {
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
 import { useToast } from "@/hooks/use-toast";
+import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
 import type { AppDispatch, RootState } from "@/store";
 import { fetchBranches } from "@/store/BranchSlice";
 import { fetchServices } from "@/store/ServiceSlice";
-import { Download, FileText, Loader2, Search, Upload } from "lucide-react";
+import { Service } from "@/types";
+import {
+  Download,
+  Edit,
+  FileText,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -36,12 +55,25 @@ import { importServicesJSON } from "./actions";
 
 export default function ServicesPage() {
   const { currentBranchId } = useBranch();
-  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
   const [isImportOpen, setIsImportOpen] = useState(false);
   const { currentItems } = useSelector(
     (state: RootState) => state.paginationReducer
   );
+  const [loading, setLoading] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+
+  const [serviceType, setServiceType] = useState<string>("satuan");
+  const [serviceForm, setServiceForm] = useState({
+    category: "",
+    servicename: "",
+    price: "",
+  });
+
+  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // JSON Import states
   const [jsonFile, setJsonFile] = useState<File | null>(null);
@@ -50,6 +82,9 @@ export default function ServicesPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { items: services, loading: serviceLoading } = useSelector(
     (state: RootState) => state.serviceReducer
+  );
+  const { items: branches } = useSelector(
+    (state: RootState) => state.branchReducer
   );
 
   useEffect(() => {
@@ -118,7 +153,7 @@ export default function ServicesPage() {
 
   const handleExport = async () => {
     try {
-      if (services?.services) {
+      if (services) {
         const blob = new Blob([JSON.stringify(services, null, 2)], {
           type: "application/json",
         });
@@ -148,6 +183,138 @@ export default function ServicesPage() {
     }
   };
 
+  const reset = () => {
+    setServiceForm({
+      category: "",
+      servicename: "",
+      price: "",
+    });
+    setServiceType("");
+    setSelectedBranchIds([]);
+    setIsAddDialogOpen(false);
+    setIsEditDialogOpen(false);
+    setSelectedService(null);
+  };
+
+  const handleCheckedChange = (checked: boolean, id: string) => {
+    setSelectedBranchIds((prev) =>
+      checked ? [...prev, id] : prev.filter((val) => val !== id)
+    );
+  };
+
+  const handleAddService = async () => {
+    const serviceData = {
+      ...serviceForm,
+      type: serviceType || "",
+      current_branch_id: selectedBranchIds,
+    };
+
+    try {
+      setLoading(true);
+      const res = await api.post("/api/services", serviceData);
+
+      if (res.status === 201) {
+        toast({
+          title: "Successful",
+          description: `Service create successful`,
+        });
+        reset();
+        dispatch(fetchServices(currentBranchId));
+      }
+    } catch (err: any) {
+      toast({
+        title: "Failed",
+        description: `${
+          err.message || "Something went wrong create service!!"
+        }`,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditService = async () => {
+    const serviceData = {
+      ...serviceForm,
+      type: serviceType || "",
+      current_branch_id: selectedBranchIds,
+    };
+
+    try {
+      setLoading(true);
+      const res = await api.put(
+        `/api/services/${selectedService?._id}`,
+        serviceData
+      );
+
+      if (res.status === 201) {
+        toast({
+          title: "Successful",
+          description: `Service updated successful`,
+        });
+        reset();
+        dispatch(fetchServices(currentBranchId));
+      }
+    } catch (err: any) {
+      toast({
+        title: "Failed",
+        description: `${
+          err.message || "Something went wrong updating service!!"
+        }`,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      setLoading(true);
+      const res = await api.delete(`/api/services/${id}`);
+
+      if (res.status === 200) {
+        toast({
+          title: "Successful",
+          description: `Service Deleted successful`,
+        });
+        dispatch(fetchServices(currentBranchId));
+      }
+    } catch (err: any) {
+      toast({
+        title: "Failed",
+        description: `${
+          err.message || "Something went wrong deleting service!!"
+        }`,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedService) {
+      setServiceForm({
+        category: selectedService.category,
+        servicename: selectedService.servicename,
+        price: String(selectedService.price),
+      });
+
+      setServiceType(selectedService.type || "Satuan");
+
+      // If it's a single branch ID:
+      if (typeof selectedService.current_branch_id === "string") {
+        setSelectedBranchIds([selectedService.current_branch_id]);
+      }
+      // If it's an array:
+      else if (Array.isArray(selectedService.current_branch_id)) {
+        setSelectedBranchIds(selectedService.current_branch_id);
+      }
+    }
+  }, [selectedService]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -163,7 +330,6 @@ export default function ServicesPage() {
             <Download className="mr-2 h-4 w-4" />
             Export JSON
           </Button>
-
           <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
             <DialogTrigger asChild>
               <Button
@@ -223,15 +389,124 @@ export default function ServicesPage() {
               </div>
             </DialogContent>
           </Dialog>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={() => reset()}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Tambah Service
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Tambah Service Baru</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={(e) => e.preventDefault()} className="">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2 space-y-1">
+                    <Select value={serviceType} onValueChange={setServiceType}>
+                      <SelectTrigger id="type">
+                        <SelectValue placeholder="Pilih type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Satuan">Satuan</SelectItem>
+                        <SelectItem value="Kiloan">Kiloan</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label htmlFor="category">Category Service</Label>
+                    <Input
+                      id="category"
+                      name="category"
+                      value={serviceForm?.category}
+                      onChange={(e) =>
+                        setServiceForm((prev) => ({
+                          ...prev,
+                          category: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label htmlFor="servicename">Service Name</Label>
+                    <Input
+                      id="servicename"
+                      name="servicename"
+                      value={serviceForm?.servicename}
+                      onChange={(e) =>
+                        setServiceForm((prev) => ({
+                          ...prev,
+                          servicename: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label htmlFor="price">Price</Label>
+                    <Input
+                      type="number"
+                      id="price"
+                      name="price"
+                      value={serviceForm?.price}
+                      onChange={(e) =>
+                        setServiceForm((prev) => ({
+                          ...prev,
+                          price: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="col-span-2 flex flex-col gap-2">
+                    {branches &&
+                      branches.map((branch) => (
+                        <div
+                          key={branch._id}
+                          className="flex gap-2 items-center"
+                        >
+                          <Checkbox
+                            id={branch._id}
+                            checked={selectedBranchIds.includes(branch._id)}
+                            onCheckedChange={(checked) =>
+                              handleCheckedChange(!!checked, branch._id)
+                            }
+                          />
+                          <Label htmlFor={branch._id} className="m-0">
+                            {branch.name} - ({branch.type})
+                          </Label>
+                        </div>
+                      ))}
+                  </div>
+                  <div className="col-span-2 flex gap-2 items-center space-y-1">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsAddDialogOpen(false)}
+                      disabled={loading}
+                    >
+                      Batal
+                    </Button>
+                    <Button onClick={handleAddService} disabled={loading}>
+                      {loading && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Simpan Layanan
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>
-            Daftar Services (
-            {Array.isArray(services?.services) && services?.services?.length})
-          </CardTitle>
+          <CardTitle>Daftar Services ({services?.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="relative mb-4">
@@ -254,7 +529,8 @@ export default function ServicesPage() {
                   <TableHead>Service Info</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Price/kg</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -263,7 +539,7 @@ export default function ServicesPage() {
                     <TableRow key={`${service.servicename}-${index}`}>
                       <TableCell>
                         <div className="text-sm text-gray-500 line-clamp-2">
-                          Satuan
+                          {service.type}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -275,11 +551,38 @@ export default function ServicesPage() {
                         <Badge variant="outline">{service.category}</Badge>
                       </TableCell>
                       <TableCell>{formatCurrency(service.price)}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedService(service);
+                              setIsEditDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDelete(service._id)}
+                            disabled={loading}
+                          >
+                            {loading ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell className="text-center italic my-5" colSpan={4}>
+                    <TableCell className="text-center italic my-5" colSpan={5}>
                       No Service Data Found
                     </TableCell>
                   </TableRow>
@@ -290,13 +593,111 @@ export default function ServicesPage() {
         </CardContent>
       </Card>
 
-      {services?.services && (
+      {services && (
         <div key={currentBranchId} className="mt-5">
-          <DynamicPagination
-            data={Array.isArray(services?.services) ? services?.services : []}
-          />
+          <DynamicPagination data={services} />
         </div>
       )}
+
+      {/* Edit dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Layanan</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => e.preventDefault()} className="">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 space-y-1">
+                <Select value={serviceType} onValueChange={setServiceType}>
+                  <SelectTrigger id="type">
+                    <SelectValue placeholder="Pilih type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Satuan">Satuan</SelectItem>
+                    <SelectItem value="Kiloan">Kiloan</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label htmlFor="category">Category Service</Label>
+                <Input
+                  id="category"
+                  name="category"
+                  value={serviceForm?.category}
+                  onChange={(e) =>
+                    setServiceForm((prev) => ({
+                      ...prev,
+                      category: e.target.value,
+                    }))
+                  }
+                  required
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label htmlFor="servicename">Service Name</Label>
+                <Input
+                  id="servicename"
+                  name="servicename"
+                  value={serviceForm?.servicename}
+                  onChange={(e) =>
+                    setServiceForm((prev) => ({
+                      ...prev,
+                      servicename: e.target.value,
+                    }))
+                  }
+                  required
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  type="number"
+                  id="price"
+                  name="price"
+                  value={serviceForm?.price}
+                  onChange={(e) =>
+                    setServiceForm((prev) => ({
+                      ...prev,
+                      price: e.target.value,
+                    }))
+                  }
+                  required
+                />
+              </div>
+              <div className="col-span-2 flex flex-col gap-2">
+                {branches &&
+                  branches.map((branch) => (
+                    <div key={branch._id} className="flex gap-2 items-center">
+                      <Checkbox
+                        id={branch._id}
+                        checked={selectedBranchIds.includes(branch._id)}
+                        onCheckedChange={(checked) =>
+                          handleCheckedChange(!!checked, branch._id)
+                        }
+                      />
+                      <Label htmlFor={branch._id} className="m-0">
+                        {branch.name} - ({branch.type})
+                      </Label>
+                    </div>
+                  ))}
+              </div>
+              <div className="col-span-2 flex gap-2 items-center space-y-1">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                  disabled={loading}
+                >
+                  Batal
+                </Button>
+                <Button onClick={handleEditService} disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Simpan Layanan
+                </Button>
+              </div>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

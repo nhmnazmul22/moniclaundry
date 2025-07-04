@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         status: "Successful",
-        data: services[0],
+        data: services,
       },
       { status: 200 }
     );
@@ -42,12 +42,10 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
-    const { searchParams } = new URL(request.url);
-    const branch_id = searchParams.get("branch_id");
 
-    const { current_branch_id, services } = body;
+    const { current_branch_id, category, servicename, price } = body;
 
-    if (!services || !current_branch_id) {
+    if (!category || !current_branch_id || !servicename || !price) {
       return NextResponse.json(
         {
           status: "Failed",
@@ -57,39 +55,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let prevServices: Service[] = [];
-
-    if (branch_id) {
-      const branchObjectId = new mongoose.Types.ObjectId(branch_id);
-      prevServices = await ServiceModel.find({
-        current_branch_id: { $in: [branchObjectId] },
-      });
-    }
-
-    if (prevServices.length > 0) {
-      const updatedService = await ServiceModel.updateOne(
-        {
-          _id: new mongoose.Types.ObjectId(prevServices[0]._id),
-        },
-        { ...body }
-      );
-      return NextResponse.json(
-        {
-          status: "Successful",
-          data: updatedService,
-        },
-        { status: 201 }
-      );
-    }
-
-    // Create new Service data
-    const service = await ServiceModel.create(body);
+    const service = await ServiceModel.create({ ...body });
 
     if (!service) {
       return NextResponse.json(
         {
           status: "Failed",
-          message: "Failed to create service",
+          message: "Service create filed",
         },
         { status: 500 }
       );

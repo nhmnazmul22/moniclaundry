@@ -78,23 +78,17 @@ export const CashTransferReceiptTemplate = React.forwardRef<
             <tbody>
               {orderItems.map((item) => (
                 <tr key={item._id}>
-                  <td>
-                    {(!Array.isArray(item.serviceDetails?.services) &&
-                      item.serviceDetails?.services?.servicename!) ||
-                      "N/A"}
-                  </td>
+                  <td>{item.serviceDetails?.servicename! || "N/A"}</td>
                   <td colSpan={3}></td>
                   <td className="text-right">{item.quantity}kg</td>
                   <td className="text-center">x</td>
                   <td className="text-right">
-                    {!Array.isArray(item.serviceDetails?.services) &&
-                      formatCurrency(item.serviceDetails?.services?.price)}
+                    {formatCurrency(item.serviceDetails?.price)}
                   </td>
                   <td className="text-right">
-                    {!Array.isArray(item.serviceDetails?.services) &&
-                      formatCurrency(
-                        item.quantity * item?.serviceDetails?.services?.price!
-                      )}
+                    {formatCurrency(
+                      item.quantity * item?.serviceDetails?.price!
+                    )}
                   </td>
                 </tr>
               ))}
@@ -241,24 +235,17 @@ export const DepositReceiptTemplate = React.forwardRef<
             <tbody>
               {orderItems.map((item) => (
                 <tr key={item._id}>
-                  <td>
-                    {(!Array.isArray(item.serviceDetails?.services) &&
-                      item.serviceDetails?.services?.servicename!) ||
-                      "N/A"}
-                  </td>
+                  <td>{item.serviceDetails?.servicename! || "N/A"}</td>
                   <td colSpan={3}></td>
                   <td className="text-right">{item.quantity}kg</td>
                   <td className="text-center">x</td>
                   <td className="text-right">
-                    {!Array.isArray(item.serviceDetails?.services) &&
-                      formatCurrency(item.serviceDetails?.services?.price!)}
+                    {formatCurrency(item.serviceDetails?.price!)}
                   </td>
                   <td className="text-right">
-                    {!Array.isArray(item.serviceDetails?.services) &&
-                      formatCurrency(
-                        Number(item.quantity) *
-                          Number(item.serviceDetails.services?.price)
-                      )}
+                    {formatCurrency(
+                      Number(item.quantity) * Number(item.serviceDetails?.price)
+                    )}
                   </td>
                 </tr>
               ))}
@@ -400,10 +387,7 @@ export const InternalReceiptTemplate = React.forwardRef<
             <tbody>
               {orderItems.map((item) => (
                 <tr key={item._id}>
-                  <td>
-                    {!Array.isArray(item.serviceDetails.services) &&
-                      item.serviceDetails.services?.servicename}
-                  </td>
+                  <td>{item.serviceDetails?.servicename}</td>
                   <td className="text-left font-bold">{item.quantity} kg</td>
                   <td></td>
                   <td></td>
@@ -520,9 +504,7 @@ export const ReceiptTemplate = React.forwardRef<
         {orderItems.map((item) => (
           <div key={item._id} className="mb-2 flex flex-col gap-1">
             <span className="font-bold block">
-              {(!Array.isArray(item.serviceDetails.services) &&
-                item?.serviceDetails?.services?.servicename) ||
-                "N/A"}
+              {item?.serviceDetails?.servicename || "N/A"}
             </span>
             <span className="block">
               {item.quantity}kg x {formatCurrency(item.unit_price)}
