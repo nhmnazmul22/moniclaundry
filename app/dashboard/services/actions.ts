@@ -18,7 +18,16 @@ export async function importServicesJSON(
     const data = await excelFile.arrayBuffer();
     const workbook = XLSX.read(data, { type: "array" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rawJson = XLSX.utils.sheet_to_json(sheet);
+    const rawJson: any = XLSX.utils.sheet_to_json(sheet);
+
+    if (rawJson[2].KATEGORI === "Branch Id") {
+      return {
+        success: false,
+        message:
+          "You can't update using import excel file, please update manually",
+        count: 0,
+      };
+    }
 
     const services: Service[] = rawJson.map((row: any) => ({
       type: row.__EMPTY || "Satuan",
