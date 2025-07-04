@@ -1,6 +1,7 @@
 "use client";
 
 import DynamicPagination from "@/components/dynamicPagination";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,14 +35,22 @@ import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
 import type { AppDispatch, RootState } from "@/store";
-import { fetchBranches } from "@/store/BranchSlice";
 import { fetchServices } from "@/store/ServiceSlice";
-import { Service } from "@/types";
-import { Edit, Loader2, Plus, Search, Trash2 } from "lucide-react";
+import { Branches, Service } from "@/types";
+import {
+  Download,
+  Edit,
+  FileText,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { importServicesJSON } from "./actions";
+import { handleExport, importServicesJSON } from "./actions";
 
 export default function ServicesPage() {
   const { currentBranchId } = useBranch();
@@ -52,21 +61,21 @@ export default function ServicesPage() {
     (state: RootState) => state.paginationReducer
   );
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setSubmitting] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-
+  const [selectedBranch, setSelectedBranch] = useState<Branches | null>(null);
   const [serviceType, setServiceType] = useState<string>("satuan");
   const [serviceForm, setServiceForm] = useState({
     category: "",
     servicename: "",
     price: "",
   });
-
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // JSON Import states
-  const [jsonFile, setJsonFile] = useState<File | null>(null);
+  const [excelFile, setExcelFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
@@ -82,27 +91,35 @@ export default function ServicesPage() {
   }, [currentBranchId]);
 
   useEffect(() => {
-    dispatch(fetchBranches());
-  }, []);
+    if (currentBranchId && branches) {
+      const branch = branches?.filter((b) => b._id === currentBranchId);
+      setSelectedBranch(branch[0]);
+    }
+  }, [currentBranchId, branches]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === "application/json") {
-      setJsonFile(file);
+    if (
+      file &&
+      (file.type ===
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+        file.type === "application/vnd.ms-excel")
+    ) {
+      setExcelFile(file);
     } else {
       toast({
         title: "Error",
-        description: "Please select a valid JSON file",
+        description: "Please select a valid Excel file exe- .xlsx or .xls",
         variant: "destructive",
       });
     }
   };
 
   const handleImport = async () => {
-    if (!jsonFile) {
+    if (!excelFile) {
       toast({
         title: "Error",
-        description: "Please select a JSON file first",
+        description: "Please select a Excel file first",
         variant: "destructive",
       });
       return;
@@ -112,17 +129,17 @@ export default function ServicesPage() {
 
     try {
       const formData = new FormData();
-      formData.append("jsonFile", jsonFile);
+      formData.append("excelFile", excelFile);
       const result = await importServicesJSON(formData, currentBranchId);
 
       if (result.success) {
         toast({
           title: "Import Success",
-          description: `Successfully imported ${result.count} services`,
+          description: `Successfully imported ${result?.count} services`,
         });
         dispatch(fetchServices(currentBranchId));
         setIsImportOpen(false);
-        setJsonFile(null);
+        setExcelFile(null);
       } else {
         toast({
           title: "Import Failed",
@@ -141,35 +158,48 @@ export default function ServicesPage() {
     }
   };
 
-  const handleExport = async () => {
+  const exportFile = async () => {
     try {
-      if (services) {
-        const blob = new Blob([JSON.stringify(services, null, 2)], {
-          type: "application/json",
-        });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `services_${new Date().toISOString().split("T")[0]}.json`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+      setSubmitting(true);
+      if (services && selectedBranch) {
+        const result = await handleExport(services, selectedBranch);
+        if (result.success) {
+          const url = window.URL.createObjectURL(result.data!);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `services_${
+            new Date().toISOString().split("T")[0]
+          }.xlsx`;
+          a.click();
+          window.URL.revokeObjectURL(url);
 
+          toast({
+            title: "Successful",
+            description: result.message,
+          });
+          return;
+        }
         toast({
-          title: "Export Success",
-          description: `Exported services`,
+          title: "Failed",
+          description: result.message,
+          variant: "destructive",
         });
+        return;
       } else {
         toast({
-          title: "Export Failed",
+          title: "Failed",
+          description: "Services and Branch not found",
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (err: any) {
       toast({
-        title: "Export Error",
-        description: "An error occurred during export",
+        title: "Failed",
+        description: err.message || "Something went wrong",
         variant: "destructive",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -312,13 +342,14 @@ export default function ServicesPage() {
           Services Management
         </h1>
         <div className="flex gap-2">
-          {/* <Button
+          <Button
             variant="outline"
-            onClick={handleExport}
+            onClick={exportFile}
             className="bg-blue-50 hover:bg-blue-100"
+            disabled={isSubmitting}
           >
             <Download className="mr-2 h-4 w-4" />
-            Export JSON
+            Export Excel
           </Button>
           <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
             <DialogTrigger asChild>
@@ -327,31 +358,31 @@ export default function ServicesPage() {
                 className="bg-green-50 hover:bg-green-100"
               >
                 <Upload className="mr-2 h-4 w-4" />
-                Import JSON
+                Import Excel
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Import Services JSON</DialogTitle>
+                <DialogTitle>Import Services Excel</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="jsonFile">Select JSON File</Label>
+                  <Label htmlFor="xlsxFile">Select Excel File</Label>
                   <Input
-                    id="jsonFile"
+                    id="xlsxFile"
                     type="file"
-                    accept=".json"
+                    accept=".xlsx"
                     onChange={handleFileChange}
                     className="mt-1"
                   />
                 </div>
 
-                {jsonFile && (
+                {excelFile && (
                   <Alert>
                     <FileText className="h-4 w-4" />
                     <AlertDescription>
-                      Selected: {jsonFile.name} (
-                      {(jsonFile.size / 1024).toFixed(1)} KB)
+                      Selected: {excelFile.name} (
+                      {(excelFile.size / 1024).toFixed(1)} KB)
                     </AlertDescription>
                   </Alert>
                 )}
@@ -361,14 +392,14 @@ export default function ServicesPage() {
                     variant="outline"
                     onClick={() => {
                       setIsImportOpen(false);
-                      setJsonFile(null);
+                      setExcelFile(null);
                     }}
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handleImport}
-                    disabled={!jsonFile || isImporting}
+                    disabled={!excelFile || isImporting}
                   >
                     {isImporting && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -378,7 +409,7 @@ export default function ServicesPage() {
                 </div>
               </div>
             </DialogContent>
-          </Dialog> */}
+          </Dialog>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button
