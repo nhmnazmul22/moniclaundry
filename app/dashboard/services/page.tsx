@@ -1,7 +1,6 @@
 "use client";
 
 import DynamicPagination from "@/components/dynamicPagination";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,16 +37,7 @@ import type { AppDispatch, RootState } from "@/store";
 import { fetchBranches } from "@/store/BranchSlice";
 import { fetchServices } from "@/store/ServiceSlice";
 import { Service } from "@/types";
-import {
-  Download,
-  Edit,
-  FileText,
-  Loader2,
-  Plus,
-  Search,
-  Trash2,
-  Upload,
-} from "lucide-react";
+import { Edit, Loader2, Plus, Search, Trash2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -322,7 +312,7 @@ export default function ServicesPage() {
           Services Management
         </h1>
         <div className="flex gap-2">
-          <Button
+          {/* <Button
             variant="outline"
             onClick={handleExport}
             className="bg-blue-50 hover:bg-blue-100"
@@ -388,7 +378,7 @@ export default function ServicesPage() {
                 </div>
               </div>
             </DialogContent>
-          </Dialog>
+          </Dialog> */}
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button
