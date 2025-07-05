@@ -47,8 +47,6 @@ export default function ExpensesPage() {
         currentBranchId={currentBranchId}
       />
 
-      <ExpenseExport expenses={expenses} />
-
       <ExpenseTable refreshTrigger={refreshTrigger} />
     </div>
   );

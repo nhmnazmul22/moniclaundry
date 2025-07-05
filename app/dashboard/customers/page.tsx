@@ -314,9 +314,7 @@ export default function CustomersPage() {
           </CardContent>
         </Card>
       </div>
-      {/* Customer Reports */}
-      <CustomerReport />
-
+      
       <Card>
         <CardHeader>
           <CardTitle>Daftar Customers ({customers?.length})</CardTitle>

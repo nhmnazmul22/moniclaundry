@@ -1,9 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Download } from "lucide-react";
+import { Download, FileSpreadsheet } from "lucide-react";
 import { useState } from "react";
 
 // Exact dummy data matching your complex image
@@ -209,7 +210,7 @@ const summaryData = [
   ["Total Pendapatan:", "Rp. 38,737,430"],
 ];
 
-export default function Component() {
+export default function ServiceReport() {
   const [isExporting, setIsExporting] = useState(false);
 
   const exportToExcel = async () => {
@@ -486,13 +487,23 @@ export default function Component() {
   };
 
   return (
-    <Button
-      onClick={exportToExcel}
-      disabled={isExporting}
-      className="w-full sm:w-auto"
-    >
-      <Download className="h-4 w-4 mr-2" />
-      {isExporting ? "Exporting..." : "Export Report"}
-    </Button>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileSpreadsheet className="h-6 w-6" />
+          Laporan Layanan Transaksi
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Button
+          onClick={exportToExcel}
+          disabled={isExporting}
+          className="w-full"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          {isExporting ? "Exporting..." : "Export Layanan Laporan"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

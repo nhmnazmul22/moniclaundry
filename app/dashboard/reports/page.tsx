@@ -1,5 +1,9 @@
 "use client";
 
+import CustomerReport from "@/components/customerReport";
+import { DepositReportExport } from "@/components/DepositReportExport";
+import { ExpenseExport } from "@/components/expense-export";
+import ServiceTransitionReport from "@/components/serviceReport";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -35,10 +39,9 @@ import { fetchCustomers } from "@/store/CustomerSlice";
 import { fetchExpenses } from "@/store/ExpensesSlice";
 import { fetchOrders } from "@/store/orderSlice";
 import { fetchPayments } from "@/store/PaymentSlice";
-import { addDays, format } from "date-fns";
-import { AlertTriangle, Download, Loader2 } from "lucide-react";
+import { format } from "date-fns";
+import { AlertTriangle, CalendarDays, Download, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { DateRange } from "react-day-picker";
 import { useDispatch, useSelector } from "react-redux";
 
 export default function ReportsPage() {
@@ -47,11 +50,11 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const dispatch = useDispatch<AppDispatch>();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: addDays(new Date(), -30),
-    to: new Date(),
-  });
-  const [reportType, setReportType] = useState<string>("revenue_summary");
+  const [filterType, setFilterType] = useState<
+    "daily" | "monthly" | "yearly" | "custom"
+  >("monthly");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   const { items: ordersData } = useSelector(
     (state: RootState) => state.orderReducer
@@ -62,12 +65,15 @@ export default function ReportsPage() {
   const { items: expensesData } = useSelector(
     (state: RootState) => state.expensesReducer
   );
-
   const { items: customerData } = useSelector(
     (state: RootState) => state.customerReducer
   );
 
   const generateReport = useCallback(async () => {
+    const dateRange = {
+      from: startDate,
+      to: endDate,
+    };
     if (!dateRange?.from || !dateRange?.to) {
       setError("Silakan pilih rentang tanggal.");
       return;
@@ -97,8 +103,8 @@ export default function ReportsPage() {
       setLoading(false);
     }
   }, [
-    dateRange,
-    reportType,
+    startDate,
+    endDate,
     ordersData,
     paymentsData,
     customerData,
@@ -116,6 +122,28 @@ export default function ReportsPage() {
   useEffect(() => {
     generateReport();
   }, [generateReport, currentBranchId]);
+
+  useEffect(() => {
+    const today = new Date();
+    if (filterType === "daily") {
+      const dateStr = today.toISOString().split("T")[0];
+      setStartDate(dateStr);
+      setEndDate(dateStr);
+    } else if (filterType === "monthly") {
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      setStartDate(firstDay.toISOString().split("T")[0]);
+      setEndDate(lastDay.toISOString().split("T")[0]);
+    } else if (filterType === "yearly") {
+      const firstDay = new Date(today.getFullYear(), 0, 1);
+      const lastDay = new Date(today.getFullYear(), 11, 31);
+      setStartDate(firstDay.toISOString().split("T")[0]);
+      setEndDate(lastDay.toISOString().split("T")[0]);
+    } else {
+      setStartDate(startDate);
+      setEndDate(endDate);
+    }
+  }, [dispatch, currentBranchId, filterType, startDate, endDate]);
 
   return (
     <div className="space-y-6">
@@ -135,53 +163,10 @@ export default function ReportsPage() {
             variant="outline"
           >
             <Download className="mr-2 h-4 w-4" />
-            Export CSV
+            Export Sales Report
           </Button>
         </div>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Report Configuration</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-4 items-end">
-          <div className="grid gap-2">
-            <Label htmlFor="reportType">Tipe Laporan</Label>
-            <Select value={reportType} onValueChange={setReportType}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Pilih Tipe Laporan" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="revenue_summary">
-                  Ringkasan Pendapatan
-                </SelectItem>
-                <SelectItem value="order_details">
-                  Detail Pesanan (Segera Hadir)
-                </SelectItem>
-                <SelectItem value="customer_insights">
-                  Wawasan Pelanggan (Segera Hadir)
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label>Rentang Tanggal</Label>
-            <DatePickerWithRange
-              date={dateRange}
-              setDate={setDateRange}
-              className="w-full md:w-auto"
-            />
-          </div>
-          <Button
-            onClick={generateReport}
-            disabled={loading}
-            className="self-end"
-          >
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Generate Report
-          </Button>
-        </CardContent>
-      </Card>
 
       {loading && (
         <div className="flex flex-col items-center justify-center py-10">
@@ -208,13 +193,88 @@ export default function ReportsPage() {
 
       {!loading && !error && reportData && (
         <>
+          <div className="grid grid-cols-12 gap-5">
+            <Card className="col-span-12">
+              <CardHeader>
+                <div className="flex items-center gap-2 mb-4">
+                  <CalendarDays className="h-5 w-5" />
+                  <h3 className="font-semibold">Filter Berdasarkan Tanggal</h3>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                  <div>
+                    <Label>Jenis Filter</Label>
+                    <Select
+                      value={filterType}
+                      onValueChange={(val) => setFilterType(val as any)}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Pilih Filter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Harian</SelectItem>
+                        <SelectItem value="monthly">Bulanan</SelectItem>
+                        <SelectItem value="yearly">Tahunan</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="start-date">Tanggal Mulai</Label>
+                    <Input
+                      id="start-date"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="mt-1"
+                      disabled={filterType !== "custom"}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="end-date">Tanggal Akhir</Label>
+                    <Input
+                      id="end-date"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="mt-1"
+                      disabled={filterType !== "custom"}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="grid grid-cols-12 gap-5">
+            <div className="col-span-3">
+              <CustomerReport startDate={startDate} endDate={endDate} />
+            </div>
+            <div className="col-span-3">
+              <ServiceTransitionReport />
+            </div>
+            <div className="col-span-3">
+              <ExpenseExport
+                expenses={expensesData!}
+                startDate={startDate}
+                endDate={endDate}
+              />
+            </div>
+            <div className="col-span-3">
+              <DepositReportExport
+                branchId={currentBranchId}
+                startDate={startDate}
+                endDate={endDate}
+              />
+            </div>
+          </div>
           <Card>
             <CardHeader>
               <CardTitle>Ringkasan Laporan</CardTitle>
               <CardDescription>
                 Untuk periode{" "}
-                {dateRange?.from ? format(dateRange.from, "dd MMM yyyy") : ""} -{" "}
-                {dateRange?.to ? format(dateRange.to, "dd MMM yyyy") : ""}
+                {startDate ? format(startDate, "dd MMM yyyy") : ""} -{" "}
+                {endDate ? format(endDate, "dd MMM yyyy") : ""}
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-3">
@@ -242,7 +302,6 @@ export default function ReportsPage() {
               </div>
             </CardContent>
           </Card>
-
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>

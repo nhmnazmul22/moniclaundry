@@ -2,15 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import ExcelJS from "exceljs";
@@ -29,27 +20,28 @@ interface Expense {
 }
 
 interface ExpenseExportProps {
-  expenses: Expense[];
+  expenses: Expense[] | any;
+  startDate: string;
+  endDate: string;
 }
 
-export function ExpenseExport({ expenses }: ExpenseExportProps) {
-  const [exportFormat, setExportFormat] = useState("excel");
-  const [dateRange, setDateRange] = useState({
-    startDate: "",
-    endDate: "",
-  });
+export function ExpenseExport({
+  expenses,
+  startDate,
+  endDate,
+}: ExpenseExportProps) {
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
 
   const filterExpensesByDate = () => {
-    if (!dateRange.startDate && !dateRange.endDate) {
+    if (startDate && endDate) {
       return expenses;
     }
 
-    return expenses.filter((expense) => {
+    return expenses.filter((expense: any) => {
       const expenseDate = new Date(expense.date || expense.createdAt);
-      const start = dateRange.startDate ? new Date(dateRange.startDate) : null;
-      const end = dateRange.endDate ? new Date(dateRange.endDate) : null;
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
 
       if (start && end) {
         return expenseDate >= start && expenseDate <= end;
@@ -105,7 +97,7 @@ export function ExpenseExport({ expenses }: ExpenseExportProps) {
 
       // Group expenses by date
       const expensesByDate: Record<string, typeof filteredExpenses> = {};
-      filteredExpenses.forEach((expense) => {
+      filteredExpenses.forEach((expense: any) => {
         const date = formatDate(expense.date || expense.createdAt); // format to "DD/MM/YYYY"
         if (!expensesByDate[date]) expensesByDate[date] = [];
         expensesByDate[date].push(expense);
@@ -120,7 +112,7 @@ export function ExpenseExport({ expenses }: ExpenseExportProps) {
         let dailyTotal = 0;
 
         // Insert used expenses
-        expenses.forEach((exp) => {
+        expenses.forEach((exp: any) => {
           usedCategories.add(exp.category);
           worksheet
             .addRow({
@@ -207,56 +199,13 @@ export function ExpenseExport({ expenses }: ExpenseExportProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label>Export Format</Label>
-            <Select value={exportFormat} onValueChange={setExportFormat}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="excel">
-                  <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-4 w-4" />
-                    Excel (.xlsx)
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Start Date (Optional)</Label>
-            <Input
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e) =>
-                setDateRange({ ...dateRange, startDate: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>End Date (Optional)</Label>
-            <Input
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e) =>
-                setDateRange({ ...dateRange, endDate: e.target.value })
-              }
-            />
-          </div>
-        </div>
-
         <Button
           onClick={exportToExcel}
           disabled={isExporting}
           className="w-full"
         >
           <Download className="h-4 w-4 mr-2" />
-          {isExporting
-            ? "Exporting..."
-            : `Export ${exportFormat.toUpperCase()}`}
+          {isExporting ? "Exporting..." : `Export Expense Laporan`}
         </Button>
       </CardContent>
     </Card>

@@ -1,6 +1,5 @@
 import { Customer, Expense, Order, Payment } from "@/types";
 import { format } from "date-fns";
-import type { DateRange } from "react-day-picker";
 import type { ReportData } from "./pdf-generator";
 
 export class ReportDataProcessor {
@@ -9,7 +8,7 @@ export class ReportDataProcessor {
     paymentsData: Payment[],
     expensesData: Expense[],
     customersData: Customer[],
-    dateRange: DateRange | undefined
+    dateRange: { from: string; to: string }
   ): ReportData {
     if (!dateRange?.from || !dateRange?.to) {
       throw new Error("Date range is required");

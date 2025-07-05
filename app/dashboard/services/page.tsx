@@ -1,7 +1,6 @@
 "use client";
 
 import DynamicPagination from "@/components/dynamicPagination";
-import ServiceTransitionReport from "@/components/excel-exporter";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -365,7 +364,6 @@ export default function ServicesPage() {
           Services Management
         </h1>
         <div className="flex gap-2">
-          <ServiceTransitionReport />
           <Button
             variant="outline"
             onClick={exportFile}

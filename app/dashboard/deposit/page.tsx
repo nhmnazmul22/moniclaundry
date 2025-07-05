@@ -1,6 +1,5 @@
 "use client";
 
-import { DepositReportExport } from "@/components/DepositReportExport";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -910,8 +909,6 @@ export default function DepositManagement() {
               </CardContent>
             </Card>
           )}
-          {/* Export Component */}
-          <DepositReportExport branchId={branchId} />
         </TabsContent>
       </Tabs>
     </div>
