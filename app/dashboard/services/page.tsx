@@ -1,6 +1,7 @@
 "use client";
 
 import DynamicPagination from "@/components/dynamicPagination";
+import ServiceTransitionReport from "@/components/excel-exporter";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -130,7 +131,29 @@ export default function ServicesPage() {
     try {
       const formData = new FormData();
       formData.append("excelFile", excelFile);
-      const result = await importServicesJSON(formData, currentBranchId);
+
+      const branch = branches?.filter((b) => b._id === currentBranchId);
+      let secondBranch = null;
+      let branchIds: string[] = [];
+
+      if (branch) {
+        secondBranch = branches?.filter(
+          (b) => b.code.split("-")[0] === branch[0].code.split("-")[0]
+        );
+        branchIds.push(secondBranch![0]._id!);
+        branchIds.push(secondBranch![1]._id!);
+      }
+
+      if (branchIds && branchIds.length < 2) {
+        toast({
+          title: "Import Failed",
+          description: "Branch Ids not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const result = await importServicesJSON(formData, branchIds!);
 
       if (result.success) {
         toast({
@@ -342,6 +365,7 @@ export default function ServicesPage() {
           Services Management
         </h1>
         <div className="flex gap-2">
+          <ServiceTransitionReport />
           <Button
             variant="outline"
             onClick={exportFile}

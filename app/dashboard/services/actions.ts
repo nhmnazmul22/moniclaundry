@@ -7,7 +7,7 @@ import { Branches, Service } from "@/types";
 // Simple JSON import function
 export async function importServicesJSON(
   formData: FormData,
-  branchId: string
+  branchIds: string[]
 ): Promise<{ success: boolean; message: string; count: number }> {
   try {
     const excelFile = formData.get("excelFile") as File;
@@ -34,7 +34,7 @@ export async function importServicesJSON(
       category: row.__EMPTY_1 || "No Category",
       servicename: row.__EMPTY_2 || "No Service Name",
       price: Number(row.__EMPTY_3) || Number("00.00"),
-      current_branch_id: [branchId], // attach selected branch
+      current_branch_id: branchIds,
     }));
 
     const res = await api.post("/api/services/importExcel", services);
