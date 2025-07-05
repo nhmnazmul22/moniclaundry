@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
+import api from "@/lib/config/axios";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
@@ -27,6 +28,7 @@ interface Expense {
   current_branch_id: string;
   createdAt: string;
 }
+
 
 interface ExpenseTableProps {
   refreshTrigger: number;
@@ -59,10 +61,13 @@ export function ExpenseTable({ refreshTrigger }: ExpenseTableProps) {
     }
   };
 
+
+
   useEffect(() => {
     fetchExpenses();
   }, [refreshTrigger]);
 
+ 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",

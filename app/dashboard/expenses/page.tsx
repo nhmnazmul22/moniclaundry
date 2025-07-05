@@ -1,6 +1,5 @@
 "use client";
 
-import { ExpenseExport } from "@/components/expense-export";
 import { ExpenseForm } from "@/components/expense-form";
 import { ExpenseTable } from "@/components/expense-table";
 import { useBranch } from "@/contexts/branch-context";
@@ -9,20 +8,17 @@ import { useEffect, useState } from "react";
 
 export default function ExpensesPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [expenses, setExpenses] = useState([]);
 
   const { currentBranchId } = useBranch();
 
   const handleExpenseAdded = async () => {
-    setRefreshTrigger((prev) => prev + 1);
-
     try {
       const response = await api.get(
         `/api/expenses?branch_id=${currentBranchId}`
       );
 
       if (response.status === 200) {
-        setExpenses(response.data.data || []);
+        setRefreshTrigger((prev) => prev + 1);
       }
     } catch (error) {
       console.error("Failed to fetch expenses for export:", error);
