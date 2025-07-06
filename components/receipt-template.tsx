@@ -15,7 +15,7 @@ interface ReceiptTemplateProps {
   businessInfo: BusinessInfo;
 }
 
-// Template 1: Cash/Transfer/QRIS Payment
+// Template 1: Cash/Transfer/QRIS/Deposit Payment
 export const CashTransferReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps
@@ -140,171 +140,22 @@ export const CashTransferReceiptTemplate = React.forwardRef<
             <span className="w-28">Status</span>
             <span className="uppercase ms-2">{order.payment_status}</span>
           </div>
-        </div>
-
-        <div className="text-left text-[7px] mb-2 mt-5">Catatan</div>
-        <div className="flex flex-col gap-1">
-          <div className="w-full h-[0.5px] bg-black"></div>
-          <p className="text-[7px] italic text-center">free tex</p>
-          <div className="w-full h-[0.5px] bg-black"></div>
-        </div>
-
-        {/* Terms Section */}
-        <div className="mt-3 text-[6px] leading-[1.1]">
-          <div className="mb-1">Ketentuan Penting:</div>
-          <ol className="list-decimal ml-4 space-y-1">
-            <li>
-              Kusut, susut, luntur karena kondisi bahan bukan tanggung jawab
-              laundry
-            </li>
-            <li>Komplain maksimal 3 hari dan wajib video unboxing</li>
-          </ol>
-        </div>
-
-        {/* Customer Service */}
-        <div className="mt-5 text-[6px] leading-[1.1] mb-3">
-          <div className="font-bold">
-            Customer Service :
-            <span className="text-black font-bold">0811-9876-771</span>
-          </div>
-          <div className="font-bold text-[6.5px]">#laundryapasajabisa</div>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-// Template 2: Deposit Payment
-export const DepositReceiptTemplate = React.forwardRef<
-  HTMLDivElement,
-  ReceiptTemplateProps
->(({ order, orderItems, businessInfo }, ref) => {
-  return (
-    <div ref={ref} className="w-[260px] p-2 bg-white text-[8px] leading-[1.1] ">
-      <div className="">
-        {/* Header */}
-        <div className="text-left mb-1">
-          <div className="text-[6px] font-semibold">Bayar Pakai Deposit </div>
-        </div>
-
-        <div className="py-1">
-          <div className="flex items-start gap-1">
-            <div className="flex-1 space-y-0.5">
-              <div className="font-semibold text-[8px]">
-                {businessInfo.name || ""}
+          {order.payment_method === "deposit" && (
+            <>
+              <div className="flex justify-start font-bold">
+                <span className="w-28">Nilai Potong Deposit</span>
+                <span className="uppercase ms-2">
+                  {formatCurrency(order.total_amount)}
+                </span>
               </div>
-              <div className="text-[7px]">{businessInfo.address || ""}</div>
-              <div className="text-[7px]">{businessInfo.phone || ""}</div>
-            </div>
-            <div className="w-8 h-8">
-              <img src="/pdf-logo.png" alt="Pdf logo" />
-            </div>
-          </div>
-        </div>
-
-        {/* Customer Section */}
-        <div className="py-1 flex flex-col space-y-0.5 items-center text-center">
-          <div className="text-center font-semibold text-[7px]">
-            Nota Customer
-          </div>
-          <div className="text-center font-semibold text-[10px]">
-            {order.customerDetails?.name}
-          </div>
-          <div className="text-center font-semibold text-[7px]">
-            Nota : {order.order_number}
-          </div>
-        </div>
-
-        {/* Transaction Info */}
-        <div className="py-1 text-[7px] space-y-1">
-          <div className="flex justify-start gap-2">
-            <span className="w-28">Transaksi</span>
-            <span>OFFLINE</span>
-          </div>
-          <div className="flex justify-start gap-2">
-            <span className="w-28">Kasir</span>
-            <span>Sri</span>
-          </div>
-        </div>
-
-        {/* Items */}
-        <div className="py-1 text-[8px]">
-          <div className="font-bold mb-1">TRANSAKSI</div>
-
-          <table className="w-full text-left">
-            <tbody>
-              {orderItems.map((item) => (
-                <tr key={item._id}>
-                  <td>{item.serviceDetails?.servicename! || "N/A"}</td>
-                  <td colSpan={3}></td>
-                  <td className="text-right">{item.quantity}kg</td>
-                  <td className="text-center">x</td>
-                  <td className="text-right">
-                    {formatCurrency(item.serviceDetails?.price!)}
-                  </td>
-                  <td className="text-right">
-                    {formatCurrency(
-                      Number(item.quantity) * Number(item.serviceDetails?.price)
-                    )}
-                  </td>
-                </tr>
-              ))}
-              <tr className="h-1" />
-              <tr>
-                <td>Total Harga</td>
-                <td colSpan={6}></td>
-                <td className="text-right">
-                  {formatCurrency(order.total_amount)}
-                </td>
-              </tr>
-              <tr>
-                <td>Diskon</td>
-                <td colSpan={6}></td>
-                <td className="text-right">-</td>
-              </tr>
-              <tr className="h-2" />
-              <tr className="font-normal">
-                <td colSpan={4}></td>
-                <td className="text-right">Harus dibayar</td>
-                <td colSpan={2}></td>
-                <td className="text-right font-semibold">
-                  {formatCurrency(order.total_amount)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Date and Status */}
-        <div className="py-2 text-[7px] space-y-1">
-          <div className="flex justify-start ">
-            <span className="w-28">Tanggal Masuk</span>
-            <span className="font-bold ms-2">
-              {formatDateTime(order.createdAt)}
-            </span>
-          </div>
-          <div className="flex justify-start">
-            <span className="w-28">Estimasi Selesai</span>
-            <span className="font-bold ms-2">
-              {formatDateTime(order.estimated_completion)}
-            </span>
-          </div>
-          <div className="flex justify-start font-bold">
-            <span className="w-28">Pembayaran</span>
-            <span className="uppercase ms-2">{order.payment_method}</span>
-          </div>
-          <div className="flex justify-start font-bold">
-            <span className="w-28">Status</span>
-            <span className="uppercase ms-2">{order.payment_status}</span>
-          </div>
-          <div className="flex justify-start font-bold">
-            <span className="w-28">Nilai Potong Deposit</span>
-            <span className="uppercase ms-2">-</span>
-          </div>
-          <div className="flex justify-start font-bold">
-            <span className="w-28">Saldo Deposit</span>
-            <span className="uppercase ms-2">-</span>
-          </div>
+              <div className="flex justify-start font-bold">
+                <span className="w-28">Saldo Deposit</span>
+                <span className="uppercase ms-2">
+                  {formatCurrency(order.customerDetails?.deposit_balance)}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="text-left text-[7px] mb-2 mt-5">Catatan</div>
@@ -605,6 +456,5 @@ export const ReceiptTemplate = React.forwardRef<
 });
 
 CashTransferReceiptTemplate.displayName = "CashTransferReceiptTemplate";
-DepositReceiptTemplate.displayName = "DepositReceiptTemplate";
 InternalReceiptTemplate.displayName = "InternalReceiptTemplate";
 ReceiptTemplate.displayName = "ReceiptTemplate";

@@ -4,7 +4,6 @@ import type React from "react";
 
 import {
   CashTransferReceiptTemplate,
-  DepositReceiptTemplate,
   InternalReceiptTemplate,
   ReceiptTemplate,
 } from "@/components/receipt-template";
@@ -265,10 +264,6 @@ export default function OrderDetailPage() {
     await generatePDF(cashTransferRef, "nota-cash-transfer");
   };
 
-  const handleDownloadDeposit = async () => {
-    await generatePDF(depositRef, "nota-deposit");
-  };
-
   const handleDownloadInternal = async () => {
     await generatePDF(internalRef, "nota-internal");
   };
@@ -349,7 +344,6 @@ export default function OrderDetailPage() {
     );
   }
 
-  // Dummy business info for receipt
   const businessInfo = {
     name:
       selectedBranch(order.current_branch_id || "")?.name ||
@@ -399,11 +393,7 @@ export default function OrderDetailPage() {
             <DropdownMenuContent>
               <DropdownMenuItem onClick={handleDownloadCashTransfer}>
                 <Download className="mr-2 h-4 w-4" />
-                Cash/Transfer/QRIS
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDownloadDeposit}>
-                <Download className="mr-2 h-4 w-4" />
-                Deposit Payment
+                Payment Receipt
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleDownloadInternal}>
                 <Download className="mr-2 h-4 w-4" />
@@ -578,12 +568,6 @@ export default function OrderDetailPage() {
             />
             <CashTransferReceiptTemplate
               ref={cashTransferRef}
-              order={order}
-              orderItems={orderItems!}
-              businessInfo={businessInfo}
-            />
-            <DepositReceiptTemplate
-              ref={depositRef}
               order={order}
               orderItems={orderItems!}
               businessInfo={businessInfo}
