@@ -13,16 +13,22 @@ export interface DeliverySchedule extends Document {
   notes?: string;
   current_branch_id: ObjectId;
 }
+
 const CustomerSchema: Schema<Customer> = new mongoose.Schema(
   {
     name: { type: String, required: true },
     phone: { type: String },
     email: { type: String },
     address: { type: String },
-    loyalty_points: { type: Number, default: 0 },
     total_orders: { type: Number, default: 0 },
     total_spent: { type: Number, default: 0 },
     total_deposit: { type: Number, default: 0 },
+    deposit_balance: { type: Number, default: 0 },
+    deposit_type: { type: String },
+    deposit_type_id: { type: mongoose.Types.ObjectId },
+    has_expiry: { type: Boolean },
+    expiry_date: { type: Date },
+    is_active: { type: Boolean },
     current_branch_id: { type: mongoose.Types.ObjectId, required: true },
   },
   { timestamps: true, versionKey: false }

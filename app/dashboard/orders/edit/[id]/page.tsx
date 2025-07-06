@@ -142,8 +142,22 @@ export default function EditOrderPage() {
     ]);
   };
 
-  const handleRemoveOrderItem = (index: number) => {
-    setOrderItems(orderItems.filter((_, i) => i !== index));
+  const handleRemoveOrderItem = async (index: number) => {
+    const orderItem = orderItems.filter((_, i) => i === index);
+    const res = await api.delete(`/api/order-items/${orderItem[0]._id}`);
+    if (res.status === 200) {
+      toast({
+        title: "Successful",
+        description: "Order Items Delete successful",
+      });
+      setOrderItems(orderItems.filter((_, i) => i !== index));
+    } else {
+      toast({
+        title: "Failed",
+        description: "Order Items Delete failed",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleOrderItemChange = (
@@ -241,6 +255,9 @@ export default function EditOrderPage() {
         customer_id: formData.customer_id || null,
         order_status: formData.order_status,
         payment_status: formData.payment_status || null,
+        subtotal: subtotal,
+        total_weight: totalWeight,
+        total_amount: totalAmount,
         notes: formData.notes || null,
         estimated_completion: formData.estimated_completion
           ? new Date(formData.estimated_completion).toISOString()
@@ -417,6 +434,7 @@ export default function EditOrderPage() {
                   <div className="flex justify-between items-start">
                     <p className="font-medium">Item #{index + 1}</p>
                     <Button
+                      type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveOrderItem(index)}

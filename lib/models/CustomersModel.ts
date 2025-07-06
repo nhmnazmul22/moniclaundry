@@ -14,7 +14,7 @@ export interface Customer extends Document {
   total_orders?: number;
   total_spent?: number;
   current_branch_id: ObjectId;
-  // New deposit-related fields
+
   deposit_balance?: number;
   deposit_type?: string;
   deposit_type_id?: ObjectId;

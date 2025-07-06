@@ -79,7 +79,7 @@ export default function DeliveriesPage() {
   const { toast } = useToast();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { items: deliveries } = useSelector(
+  const { items: deliveries, loading: deliveryLoading } = useSelector(
     (state: RootState) => state.deliveryReducer
   );
   const { items: staffData } = useSelector(
@@ -108,16 +108,8 @@ export default function DeliveriesPage() {
         return validStatuses.includes(o.order_status);
       });
 
-      console.log("Available orders for delivery:", availableOrders);
-
       setKurirList(staffData?.filter((s: any) => s.role === "kurir") || []);
       setOrderList(availableOrders || []);
-
-      console.log(
-        "Final kurir list:",
-        staffData?.filter((s: any) => s.role === "kurir")
-      );
-      console.log("Final order list:", availableOrders);
     } catch (e) {
       setError("Terjadi kesalahan saat memuat data.");
       console.error("Error in fetchPageData:", e);
@@ -336,7 +328,7 @@ export default function DeliveriesPage() {
     }
   };
 
-  if (loading && deliveries?.length === 0) {
+  if (deliveryLoading && deliveries?.length === 0) {
     return (
       <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
@@ -619,11 +611,7 @@ export default function DeliveriesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {deliveries ? (
-                <div className="flex justify-center items-center h-64">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-              ) : (
+              {deliveries &&
                 deliveries!.map((delivery) => (
                   <TableRow key={delivery._id}>
                     <TableCell>
@@ -717,8 +705,7 @@ export default function DeliveriesPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
+                ))}
             </TableBody>
           </Table>
         </CardContent>
