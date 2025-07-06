@@ -11,20 +11,24 @@ import { useEffect, useState } from "react";
 
 export default function ServiceReport() {
   const [isExporting, setIsExporting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<SalesReportItem[]>([]);
   const [summaryData, setSummaryData] = useState<[string, string][]>([]);
 
   const fetchReportData = async () => {
+    setLoading(true);
     try {
       const res = await api.get("/api/reports/service-report");
       if (res.status === 200) {
-        console.log(res.data);
         setReportData(res.data.data);
         setSummaryData(res.data.summary);
+        setLoading(false);
         return;
       }
     } catch (err: any) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -321,7 +325,7 @@ export default function ServiceReport() {
       <CardContent>
         <Button
           onClick={exportToExcel}
-          disabled={isExporting}
+          disabled={isExporting || loading}
           className="w-full"
         >
           <Download className="h-4 w-4 mr-2" />
