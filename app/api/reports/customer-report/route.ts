@@ -171,7 +171,6 @@ export async function GET(request: NextRequest) {
       },
       { $sort: { nama: 1 } },
     ]);
-    console.log(customers);
     return NextResponse.json(
       {
         status: "Success",

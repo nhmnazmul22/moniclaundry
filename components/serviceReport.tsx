@@ -2,220 +2,36 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import api from "@/lib/config/axios";
+import { SalesReportItem } from "@/types";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Download, FileSpreadsheet } from "lucide-react";
-import { useState } from "react";
-
-// Exact dummy data matching your complex image
-const dummyTransactions = [
-  {
-    tanggalTransaksi: "31-05-2025 10:29",
-    nomorTransaksi: "TRX4310/T1310",
-    namaPelanggan: "Bu Lia",
-    kategori: "Cuci dan Setrika",
-    kilogramJenis: "CKS",
-    kilogramTotal: "6.2",
-    kilogramHarga: "Rp. 3,000",
-    kategoriLayanan: "Sepatu Kulit/So, Sepatu Kulit/Sekolah/Premium",
-    kategoriTotal: "1",
-    kategoriHarga: "Rp. 60,000",
-    kategoriMeter: "",
-    meterLayanan: "",
-    meterTotal: "",
-    meterHarga: "",
-    statusPembayaran: "Lunas",
-    hargaPenjualan: "Rp. 55,800",
-    metodePembayaran: "Transfer",
-  },
-  {
-    tanggalTransaksi: "31-05-2025 10:22",
-    nomorTransaksi: "TRX4310/T1309",
-    namaPelanggan: "Bp Maydin",
-    kategori: "",
-    kilogramJenis: "",
-    kilogramTotal: "",
-    kilogramHarga: "",
-    kategoriLayanan: "Celana Panjang, Celana Panjang, Kemeja",
-    kategoriTotal: "3",
-    kategoriHarga: "Rp. 20,000",
-    kategoriMeter: "",
-    meterLayanan: "",
-    meterTotal: "",
-    meterHarga: "",
-    statusPembayaran: "Lunas",
-    hargaPenjualan: "Rp. 60,000",
-    metodePembayaran: "QRIS",
-  },
-  {
-    tanggalTransaksi: "31-05-2025 10:21",
-    nomorTransaksi: "TRX4310/T1308",
-    namaPelanggan: "Bp Maydin",
-    kategori: "",
-    kilogramJenis: "",
-    kilogramTotal: "",
-    kilogramHarga: "",
-    kategoriLayanan: "Kemeja",
-    kategoriTotal: "4",
-    kategoriHarga: "Rp. 20,000",
-    kategoriMeter: "",
-    meterLayanan: "",
-    meterTotal: "",
-    meterHarga: "",
-    statusPembayaran: "Lunas",
-    hargaPenjualan: "Rp. 140,000",
-    metodePembayaran: "QRIS",
-  },
-  {
-    tanggalTransaksi: "31-05-2025 10:50",
-    nomorTransaksi: "TRX4310/T1307",
-    namaPelanggan: "Nanda TG 3 no 3",
-    kategori: "Cuci dan Setrika",
-    kilogramJenis: "CKS",
-    kilogramTotal: "5.0",
-    kilogramHarga: "Rp. 3,000",
-    kategoriLayanan: "",
-    kategoriTotal: "",
-    kategoriHarga: "",
-    kategoriMeter: "",
-    meterLayanan: "",
-    meterTotal: "",
-    meterHarga: "",
-    statusPembayaran: "Lunas",
-    hargaPenjualan: "Rp. 25,200",
-    metodePembayaran: "QRIS",
-  },
-  {
-    tanggalTransaksi: "31-05-2025 06:43",
-    nomorTransaksi: "TRX4310/T1306",
-    namaPelanggan: "Ibu Sari",
-    kategori: "Cuci dan Setrika",
-    kilogramJenis: "CKS",
-    kilogramTotal: "3.5",
-    kilogramHarga: "Rp. 3,000",
-    kategoriLayanan: "",
-    kategoriTotal: "",
-    kategoriHarga: "",
-    kategoriMeter: "",
-    meterLayanan: "",
-    meterTotal: "",
-    meterHarga: "",
-    statusPembayaran: "Lunas",
-    hargaPenjualan: "Rp. 61,000",
-    metodePembayaran: "QRIS",
-  },
-  {
-    tanggalTransaksi: "31-05-2025 06:48",
-    nomorTransaksi: "TRX4310/T1305",
-    namaPelanggan: "Ibu Ningrum",
-    kategori: "Cuci dan Setrika",
-    kilogramJenis: "CKS",
-    kilogramTotal: "3.7",
-    kilogramHarga: "Rp. 3,000",
-    kategoriLayanan: "",
-    kategoriTotal: "",
-    kategoriHarga: "",
-    kategoriMeter: "",
-    meterLayanan: "",
-    meterTotal: "",
-    meterHarga: "",
-    statusPembayaran: "Lunas",
-    hargaPenjualan: "Rp. 87,300",
-    metodePembayaran: "Transfer",
-  },
-  {
-    tanggalTransaksi: "31-05-2025 06:47",
-    nomorTransaksi: "TRX4310/T1304",
-    namaPelanggan: "Ibu Ningrum",
-    kategori: "",
-    kilogramJenis: "",
-    kilogramTotal: "",
-    kilogramHarga: "",
-    kategoriLayanan: "Sepatu Kecil, Sepatu Kecil",
-    kategoriTotal: "1",
-    kategoriHarga: "Rp. 5,000",
-    kategoriMeter: "",
-    meterLayanan: "",
-    meterTotal: "",
-    meterHarga: "",
-    statusPembayaran: "Lunas",
-    hargaPenjualan: "Rp. 5,000",
-    metodePembayaran: "Transfer",
-  },
-  {
-    tanggalTransaksi: "31-05-2025 06:47",
-    nomorTransaksi: "TRX4310/T1303",
-    namaPelanggan: "Yoga",
-    kategori: "",
-    kilogramJenis: "",
-    kilogramTotal: "",
-    kilogramHarga: "",
-    kategoriLayanan: "Celana Panjang, Celana Panjang",
-    kategoriTotal: "3",
-    kategoriHarga: "Rp. 20,000",
-    kategoriMeter: "",
-    meterLayanan: "",
-    meterTotal: "",
-    meterHarga: "",
-    statusPembayaran: "Lunas",
-    hargaPenjualan: "Rp. 54,000",
-    metodePembayaran: "Cash",
-  },
-  {
-    tanggalTransaksi: "31-05-2025 13:53",
-    nomorTransaksi: "TRX4310/T1301",
-    namaPelanggan: "Pillo Iront Andilla",
-    kategori: "Cuci dan Setrika",
-    kilogramJenis: "CKS",
-    kilogramTotal: "8.2",
-    kilogramHarga: "Rp. 3,000",
-    kategoriLayanan: "",
-    kategoriTotal: "",
-    kategoriHarga: "",
-    kategoriMeter: "",
-    meterLayanan: "",
-    meterTotal: "",
-    meterHarga: "",
-    statusPembayaran: "Lunas",
-    hargaPenjualan: "Rp. 73,800",
-    metodePembayaran: "Transfer",
-  },
-  {
-    tanggalTransaksi: "31-05-2025 13:52",
-    nomorTransaksi: "TRX4310/T1300",
-    namaPelanggan: "Pillo Iront Andilla",
-    kategori: "Cuci dan Setrika",
-    kilogramJenis: "CKS",
-    kilogramTotal: "5.4",
-    kilogramHarga: "Rp. 3,000",
-    kategoriLayanan: "",
-    kategoriTotal: "",
-    kategoriHarga: "",
-    kategoriMeter: "",
-    meterLayanan: "",
-    meterTotal: "",
-    meterHarga: "",
-    statusPembayaran: "Lunas",
-    hargaPenjualan: "Rp. 48,600",
-    metodePembayaran: "Transfer",
-  },
-];
-
-// Add summary section - Rows 7-11
-const summaryData = [
-  ["List Laporan Transaksi Layanan", ""],
-  ["Total Kilos:", "2303.44 Kg"],
-  ["Total Buah:", "530 Buah"],
-  ["Jumlah Transaksi:", "533 Transaksi"],
-  ["Total Pendapatan:", "Rp. 38,737,430"],
-];
+import { useEffect, useState } from "react";
 
 export default function ServiceReport() {
   const [isExporting, setIsExporting] = useState(false);
+  const [reportData, setReportData] = useState<SalesReportItem[]>([]);
+  const [summaryData, setSummaryData] = useState<[string, string][]>([]);
+
+  const fetchReportData = async () => {
+    try {
+      const res = await api.get("/api/reports/service-report");
+      if (res.status === 200) {
+        console.log(res.data);
+        setReportData(res.data.data);
+        setSummaryData(res.data.summary);
+        return;
+      }
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
 
   const exportToExcel = async () => {
     setIsExporting(true);
-
+    console.log(reportData);
+    console.log(summaryData);
     try {
       // Create a new workbook
       const workbook = new ExcelJS.Workbook();
@@ -434,25 +250,29 @@ export default function ServiceReport() {
       });
 
       // Add transaction data with alternating colors
-      dummyTransactions.forEach((transaction, index) => {
+      reportData.forEach((transaction, index) => {
         const rowIndex = 15 + index;
 
         const rowData = [
           transaction.tanggalTransaksi || "-",
           transaction.nomorTransaksi || "-",
           transaction.namaPelanggan || "-",
-          transaction.kategori || "-",
+
+          transaction.kilogramKategori || "-",
           transaction.kilogramJenis || "-",
           transaction.kilogramTotal || "-",
           transaction.kilogramHarga || "-",
-          transaction.kategoriLayanan || "-",
-          transaction.kategoriLayanan || "-",
-          transaction.kategoriTotal || "-",
-          transaction.kategoriHarga || "-",
-          transaction.kategoriMeter || "-",
+
+          transaction.sautuanKategori || "-",
+          transaction.sautuanLayanan || "-",
+          transaction.sautuanTotal || "-",
+          transaction.sautuanHarga || "-",
+
+          transaction.meterKategori || "-",
           transaction.meterLayanan || "-",
           transaction.meterTotal || "-",
           transaction.meterHarga || "-",
+
           transaction.statusPembayaran || "-",
           transaction.hargaPenjualan || "-",
           transaction.metodePembayaran || "-",
@@ -485,6 +305,10 @@ export default function ServiceReport() {
       setIsExporting(false);
     }
   };
+
+  useEffect(() => {
+    fetchReportData();
+  }, []);
 
   return (
     <Card>

@@ -13,7 +13,7 @@ export interface Service extends Document {
 // Define the schema
 const DataSchema: Schema<Service> = new mongoose.Schema(
   {
-    type: { type: String },
+    type: { type: String, enum: ["Satuan", "Kiloan", "Meter"] },
     category: { type: String },
     servicename: { type: String },
     price: { type: Number },

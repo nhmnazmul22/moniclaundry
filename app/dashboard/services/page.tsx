@@ -456,6 +456,7 @@ export default function ServicesPage() {
                       <SelectContent>
                         <SelectItem value="Satuan">Satuan</SelectItem>
                         <SelectItem value="Kiloan">Kiloan</SelectItem>
+                        <SelectItem value="Meter">Meter</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

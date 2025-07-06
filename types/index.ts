@@ -293,3 +293,24 @@ export interface Expense {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export interface SalesReportItem {
+  tanggalTransaksi: string;
+  nomorTransaksi: string;
+  namaPelanggan: string;
+  kilogramKategori: string;
+  kilogramJenis: string;
+  kilogramTotal: string | number;
+  kilogramHarga: string;
+  sautuanKategori: string;
+  sautuanLayanan: string;
+  sautuanTotal: string | number;
+  sautuanHarga: string;
+  meterKategori: string;
+  meterLayanan: string;
+  meterTotal: string | number;
+  meterHarga: string;
+  statusPembayaran: string;
+  hargaPenjualan: string;
+  metodePembayaran: string;
+}
