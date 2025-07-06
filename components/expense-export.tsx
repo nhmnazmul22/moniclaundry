@@ -193,9 +193,9 @@ export function ExpenseExport({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <FileSpreadsheet className="h-5 w-5" />
-          Export Expense Report
+          Expense Report
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -205,7 +205,7 @@ export function ExpenseExport({
           className="w-full"
         >
           <Download className="h-4 w-4 mr-2" />
-          {isExporting ? "Exporting..." : `Export Expense Laporan`}
+          {isExporting ? "Exporting..." : `Export Laporan`}
         </Button>
       </CardContent>
     </Card>

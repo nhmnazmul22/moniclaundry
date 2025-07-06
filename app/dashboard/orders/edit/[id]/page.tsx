@@ -15,30 +15,57 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useBranch } from "@/contexts/branch-context";
+import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
+import { formatCurrency } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchCustomers } from "@/store/CustomerSlice";
+import { fetchOrderItems } from "@/store/OrderItemSlice";
+import { fetchServices } from "@/store/ServiceSlice";
 import type { Order } from "@/types";
-import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Loader2,
+  PlusCircle,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { toast } from "sonner";
 
+interface OrderItemForm {
+  _id?: string;
+  service_id?: string;
+  quantity: number; // This will be weight (kg) or pieces depending on service
+  unit_price: number;
+  subtotal: number;
+  service_name?: string; // For display
+}
 export default function EditOrderPage() {
   const params = useParams();
   const orderId = params.id as string;
   const { currentBranchId } = useBranch();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orderItems, setOrderItems] = useState<OrderItemForm[]>([]);
+  const [hasInitializedOrderItems, setHasInitializedOrderItems] =
+    useState(false);
 
   const { items: customers } = useSelector(
     (state: RootState) => state.customerReducer
+  );
+  const { items: services } = useSelector(
+    (state: RootState) => state.serviceReducer
+  );
+  const { items: OrdItems } = useSelector(
+    (state: RootState) => state.orderItemsReducer
   );
 
   const [formData, setFormData] = useState({
@@ -52,26 +79,21 @@ export default function EditOrderPage() {
   const fetchData = async () => {
     setLoading(true);
     setError(null);
-
     try {
-      // Fetch order
       const res = await api.get(`/api/orders/${orderId}`);
       if (res.status === 200) {
-        setOrder(res.data.data);
+        const data = res.data.data;
+        setOrder(data);
+        setFormData({
+          customer_id: data.customerDetails._id || "",
+          order_status: data.order_status,
+          payment_status: data.payment_status || "",
+          notes: data.notes || "",
+          estimated_completion: data.estimated_completion
+            ? new Date(data.estimated_completion).toISOString().slice(0, 16)
+            : "",
+        });
       }
-
-      // Set form data
-      setFormData({
-        customer_id: res.data.data.customerDetails._id || "",
-        order_status: res.data.data.order_status,
-        payment_status: res.data.data.payment_status || "",
-        notes: res.data.data.notes || "",
-        estimated_completion: res.data.data.estimated_completion
-          ? new Date(res.data.data.estimated_completion)
-              .toISOString()
-              .slice(0, 16)
-          : "",
-      });
     } catch (err: any) {
       setError(err.message || "Gagal memuat data order.");
     } finally {
@@ -82,33 +104,114 @@ export default function EditOrderPage() {
   useEffect(() => {
     if (orderId) {
       fetchData();
+      dispatch(fetchOrderItems(orderId));
     }
   }, [orderId]);
 
   useEffect(() => {
     dispatch(fetchCustomers(currentBranchId));
+    dispatch(fetchServices(currentBranchId));
   }, [currentBranchId]);
+
+  useEffect(() => {
+    if (!hasInitializedOrderItems && OrdItems && OrdItems?.length > 0) {
+      setOrderItems(
+        OrdItems.map((item) => ({
+          _id: item._id,
+          service_id: item.serviceDetails._id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          subtotal: item.subtotal,
+          service_name: item.serviceDetails?.servicename || "",
+        }))
+      );
+      setHasInitializedOrderItems(true);
+    }
+  }, [OrdItems, hasInitializedOrderItems]);
+
+  const handleAddOrderItem = () => {
+    setOrderItems((prev) => [
+      ...prev,
+      {
+        quantity: 1,
+        unit_price: 0,
+        subtotal: 0,
+        service_id: "",
+        service_name: "",
+      },
+    ]);
+  };
+
+  const handleRemoveOrderItem = (index: number) => {
+    setOrderItems(orderItems.filter((_, i) => i !== index));
+  };
+
+  const handleOrderItemChange = (
+    index: number,
+    field: keyof OrderItemForm,
+    value: any
+  ) => {
+    const updatedItems = [...orderItems];
+    const item = updatedItems[index];
+
+    (item as any)[field] = value;
+
+    if (field === "service_id") {
+      const selectedService = services?.find((s) => s._id === value);
+      if (selectedService) {
+        item.unit_price = selectedService.price;
+        item.service_name = selectedService.servicename;
+      }
+    }
+
+    if (field === "service_id" || field === "quantity") {
+      item.subtotal = item.quantity * item.unit_price;
+    }
+
+    setOrderItems(updatedItems);
+  };
+
+  const calculateTotals = () => {
+    const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const discount = 0;
+    const tax = 0;
+    const totalAmount = subtotal - discount + tax;
+    const totalWeight = orderItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
+    return { subtotal, discount, tax, totalAmount, totalWeight };
+  };
+
+  const { subtotal, discount, tax, totalAmount, totalWeight } =
+    calculateTotals();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
     try {
-      const updateData: any = {
-        customer_id: formData.customer_id || null,
-        order_status: formData.order_status,
-        payment_status: formData.payment_status || null,
-        notes: formData.notes || null,
-        estimated_completion: formData.estimated_completion
-          ? new Date(formData.estimated_completion).toISOString()
-          : null,
-        updated_at: new Date().toISOString(),
-      };
+      // Order Items added or updated
+      const orderItemsData = orderItems.map((item) => ({
+        _id: item._id, // optional for existing items
+        service_id: item.service_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        subtotal: item.subtotal,
+        order_id: order?._id,
+        current_branch_id: currentBranchId,
+      }));
 
-      const res = await api.put(`/api/orders/${orderId}`, updateData);
+      const itemRes = await api.put(`/api/order-items`, orderItemsData);
+      if (itemRes.status !== 201) {
+        toast({
+          title: "Failed",
+          description: "Order Items update or added failed",
+        });
+        return;
+      }
 
-      if (res.status !== 201) throw new Error("Order update failed");
-
+      // Payment added or updated
       if (
         order?.payment_status === "belum lunas" &&
         (formData.payment_status === "lunas" ||
@@ -125,16 +228,46 @@ export default function EditOrderPage() {
 
         const res = await api.post("/api/payments", paymentData);
         if (res.status !== 201) {
-          await api.delete(`/api/orders/${order._id}`);
-          console.log(res.data);
+          toast({
+            title: "Failed",
+            description: "Order Items update or added failed",
+          });
           return;
         }
       }
 
-      toast.success("Order berhasil diperbarui!");
+      // Order updated
+      const updateData: any = {
+        customer_id: formData.customer_id || null,
+        order_status: formData.order_status,
+        payment_status: formData.payment_status || null,
+        notes: formData.notes || null,
+        estimated_completion: formData.estimated_completion
+          ? new Date(formData.estimated_completion).toISOString()
+          : null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const res = await api.put(`/api/orders/${orderId}`, updateData);
+      if (res.status !== 201) {
+        toast({
+          title: "Failed",
+          description: "Order update failed",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Order berhasil diperbarui!",
+      });
       router.push(`/dashboard/orders/${orderId}`);
     } catch (err: any) {
-      toast.error(`Gagal memperbarui order: ${err.message}`);
+      toast({
+        title: "Failed",
+        description: `Gagal memperbarui order: ${err.message}`,
+        variant: "destructive",
+      });
       console.error(err);
     } finally {
       setSaving(false);
@@ -265,6 +398,122 @@ export default function EditOrderPage() {
                 />
               </div>
             </div>
+
+            {/* Order Items */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <Label>Item Layanan</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddOrderItem}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> Tambah Item
+                </Button>
+              </div>
+              {orderItems.map((item, index) => (
+                <Card key={index} className="p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <p className="font-medium">Item #{index + 1}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveOrderItem(index)}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor={`service-${index}`}>Layanan</Label>
+                      <Select
+                        value={item.service_id}
+                        onValueChange={(value) =>
+                          handleOrderItemChange(index, "service_id", value)
+                        }
+                      >
+                        <SelectTrigger id={`service-${index}`}>
+                          <SelectValue placeholder="Pilih Layanan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {services &&
+                            services.map((service) => (
+                              <SelectItem
+                                key={service._id}
+                                value={service._id!}
+                              >
+                                {service.servicename} (
+                                {formatCurrency(service.price)}/kg)
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`quantity-${index}`}>
+                        Kuantitas (kg/pcs)
+                      </Label>
+                      <Input
+                        id={`quantity-${index}`}
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          handleOrderItemChange(
+                            index,
+                            "quantity",
+                            Number.parseFloat(e.target.value) || 0
+                          )
+                        }
+                        min="0.1"
+                        step="0.1"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Subtotal</Label>
+                      <Input
+                        value={formatCurrency(item.subtotal)}
+                        readOnly
+                        className="bg-gray-100"
+                      />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+              {orderItems.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Belum ada item layanan.
+                </p>
+              )}
+            </div>
+
+            {/* Totals */}
+            {orderItems.length > 0 && (
+              <Card className="p-4 bg-slate-50">
+                <CardTitle className="text-md mb-2">Ringkasan Biaya</CardTitle>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Total Berat/Item:</span>{" "}
+                    <span>{totalWeight.toFixed(1)} kg/pcs</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>{" "}
+                    <span>{formatCurrency(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Diskon:</span> <span>{formatCurrency(discount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Pajak:</span> <span>{formatCurrency(tax)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-md pt-1 border-t mt-1">
+                    <span>Total Tagihan:</span>{" "}
+                    <span>{formatCurrency(totalAmount)}</span>
+                  </div>
+                </div>
+              </Card>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="notes">Catatan</Label>

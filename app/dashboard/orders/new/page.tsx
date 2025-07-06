@@ -411,8 +411,12 @@ export default function NewOrderPage() {
                 <div className="flex justify-between">
                   <span>Subtotal:</span> <span>{formatCurrency(subtotal)}</span>
                 </div>
-                {/* <div className="flex justify-between"><span>Diskon:</span> <span>{formatCurrency(discount)}</span></div> */}
-                {/* <div className="flex justify-between"><span>Pajak:</span> <span>{formatCurrency(tax)}</span></div> */}
+                <div className="flex justify-between">
+                  <span>Diskon:</span> <span>{formatCurrency(discount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Pajak:</span> <span>{formatCurrency(tax)}</span>
+                </div>
                 <div className="flex justify-between font-bold text-md pt-1 border-t mt-1">
                   <span>Total Tagihan:</span>{" "}
                   <span>{formatCurrency(totalAmount)}</span>

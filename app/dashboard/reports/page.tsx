@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -40,9 +41,40 @@ import { fetchExpenses } from "@/store/ExpensesSlice";
 import { fetchOrders } from "@/store/orderSlice";
 import { fetchPayments } from "@/store/PaymentSlice";
 import { format } from "date-fns";
-import { AlertTriangle, CalendarDays, Download, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  Download,
+  FileSpreadsheet,
+  Loader2,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+const chartData = [
+  { month: "Penjualan", desktop: 186, mobile: 80 },
+  { month: "Jumlah Kilo", desktop: 305, mobile: 200 },
+  { month: "Jumlah Satuan", desktop: 237, mobile: 120 },
+  { month: "Jumlah Customer", desktop: 73, mobile: 190 },
+  { month: "May", desktop: 209, mobile: 130 },
+  { month: "June", desktop: 214, mobile: 140 },
+  { month: "January", desktop: 186, mobile: 80 },
+  { month: "February", desktop: 305, mobile: 200 },
+  { month: "March", desktop: 237, mobile: 120 },
+  { month: "April", desktop: 73, mobile: 190 },
+  { month: "May", desktop: 209, mobile: 130 },
+  { month: "June", desktop: 214, mobile: 140 },
+];
+const chartConfig = {
+  desktop: {
+    label: "Desktop",
+    color: "#2563eb",
+  },
+  mobile: {
+    label: "Mobile",
+    color: "#60a5fa",
+  },
+} satisfies ChartConfig;
 
 export default function ReportsPage() {
   const { currentBranchId } = useBranch();
@@ -90,7 +122,6 @@ export default function ReportsPage() {
         dateRange
       );
       setReportData(processedData);
-      console.log(processedData);
     } catch (e) {
       setError(
         e instanceof Error
@@ -155,16 +186,6 @@ export default function ReportsPage() {
           <p className="text-muted-foreground">
             Analisis performa bisnis dan laporan keuangan
           </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => exportSalesReport(createDummyData(reportData!))}
-            disabled={!reportData || loading}
-            variant="outline"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export Sales Report
-          </Button>
         </div>
       </div>
 
@@ -246,26 +267,71 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
           </div>
+          <div>
+            <ChartContainer config={chartConfig} className="h-[300px] w-full">
+              <BarChart accessibilityLayer data={chartData}>
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                  tickFormatter={(value) => value}
+                />
+                <Bar dataKey="desktop" fill="var(--color-desktop)" radius={4} />
+                <Bar dataKey="mobile" fill="var(--color-mobile)" radius={4} />
+              </BarChart>
+            </ChartContainer>
+          </div>
+
           <div className="grid grid-cols-12 gap-5">
             <div className="col-span-3">
+              <ServiceTransitionReport
+                branchId={currentBranchId}
+                startDate={startDate}
+                endDate={endDate}
+              />
+            </div>
+            <div className="col-span-2">
               <CustomerReport startDate={startDate} endDate={endDate} />
             </div>
-            <div className="col-span-3">
-              <ServiceTransitionReport />
-            </div>
-            <div className="col-span-3">
+            <div className="col-span-2">
               <ExpenseExport
                 expenses={expensesData!}
                 startDate={startDate}
                 endDate={endDate}
               />
             </div>
-            <div className="col-span-3">
+            <div className="col-span-2">
               <DepositReportExport
                 branchId={currentBranchId}
                 startDate={startDate}
                 endDate={endDate}
               />
+            </div>
+            <div className="col-span-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <FileSpreadsheet className="h-6 w-6" />
+                    Laporan Penjualan
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() =>
+                        exportSalesReport(createDummyData(reportData!))
+                      }
+                      disabled={!reportData || loading}
+                      className="w-full"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Export Report
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
           <Card>
@@ -374,7 +440,6 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
           </div>
-
           <Card>
             <CardHeader>
               <CardTitle>Daily Revenue Breakdown</CardTitle>

@@ -131,18 +131,19 @@ export default function CustomerReport({ startDate, endDate }: CustomerReport) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <FileSpreadsheet className="h-6 w-6" />
-          Laporan Data Customer
+          Laporan Customer
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 gap-4">
-          <Button onClick={exportToExcel} className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Export Customer Laporan
-          </Button>
-        </div>
+        <Button
+          onClick={exportToExcel}
+          className="flex items-center gap-2 w-full"
+        >
+          <Download className="h-4 w-4" />
+          Export Laporan
+        </Button>
       </CardContent>
     </Card>
   );

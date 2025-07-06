@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import api from "@/lib/config/axios";
 import { format } from "date-fns";
-import { Download, Loader2 } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -134,7 +134,10 @@ export function DepositReportExport({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Export Laporan Deposit</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <FileSpreadsheet className="h-6 w-6" />
+          Laporan Deposit
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-2">
@@ -146,12 +149,12 @@ export function DepositReportExport({
             {isExporting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Mengekspor...
+                Exporting...
               </>
             ) : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Export Deposit Laporan
+                Export Laporan
               </>
             )}
           </Button>

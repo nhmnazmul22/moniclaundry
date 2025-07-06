@@ -110,6 +110,56 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PUT(req: NextRequest) {
+  await dbConnect();
+  const order_items = await req.json();
+
+  const bulkUpdateOps = [];
+  const newItems = [];
+
+  for (const item of order_items) {
+    if (item._id) {
+      // Prepare update for existing item
+      bulkUpdateOps.push({
+        updateOne: {
+          filter: { _id: item._id },
+          update: {
+            $set: {
+              service_id: item.service_id,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              subtotal: item.subtotal,
+              current_branch_id: item.current_branch_id,
+            },
+          },
+        },
+      });
+    } else {
+      // Prepare insert for new item
+      newItems.push(item);
+    }
+  }
+
+  // Run updates and inserts
+  const [updateResult, insertResult] = await Promise.all([
+    bulkUpdateOps.length > 0
+      ? OrderItemsModel.bulkWrite(bulkUpdateOps)
+      : Promise.resolve(null),
+    newItems.length > 0
+      ? OrderItemsModel.insertMany(newItems)
+      : Promise.resolve([]),
+  ]);
+
+  return NextResponse.json(
+    {
+      message: "OrderItems updated and added successfully.",
+      updated: updateResult,
+      inserted: insertResult,
+    },
+    { status: 201 }
+  );
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     await dbConnect();

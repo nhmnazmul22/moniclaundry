@@ -68,6 +68,7 @@ export interface Order {
 
 export interface OrderItem {
   _id: string;
+  service_id?: string;
   orderDetails: Order;
   serviceDetails: Service;
   quantity: number;
@@ -302,10 +303,10 @@ export interface SalesReportItem {
   kilogramJenis: string;
   kilogramTotal: string | number;
   kilogramHarga: string;
-  sautuanKategori: string;
-  sautuanLayanan: string;
-  sautuanTotal: string | number;
-  sautuanHarga: string;
+  satuanKategori: string;
+  satuanLayanan: string;
+  satuanTotal: string | number;
+  satuanHarga: string;
   meterKategori: string;
   meterLayanan: string;
   meterTotal: string | number;

@@ -9,7 +9,17 @@ import { saveAs } from "file-saver";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export default function ServiceReport() {
+interface ServiceReportType {
+  branchId: string;
+  startDate: string;
+  endDate: string;
+}
+
+export default function ServiceReport({
+  branchId,
+  startDate,
+  endDate,
+}: ServiceReportType) {
   const [isExporting, setIsExporting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<SalesReportItem[]>([]);
@@ -18,7 +28,9 @@ export default function ServiceReport() {
   const fetchReportData = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/api/reports/service-report");
+      const res = await api.get(
+        `/api/reports/service-report?branch_id=${branchId}&start_date=${startDate}&end_date=${endDate}`
+      );
       if (res.status === 200) {
         setReportData(res.data.data);
         setSummaryData(res.data.summary);
@@ -97,8 +109,9 @@ export default function ServiceReport() {
 
       // Add report period - Row 5
       worksheet.mergeCells("A5:R5");
-      worksheet.getCell("A5").value =
-        "Laporan Transaksi Layanan dari tanggal 01-05-2025 sampai 31-05-2025";
+      worksheet.getCell(
+        "A5"
+      ).value = `Laporan Transaksi Layanan dari tanggal ${startDate} sampai ${endDate}`;
       worksheet.getCell("A5").font = { size: 11 };
 
       summaryData.forEach((row, index) => {
@@ -267,10 +280,10 @@ export default function ServiceReport() {
           transaction.kilogramTotal || "-",
           transaction.kilogramHarga || "-",
 
-          transaction.sautuanKategori || "-",
-          transaction.sautuanLayanan || "-",
-          transaction.sautuanTotal || "-",
-          transaction.sautuanHarga || "-",
+          transaction.satuanKategori || "-",
+          transaction.satuanLayanan || "-",
+          transaction.satuanTotal || "-",
+          transaction.satuanHarga || "-",
 
           transaction.meterKategori || "-",
           transaction.meterLayanan || "-",
@@ -317,9 +330,9 @@ export default function ServiceReport() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <FileSpreadsheet className="h-6 w-6" />
-          Laporan Layanan Transaksi
+          Laporan Transaksi
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -329,7 +342,7 @@ export default function ServiceReport() {
           className="w-full"
         >
           <Download className="h-4 w-4 mr-2" />
-          {isExporting ? "Exporting..." : "Export Layanan Laporan"}
+          {isExporting ? "Exporting..." : "Export Laporan"}
         </Button>
       </CardContent>
     </Card>
