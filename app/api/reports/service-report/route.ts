@@ -22,7 +22,10 @@ export async function GET(request: NextRequest) {
     branchObjectId = new mongoose.Types.ObjectId(branchIdParam);
   }
 
-  let dateFilter: any = {};
+  // Parse and validate startDate and endDate
+  let startDate: Date | null = null;
+  let endDate: Date | null = null;
+
   if (startDateParam) {
     const sd = new Date(startDateParam);
     if (isNaN(sd.getTime())) {
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-    dateFilter.$gte = sd;
+    startDate = sd;
   }
   if (endDateParam) {
     const ed = new Date(endDateParam);
@@ -42,10 +45,29 @@ export async function GET(request: NextRequest) {
       );
     }
     ed.setHours(23, 59, 59, 999);
-    dateFilter.$lte = ed;
+    endDate = ed;
   }
 
   try {
+    // Match date range filter for reportData (all other data except chart)
+    const matchDateFilter: any = {};
+    if (startDate && endDate) {
+      matchDateFilter.$gte = startDate;
+      matchDateFilter.$lte = endDate;
+    } else if (startDate) {
+      matchDateFilter.$gte = startDate;
+    } else if (endDate) {
+      matchDateFilter.$lte = endDate;
+    }
+
+    // For chart, always use full year based on startDate year (or current year)
+    const chartYear = startDate
+      ? startDate.getFullYear()
+      : new Date().getFullYear();
+    const chartStartDate = new Date(chartYear, 0, 1);
+    const chartEndDate = new Date(chartYear, 11, 31, 23, 59, 59, 999);
+
+    // Aggregation pipeline for order items with lookups and date filtering
     const pipeline: any[] = [
       {
         $lookup: {
@@ -56,12 +78,11 @@ export async function GET(request: NextRequest) {
         },
       },
       { $unwind: "$order" },
-
       {
         $match: {
           ...(branchObjectId && { "order.current_branch_id": branchObjectId }),
-          ...(Object.keys(dateFilter).length > 0 && {
-            "order.createdAt": dateFilter,
+          ...(Object.keys(matchDateFilter).length > 0 && {
+            "order.createdAt": matchDateFilter,
           }),
         },
       },
@@ -85,8 +106,10 @@ export async function GET(request: NextRequest) {
       { $unwind: "$service" },
     ];
 
+    // Fetch all order items matching report date range for reportData
     const orderItems = await OrderItemsModel.aggregate(pipeline);
 
+    // Prepare summary and report data
     let totalKilos = 0;
     let totalItems = 0;
     let totalRevenue = 0;
@@ -95,29 +118,26 @@ export async function GET(request: NextRequest) {
     const reportData = orderItems.map((item: any) => {
       const { order, service, customer, quantity, unit_price, subtotal } = item;
       const type: string = service.type || "Satuan";
+      const orderDate = new Date(order.createdAt);
 
       transactionSet.add(order.order_number);
       totalRevenue += subtotal ?? 0;
       if (type === "Kiloan") {
         totalKilos += order.total_weight ?? 0;
-      } else {
+      } else if (type === "Satuan") {
         totalItems += quantity ?? 0;
       }
 
       return {
-        tanggalTransaksi: order.createdAt
-          ? new Date(order.createdAt).toLocaleString("id-ID", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "-",
+        tanggalTransaksi: orderDate.toLocaleString("id-ID", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
         nomorTransaksi: order.order_number,
         namaPelanggan: customer?.name ?? "-",
-
-        // Kilogram
         kilogramKategori: type === "Kiloan" ? service.category : "-",
         kilogramJenis: type === "Kiloan" ? service.servicename : "-",
         kilogramTotal: type === "Kiloan" ? order.total_weight : "-",
@@ -125,8 +145,6 @@ export async function GET(request: NextRequest) {
           type === "Kiloan"
             ? `Rp. ${Number(unit_price || 0).toLocaleString("id-ID")}`
             : "-",
-
-        // Satuan
         satuanKategori: type === "Satuan" ? service.category : "-",
         satuanLayanan: type === "Satuan" ? service.servicename : "-",
         satuanTotal: type === "Satuan" ? quantity : "-",
@@ -134,8 +152,6 @@ export async function GET(request: NextRequest) {
           type === "Satuan"
             ? `Rp. ${Number(subtotal || 0).toLocaleString("id-ID")}`
             : "-",
-
-        // Meter
         meterKategori: type === "Meter" ? service.category : "-",
         meterLayanan: type === "Meter" ? service.servicename : "-",
         meterTotal: type === "Meter" ? quantity : "-",
@@ -143,7 +159,6 @@ export async function GET(request: NextRequest) {
           type === "Meter"
             ? `Rp. ${Number(subtotal || 0).toLocaleString("id-ID")}`
             : "-",
-
         statusPembayaran: (order.payment_status ?? "-").toUpperCase(),
         hargaPenjualan: `Rp. ${Number(order.total_amount || 0).toLocaleString(
           "id-ID"
@@ -155,6 +170,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Build summary array
     const summaryData: [string, string][] = [
       ["List Laporan Transaksi Layanan", ""],
       ["Total Kilos:", `${totalKilos.toFixed(2)} Kg`],
@@ -163,8 +179,91 @@ export async function GET(request: NextRequest) {
       ["Total Pendapatan:", `Rp. ${totalRevenue.toLocaleString("id-ID")}`],
     ];
 
+    // --- Chart Data ---
+
+    // Build chart data using full year range (Jan-Dec)
+    const chartPipeline: any[] = [
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          ...(branchObjectId && { "order.current_branch_id": branchObjectId }),
+          "order.createdAt": { $gte: chartStartDate, $lte: chartEndDate },
+        },
+      },
+      {
+        $lookup: {
+          from: "services",
+          localField: "service_id",
+          foreignField: "_id",
+          as: "service",
+        },
+      },
+      { $unwind: "$service" },
+    ];
+
+    const chartOrderItems = await OrderItemsModel.aggregate(chartPipeline);
+
+    // Map to aggregate by month label
+    const chartMap = new Map<
+      string,
+      { kilogramTotal: number; satuanTotal: number; meterTotal: number }
+    >();
+
+    chartOrderItems.forEach((item: any) => {
+      const type = item.service?.type ?? "Satuan";
+      const date = new Date(item.order.createdAt);
+      const label = date.toLocaleString("en-US", {
+        month: "short",
+        year: "numeric",
+      });
+
+      const current = chartMap.get(label) ?? {
+        kilogramTotal: 0,
+        satuanTotal: 0,
+        meterTotal: 0,
+      };
+
+      if (type === "Kiloan") {
+        current.kilogramTotal += item.order.total_weight ?? 0;
+      } else if (type === "Satuan") {
+        current.satuanTotal += item.quantity ?? 0;
+      } else if (type === "Meter") {
+        current.meterTotal += item.quantity ?? 0;
+      }
+
+      chartMap.set(label, current);
+    });
+
+    // Fill 12 months with zero if missing
+    const allMonths = Array.from({ length: 12 }, (_, i) => {
+      const date = new Date(chartYear, i, 1);
+      return date.toLocaleString("en-US", { month: "short", year: "numeric" });
+    });
+
+    const chartData = allMonths.map((label) => ({
+      month: label,
+      ...(chartMap.get(label) ?? {
+        kilogramTotal: 0,
+        satuanTotal: 0,
+        meterTotal: 0,
+      }),
+    }));
+
     return NextResponse.json(
-      { success: true, summary: summaryData, data: reportData },
+      {
+        success: true,
+        summary: summaryData,
+        data: reportData,
+        chartData,
+      },
       { status: 200 }
     );
   } catch (err: any) {
