@@ -3,11 +3,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import api from "@/lib/config/axios";
-import { SalesReportItem } from "@/types";
+import { AppDispatch, RootState } from "@/store";
+import { fetchBranches } from "@/store/BranchSlice";
+import { Branches, SalesReportItem } from "@/types";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 interface ServiceReportType {
   branchId: string;
@@ -24,6 +27,12 @@ export default function ServiceReport({
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<SalesReportItem[]>([]);
   const [summaryData, setSummaryData] = useState<[string, string][]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<Branches | null>(null);
+  const { items: branches } = useSelector(
+    (state: RootState) => state.branchReducer
+  );
+
+  const dispatch = useDispatch<AppDispatch>();
 
   const fetchReportData = async () => {
     setLoading(true);
@@ -46,8 +55,6 @@ export default function ServiceReport({
 
   const exportToExcel = async () => {
     setIsExporting(true);
-    console.log(reportData);
-    console.log(summaryData);
     try {
       // Create a new workbook
       const workbook = new ExcelJS.Workbook();
@@ -88,7 +95,7 @@ export default function ServiceReport({
       };
 
       worksheet.mergeCells("A2:R2");
-      worksheet.getCell("A2").value = "Mosaic Laundry GG";
+      worksheet.getCell("A2").value = selectedBranch?.name || "";
       worksheet.getCell("A2").font = {
         bold: true,
         size: 11,
@@ -99,8 +106,7 @@ export default function ServiceReport({
       };
 
       worksheet.mergeCells("A3:R3");
-      worksheet.getCell("A3").value =
-        "Jl. Grand Galaxy Boulevard Blok FE 2/7 Kavling B";
+      worksheet.getCell("A3").value = selectedBranch?.address;
       worksheet.getCell("A3").font = { size: 11, bold: true };
       worksheet.getCell("A3").alignment = {
         horizontal: "center",
@@ -326,6 +332,17 @@ export default function ServiceReport({
   useEffect(() => {
     fetchReportData();
   }, []);
+
+  useEffect(() => {
+    dispatch(fetchBranches());
+  }, []);
+
+  useEffect(() => {
+    if (branchId) {
+      const branch = branches?.find((b) => b._id === branchId);
+      setSelectedBranch(branch!);
+    }
+  }, [branchId, branches]);
 
   return (
     <Card>

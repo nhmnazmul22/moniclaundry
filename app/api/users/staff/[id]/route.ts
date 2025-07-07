@@ -1,5 +1,6 @@
 import { dbConnect } from "@/lib/config/db";
 import UsersModel from "@/lib/models/UsersModel";
+import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -51,10 +52,17 @@ export async function PUT(
     const userId = (await params).id;
     const body = await request.json();
 
+    const { password } = body;
+
+    let hashedPassword = password;
+    if (password || password.length > 0) {
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+
     // Update users data
     const UpdatedUser = await UsersModel.updateOne(
       { _id: new mongoose.Types.ObjectId(userId) },
-      { ...body }
+      { ...body, password: hashedPassword }
     );
 
     if (!UpdatedUser) {

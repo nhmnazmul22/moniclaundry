@@ -71,7 +71,7 @@ const ChartData: React.FC<ChartDataType> = ({ branchId }) => {
 
   if (loading)
     return (
-      <div className="text-center">
+      <div className="text-center flex flex-col gap-2 items-center">
         <Loader className="animate-spin" />
         Loading chart...
       </div>

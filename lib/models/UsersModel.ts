@@ -28,7 +28,7 @@ const DataSchema: Schema<Users> = new mongoose.Schema(
     phone: { type: String },
     address: { type: String },
     avatar_url: { type: String },
-    is_active: { type: Boolean, required: true },
+    is_active: { type: Boolean, default: true },
     current_branch_id: [
       {
         type: mongoose.Types.ObjectId,

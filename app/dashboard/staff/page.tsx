@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -28,11 +29,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
-import { type StaffMember } from "@/lib/staff-data";
 import { formatDateTime } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
+import { fetchBranches } from "@/store/BranchSlice";
 import { fetchUsers } from "@/store/StaffSlice";
 import { User } from "@/types";
 import {
@@ -50,7 +51,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 export default function StaffPage() {
   const { data: session } = useSession();
-  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [staff, setStaff] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,19 +59,25 @@ export default function StaffPage() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
   const dispatch = useDispatch<AppDispatch>();
   // Form state
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<"owner" | "admin" | "kurir">("kurir");
+  const [role, setRole] = useState<"owner" | "admin" | "kurir" | "kasir">(
+    "kurir"
+  );
   const [password, setPassword] = useState("");
   const [isActive, setIsActive] = useState(true);
-  const { toast } = useToast();
 
   const { items: staffs, loading: staffsLoading } = useSelector(
     (state: RootState) => state.staffsReducer
+  );
+
+  const { items: branches } = useSelector(
+    (state: RootState) => state.branchReducer
   );
 
   // Only allow Owner to access this page
@@ -91,6 +98,7 @@ export default function StaffPage() {
 
   useEffect(() => {
     dispatch(fetchUsers());
+    dispatch(fetchBranches());
   }, []);
 
   const resetForm = () => {
@@ -119,6 +127,7 @@ export default function StaffPage() {
     setIsEditMode(true);
     setEditingStaffId(member._id!);
     setIsModalOpen(true);
+    setSelectedBranchIds(member.current_branch_id);
   };
 
   const handleSaveStaff = async () => {
@@ -166,15 +175,28 @@ export default function StaffPage() {
     try {
       if (isEditMode && editingStaffId) {
         // Update existing staff
-        const updateData: Partial<StaffMember> = {
+        const updateData = {
           full_name: fullName,
           email: email,
           phone: phone || undefined,
           role: role,
+          password: password,
           is_active: isActive,
         };
 
-        await api.put(`/api/users/staff/${editingStaffId}`, updateData);
+        const res = await api.put(
+          `/api/users/staff/${editingStaffId}`,
+          updateData
+        );
+
+        if (res.status !== 201) {
+          toast({
+            title: "Error",
+            description: res.data.message || "Gagal menyimpan data staff",
+            variant: "destructive",
+          });
+          return;
+        }
 
         toast({
           title: "Sukses! 🎉",
@@ -182,14 +204,23 @@ export default function StaffPage() {
         });
       } else {
         // Create new staff
-        await api.post("/api/users", {
+        const res = await api.post("/api/users", {
           full_name: fullName,
           email: email,
           phone: phone || undefined,
           role: role,
           password: password,
-          is_active: isActive,
+          current_branch_id: selectedBranchIds,
         });
+
+        if (res.status !== 201) {
+          toast({
+            title: "Error",
+            description: res.data.message || "Gagal menyimpan data staff",
+            variant: "destructive",
+          });
+          return;
+        }
 
         toast({
           title: "Sukses! 🎉",
@@ -303,6 +334,12 @@ export default function StaffPage() {
     return false;
   };
 
+  const handleCheckedChange = (checked: boolean, id: string) => {
+    setSelectedBranchIds((prev) =>
+      checked ? [...prev, id] : prev.filter((val) => val !== id)
+    );
+  };
+
   if (loading && staffs?.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -331,6 +368,7 @@ export default function StaffPage() {
     owners: staffs?.filter((s) => s.role === "owner").length,
     admins: staffs?.filter((s) => s.role === "admin").length,
     kurirs: staffs?.filter((s) => s.role === "kurir").length,
+    kasir: staffs?.filter((s) => s.role === "kasir").length,
   };
 
   return (
@@ -357,7 +395,7 @@ export default function StaffPage() {
 
       {/* Dialog Tambah/Edit Staff */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[525px]">
+        <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <DialogTitle>
               {isEditMode ? "Edit Staff" : "Tambah Staff Baru"}
@@ -369,7 +407,7 @@ export default function StaffPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
+            <div className="flex flex-col items-start gap-2">
               <Label htmlFor="fullName" className="text-right">
                 Nama Lengkap *
               </Label>
@@ -382,7 +420,7 @@ export default function StaffPage() {
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
+            <div className="flex flex-col items-start gap-2">
               <Label htmlFor="emailStaff" className="text-right">
                 Email *
               </Label>
@@ -397,7 +435,7 @@ export default function StaffPage() {
                 disabled={isEditMode} // Don't allow email change in edit mode
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
+            <div className="flex flex-col items-start gap-2">
               <Label htmlFor="passwordStaff" className="text-right">
                 Password {isEditMode ? "(Kosongkan jika tidak diubah)" : "*"}
               </Label>
@@ -415,7 +453,7 @@ export default function StaffPage() {
                 required={!isEditMode}
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
+            <div className="flex flex-col items-start gap-2">
               <Label htmlFor="phoneStaff" className="text-right">
                 Telepon
               </Label>
@@ -428,13 +466,13 @@ export default function StaffPage() {
                 placeholder="08xxxxxxxxxx (opsional)"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
+            <div className="flex flex-col items-start gap-2">
               <Label htmlFor="roleStaff" className="text-right">
                 Role *
               </Label>
               <Select
                 onValueChange={(value) =>
-                  setRole(value as "owner" | "admin" | "kurir")
+                  setRole(value as "owner" | "admin" | "kurir" | "kasir")
                 }
                 value={role}
               >
@@ -447,25 +485,27 @@ export default function StaffPage() {
                   )}
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="kurir">Kurir</SelectItem>
+                  <SelectItem value="kasir">Kasir</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="isActiveStaff" className="text-right">
-                Status
-              </Label>
-              <Select
-                onValueChange={(value) => setIsActive(value === "true")}
-                value={String(isActive)}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Aktif</SelectItem>
-                  <SelectItem value="false">Non-Aktif</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col items-start gap-2">
+              {branches &&
+                role !== "owner" &&
+                branches.map((branch) => (
+                  <div key={branch._id} className="flex gap-2 items-center">
+                    <Checkbox
+                      id={branch._id}
+                      checked={selectedBranchIds.includes(branch._id)}
+                      onCheckedChange={(checked) =>
+                        handleCheckedChange(!!checked, branch._id)
+                      }
+                    />
+                    <Label htmlFor={branch._id} className="m-0">
+                      {branch.name} - ({branch.type})
+                    </Label>
+                  </div>
+                ))}
             </div>
           </div>
           <DialogFooter>
@@ -498,34 +538,6 @@ export default function StaffPage() {
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Total Staff</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Aktif</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {stats.active}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Non-Aktif</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {stats.inactive}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
             <CardTitle className="text-sm font-medium">Owners</CardTitle>
           </CardHeader>
           <CardContent>
@@ -546,6 +558,34 @@ export default function StaffPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.kurirs}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Kasir</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.kasir}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Aktif</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.active}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Non-Aktif</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {stats.inactive}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -584,7 +624,7 @@ export default function StaffPage() {
       {/* Staff Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Staff ({staff.length})</CardTitle>
+          <CardTitle>Daftar Staff ({stats.total})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>

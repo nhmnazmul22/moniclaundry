@@ -2,11 +2,12 @@ export interface User {
   _id?: string;
   email: string;
   full_name: string;
-  role: "owner" | "admin" | "kurir";
+  role: "owner" | "admin" | "kurir" | "kasir";
   phone?: string;
   address?: string;
   avatar_url?: string;
   is_active: boolean;
+  current_branch_id: string[];
   createdAt?: string;
   updatedAt?: string;
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -13,10 +12,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
-import api from "@/lib/config/axios";
-import ExcelJS from "exceljs";
-import { saveAs } from "file-saver";
-import { Download } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface Expense {
@@ -28,7 +23,6 @@ interface Expense {
   current_branch_id: string;
   createdAt: string;
 }
-
 
 interface ExpenseTableProps {
   refreshTrigger: number;
@@ -61,13 +55,10 @@ export function ExpenseTable({ refreshTrigger }: ExpenseTableProps) {
     }
   };
 
-
-
   useEffect(() => {
     fetchExpenses();
   }, [refreshTrigger]);
 
- 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -103,114 +94,6 @@ export function ExpenseTable({ refreshTrigger }: ExpenseTableProps) {
       "Uang Training": "bg-emerald-100 text-emerald-800",
     };
     return colors[category] || "bg-gray-100 text-gray-800";
-  };
-
-  const exportToExcel = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Expense Report");
-
-    // Set column widths
-    worksheet.columns = [
-      { header: "Tanggal (otomatis harian)", key: "date", width: 25 },
-      { header: "Jenis Pengeluaran", key: "category", width: 20 },
-      { header: "Rp", key: "amount", width: 15 },
-    ];
-
-    // Style the header row
-    const headerRow = worksheet.getRow(1);
-
-    for (let col = 1; col <= 3; col++) {
-      const cell = headerRow.getCell(col);
-      cell.font = { bold: true, color: { argb: "000000" } };
-      cell.border = {
-        top: { style: "thin" },
-        left: { style: "thin" },
-        bottom: { style: "thin" },
-        right: { style: "thin" },
-      };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-    }
-
-    // Add expense data
-    expenses.forEach((expense) => {
-      const row = worksheet.addRow({
-        date: formatDate(expense.date || expense.createdAt),
-        category: expense.category,
-        amount: expense.amount,
-      });
-
-      // Format amount column as currency
-      const amountCell = row.getCell(3);
-      amountCell.numFmt = "#,##0";
-      amountCell.alignment = { horizontal: "right" };
-    });
-
-    // Add empty rows to match your image format
-    const emptyCategories = [
-      "Bensin Mobil",
-      "Gas",
-      "Kasbon",
-      "Kebutuhan Laundry",
-      "Lainnya",
-      "Lembur",
-      "Medis",
-      "Traktir Karyawan",
-      "Uang Training",
-    ];
-
-    // Get existing categories from expenses
-    const existingCategories = expenses.map((exp) => exp.category);
-
-    // Add empty rows for categories not in expenses
-    emptyCategories.forEach((category) => {
-      if (!existingCategories.includes(category)) {
-        worksheet.addRow({
-          date: "",
-          category: category,
-          amount: "",
-        });
-      }
-    });
-
-    // Add total row
-    const totalRow = worksheet.addRow({
-      date: "",
-      category: "TOTAL",
-      amount: getTotalAmount(),
-    });
-
-    // Style the total row
-    totalRow.font = { bold: true };
-    totalRow.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "F2F2F2" },
-    };
-
-    const totalAmountCell = totalRow.getCell(3);
-    totalAmountCell.numFmt = "#,##0";
-    totalAmountCell.alignment = { horizontal: "right" };
-
-    // Add borders to all cells
-    worksheet.eachRow((row, rowNumber) => {
-      row.eachCell((cell) => {
-        cell.border = {
-          top: { style: "thin" },
-          left: { style: "thin" },
-          bottom: { style: "thin" },
-          right: { style: "thin" },
-        };
-      });
-    });
-
-    // Generate Excel file
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-
-    const today = new Date().toISOString().split("T")[0];
-    saveAs(blob, `Expense_Report_${today}.xlsx`);
   };
 
   if (isLoading) {
@@ -249,15 +132,6 @@ export function ExpenseTable({ refreshTrigger }: ExpenseTableProps) {
         <CardTitle className="flex justify-between items-center">
           <span>Expense Records</span>
           <div className="flex items-center gap-2">
-            <Button
-              onClick={exportToExcel}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2 bg-transparent"
-            >
-              <Download className="h-4 w-4" />
-              Export Excel
-            </Button>
             <Badge variant="outline" className="text-lg px-3 py-1">
               Total: {formatCurrency(getTotalAmount())}
             </Badge>
