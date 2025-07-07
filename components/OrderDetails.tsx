@@ -81,6 +81,7 @@ export default function OrderDetailPage({
 
   const reset = () => {
     setIsViewOrder(false);
+    setIsEditOrder(false);
     setOrderId("");
     return;
   };
@@ -309,12 +310,10 @@ export default function OrderDetailPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Link href="/dashboard/orders">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Kembali
-            </Button>
-          </Link>
+          <Button variant="outline" size="sm" onClick={() => reset()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Kembali
+          </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Detail Order</h1>
             <p className="text-muted-foreground">Order #{order.order_number}</p>
