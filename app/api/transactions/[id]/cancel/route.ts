@@ -96,27 +96,6 @@ export async function POST(
         { session }
       );
 
-      // Create refund transaction record if there's a refund
-      if (refundAmount > 0) {
-        await TransactionModel.create(
-          [
-            {
-              customer_id: transaction.customer_id,
-              branch_id: transaction.branch_id,
-              amount: refundAmount,
-              type: "refund",
-              payment_method: "deposit",
-              description: `Refund for cancelled transaction ${
-                transaction._id
-              } - ${reason || "Cancelled"}`,
-              reference_id: `REF-${Date.now()}`,
-              processed_by,
-            },
-          ],
-          { session }
-        );
-      }
-
       await session.commitTransaction();
 
       // Get updated customer data

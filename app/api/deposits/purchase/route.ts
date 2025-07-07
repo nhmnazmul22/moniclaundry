@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
 
     // Get customer
     const customer = await CustomerModel.findById(customer_id);
+    console.log(customer);
     if (!customer || !customer.is_active) {
       return NextResponse.json(
         {

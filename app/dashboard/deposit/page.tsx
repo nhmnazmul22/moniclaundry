@@ -48,6 +48,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBranch } from "@/contexts/branch-context";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import {
@@ -79,7 +80,6 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { toast } from "sonner";
 
 export default function DepositManagement() {
   const { currentBranchId: branchId } = useBranch();
@@ -103,6 +103,10 @@ export default function DepositManagement() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
   const [laundryAmount, setLaundryAmount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [openDialogCustomerId, setOpenDialogCustomerId] = useState<
+    string | null
+  >(null);
 
   // Fetch all data on component mount
   useEffect(() => {
@@ -117,16 +121,32 @@ export default function DepositManagement() {
   // Handle errors with toast notifications
   useEffect(() => {
     if (customers.error) {
-      toast.error(customers.error);
+      toast({
+        title: "Failed",
+        description: customers.error || "Failed to fetch Customer data",
+        variant: "destructive",
+      });
     }
     if (depositTypes.error) {
-      toast.error(depositTypes.error);
+      toast({
+        title: "Failed",
+        description: depositTypes.error || "Failed to fetch Deposit Types data",
+        variant: "destructive",
+      });
     }
     if (transactions.error) {
-      toast.error(transactions.error);
+      toast({
+        title: "Failed",
+        description: transactions.error || "Failed to fetch transaction data",
+        variant: "destructive",
+      });
     }
     if (dashboard.error) {
-      toast.error(dashboard.error);
+      toast({
+        title: "Failed",
+        description: dashboard.error || "Failed to fetch dashboard data",
+        variant: "destructive",
+      });
     }
   }, [
     customers.error,
@@ -156,9 +176,16 @@ export default function DepositManagement() {
           deposit_value: 0,
           description: "",
         });
-        toast.success("Deposit type created successfully");
-      } catch (error) {
-        toast.error("Failed to create deposit type");
+        toast({
+          title: "Successful",
+          description: "Deposit type created successfully",
+        });
+      } catch (error: any) {
+        toast({
+          title: "Failed",
+          description: error.message || "Failed to create deposit type",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -174,9 +201,16 @@ export default function DepositManagement() {
           })
         ).unwrap();
         setEditingDepositType(null);
-        toast.success("Deposit type updated successfully");
-      } catch (error) {
-        toast.error("Failed to update deposit type");
+        toast({
+          title: "Successful",
+          description: "Deposit type updated successfully",
+        });
+      } catch (error: any) {
+        toast({
+          title: "Failed",
+          description: error.message || "Failed to update deposit type",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -185,9 +219,16 @@ export default function DepositManagement() {
   const handleDeleteDepositType = async (id: string) => {
     try {
       await dispatch(deleteDepositType(id)).unwrap();
-      toast.success("Deposit type deleted successfully");
-    } catch (error) {
-      toast.error("Failed to delete deposit type");
+      toast({
+        title: "Successful",
+        description: "Deposit type deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed",
+        description: error.message || "Failed to delete deposit type",
+        variant: "destructive",
+      });
     }
   };
 
@@ -215,7 +256,12 @@ export default function DepositManagement() {
         const cashNeeded = laundryAmount - depositUsed;
 
         if (!paymentMethod) {
-          toast.error("Please select payment method for the remaining amount");
+          toast({
+            title: "Failed",
+            description:
+              "Please select payment method for the remaining amount",
+            variant: "destructive",
+          });
           return;
         }
 
@@ -239,9 +285,16 @@ export default function DepositManagement() {
       setSelectedCustomer("");
       setLaundryAmount(0);
       setPaymentMethod("");
-      toast.success("Transaction processed successfully");
-    } catch (error) {
-      toast.error("Failed to process transaction");
+      toast({
+        title: "Successful",
+        description: "Transaction processed successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
     }
   };
 
@@ -264,9 +317,17 @@ export default function DepositManagement() {
 
       // Refresh transactions to show the new purchase
       dispatch(fetchTransactions({ branchId, limit: 50 }));
-      toast.success("Deposit purchased successfully");
-    } catch (error) {
-      toast.error("Failed to purchase deposit");
+      toast({
+        title: "Successful",
+        description: "Deposit purchased successfully",
+      });
+      setOpenDialogCustomerId(null);
+    } catch (error: any) {
+      toast({
+        title: "Failed",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
     }
   };
 
@@ -290,9 +351,16 @@ export default function DepositManagement() {
         );
       }
 
-      toast.success("Transaction cancelled successfully");
-    } catch (error) {
-      toast.error("Failed to cancel transaction");
+      toast({
+        title: "Successful",
+        description: "Transaction cancelled successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed",
+        description: error.message || "Failed to cancel transaction",
+        variant: "destructive",
+      });
     }
   };
 
@@ -322,8 +390,6 @@ export default function DepositManagement() {
     depositTypes.loading ||
     transactions.loading ||
     dashboard.loading;
-
-  console.log(isLoading);
 
   if (isLoading && customers.items.length === 0) {
     return (
@@ -542,38 +608,36 @@ export default function DepositManagement() {
                         )}
                       </p>
                     </div>
-                    {transaction.type === "laundry" &&
-                      transaction.status === "completed" && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              Batalkan
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Batalkan Transaksi
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Apakah Anda yakin ingin membatalkan transaksi
-                                ini? Saldo deposit akan dikembalikan ke
-                                pelanggan.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Batal</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() =>
-                                  handleCancelTransaction(transaction._id!)
-                                }
-                              >
-                                Ya, Batalkan
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
+                    {transaction.status === "completed" && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            Batalkan
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Batalkan Transaksi
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Apakah Anda yakin ingin membatalkan transaksi ini?
+                              Saldo deposit akan dikembalikan ke pelanggan.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() =>
+                                handleCancelTransaction(transaction._id!)
+                              }
+                            >
+                              Ya, Batalkan
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 ))}
               </div>
@@ -624,7 +688,12 @@ export default function DepositManagement() {
                         )}
                       </div>
                     </div>
-                    <Dialog>
+                    <Dialog
+                      open={openDialogCustomerId === customer._id}
+                      onOpenChange={(isOpen) =>
+                        setOpenDialogCustomerId(isOpen ? customer._id : null)
+                      }
+                    >
                       <DialogTrigger asChild>
                         <Button variant="outline">
                           <CreditCard className="w-4 h-4 mr-2" />
@@ -932,10 +1001,18 @@ function DepositPurchaseForm({
   const [selectedDepositType, setSelectedDepositType] = useState("");
   const [hasExpiry, setHasExpiry] = useState(false);
   const [expiryDate, setExpiryDate] = useState<Date>();
+  const [loading, setLoading] = useState(false);
 
   const handlePurchase = () => {
-    if (selectedDepositType) {
-      onPurchase(customer._id, selectedDepositType, hasExpiry, expiryDate);
+    try {
+      setLoading(true);
+      if (selectedDepositType) {
+        onPurchase(customer._id, selectedDepositType, hasExpiry, expiryDate);
+      }
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1051,8 +1128,11 @@ function DepositPurchaseForm({
       <DialogFooter>
         <Button
           onClick={handlePurchase}
-          disabled={!selectedDepositType || (hasExpiry && !expiryDate)}
+          disabled={
+            !selectedDepositType || (hasExpiry && !expiryDate) || loading
+          }
         >
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Beli Deposit
         </Button>
       </DialogFooter>
