@@ -189,6 +189,8 @@ export default function ReportsPage() {
 
       {!loading && !error && reportData && (
         <>
+          {/* Chart data show */}
+          <ChartData branchId={currentBranchId} />
           <div className="grid grid-cols-12 gap-5">
             <Card className="col-span-12">
               <CardHeader>
@@ -242,8 +244,6 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
           </div>
-          {/* Chart data show */}
-          <ChartData branchId={currentBranchId} />
           <div className="grid grid-cols-12 gap-5">
             <div className="col-span-3">
               <ServiceTransitionReport

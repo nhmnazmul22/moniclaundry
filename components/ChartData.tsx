@@ -1,4 +1,5 @@
 import api from "@/lib/config/axios";
+import { Loader } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import {
   Bar,
@@ -68,11 +69,17 @@ const ChartData: React.FC<ChartDataType> = ({ branchId }) => {
     }
   }, [branchId]);
 
-  if (loading) return <div>Loading chart...</div>;
+  if (loading)
+    return (
+      <div className="text-center">
+        <Loader className="animate-spin" />
+        Loading chart...
+      </div>
+    );
   if (!chartData.length) return <div>No data for the current year</div>;
 
   return (
-    <ChartContainer config={chartConfig} className="h-[350px] w-full">
+    <ChartContainer config={chartConfig} className="h-[400px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />

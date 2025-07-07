@@ -21,6 +21,7 @@ import { formatCurrency } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchCustomers } from "@/store/CustomerSlice";
 import { fetchOrderItems } from "@/store/OrderItemSlice";
+import { fetchOrders } from "@/store/orderSlice";
 import { fetchServices } from "@/store/ServiceSlice";
 import type { Order } from "@/types";
 import {
@@ -31,8 +32,8 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 interface OrderItemForm {
@@ -43,13 +44,21 @@ interface OrderItemForm {
   subtotal: number;
   service_name?: string; // For display
 }
-export default function EditOrderPage() {
-  const params = useParams();
-  const orderId = params.id as string;
+
+interface EditOrderPageType {
+  orderId: string;
+  setIsEditOrder: Dispatch<SetStateAction<boolean>>;
+  setOrderId: Dispatch<SetStateAction<string>>;
+}
+
+export default function EditOrderPage({
+  orderId,
+  setIsEditOrder,
+  setOrderId,
+}: EditOrderPageType) {
   const { currentBranchId } = useBranch();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -129,6 +138,12 @@ export default function EditOrderPage() {
     }
   }, [OrdItems, hasInitializedOrderItems]);
 
+  const reset = () => {
+    setIsEditOrder(false);
+    setOrderId("");
+    return;
+  };
+
   const handleAddOrderItem = () => {
     setOrderItems((prev) => [
       ...prev,
@@ -144,19 +159,23 @@ export default function EditOrderPage() {
 
   const handleRemoveOrderItem = async (index: number) => {
     const orderItem = orderItems.filter((_, i) => i === index);
-    const res = await api.delete(`/api/order-items/${orderItem[0]._id}`);
-    if (res.status === 200) {
-      toast({
-        title: "Successful",
-        description: "Order Items Delete successful",
-      });
-      setOrderItems(orderItems.filter((_, i) => i !== index));
+    if (orderItem[0]._id) {
+      const res = await api.delete(`/api/order-items/${orderItem[0]._id}`);
+      if (res.status === 200) {
+        toast({
+          title: "Successful",
+          description: "Order Items Delete successful",
+        });
+        setOrderItems(orderItems.filter((_, i) => i !== index));
+      } else {
+        toast({
+          title: "Failed",
+          description: "Order Items Delete failed",
+          variant: "destructive",
+        });
+      }
     } else {
-      toast({
-        title: "Failed",
-        description: "Order Items Delete failed",
-        variant: "destructive",
-      });
+      setOrderItems(orderItems.filter((_, i) => i !== index));
     }
   };
 
@@ -278,7 +297,8 @@ export default function EditOrderPage() {
         title: "Success",
         description: "Order berhasil diperbarui!",
       });
-      router.push(`/dashboard/orders/${orderId}`);
+      reset();
+      dispatch(fetchOrders(currentBranchId));
     } catch (err: any) {
       toast({
         title: "Failed",
@@ -321,12 +341,6 @@ export default function EditOrderPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-4">
-        <Link href={`/dashboard/orders/${orderId}`}>
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Kembali
-          </Button>
-        </Link>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Edit Order</h1>
           <p className="text-muted-foreground">Order #{order.order_number}</p>
@@ -547,11 +561,10 @@ export default function EditOrderPage() {
             </div>
 
             <div className="flex justify-end space-x-2">
-              <Link href={`/dashboard/orders/${orderId}`}>
-                <Button type="button" variant="outline">
-                  Batal
-                </Button>
-              </Link>
+              <Button type="button" variant="outline" onClick={() => reset()}>
+                Batal
+              </Button>
+
               <Button type="submit" disabled={saving}>
                 {saving ? (
                   <>

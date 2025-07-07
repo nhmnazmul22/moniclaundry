@@ -27,6 +27,7 @@ import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchCustomers } from "@/store/CustomerSlice";
+import { fetchOrders } from "@/store/orderSlice";
 import { fetchServices } from "@/store/ServiceSlice";
 import type { Branches } from "@/types";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
@@ -71,6 +72,13 @@ export default function NewOrderPage() {
     dispatch(fetchServices(currentBranchId));
   }, [currentBranchId]);
 
+  const reset = () => {
+    setCustomerId("");
+    setOrderItems([]);
+    setBranchId("");
+    setNotes("");
+    return;
+  };
   const handleAddOrderItem = () => {
     const defaultService = Array.isArray(services) && services[0];
     if (!defaultService) {
@@ -243,7 +251,6 @@ export default function NewOrderPage() {
     const response = await api.post("/api/order-items", orderItemsData);
 
     if (response.data.data.status === "Failed") {
-      // Optionally, delete the created order if items fail to insert (rollback logic)
       await api.delete(`/api/orders/${result.data.data._id}`);
       toast({
         title: "Error",
@@ -273,7 +280,6 @@ export default function NewOrderPage() {
       const res = await api.post("/api/payments", paymentData);
       if (res.status !== 201) {
         await api.delete(`/api/orders/${result.data.data._id}`);
-        console.log(res.data);
         return;
       }
     }
@@ -283,6 +289,8 @@ export default function NewOrderPage() {
       description: `Order ${result.data.data.order_number} berhasil dibuat.`,
     });
     setIsSubmitting(false);
+    reset();
+    dispatch(fetchOrders(currentBranchId));
     router.push("/dashboard/orders");
   };
 
@@ -495,7 +503,7 @@ export default function NewOrderPage() {
         <CardFooter className="flex justify-end gap-2">
           <Button
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => reset()}
             disabled={isSubmitting}
           >
             Batal

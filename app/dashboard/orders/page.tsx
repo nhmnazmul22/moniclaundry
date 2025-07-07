@@ -1,5 +1,8 @@
 "use client";
 
+import EditOrderPage from "@/components/EditOrder";
+import NewOrderPage from "@/components/NewOrder";
+import OrderDetailPage from "@/components/OrderDetails";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,9 +31,8 @@ import {
 } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchOrders } from "@/store/orderSlice";
-import { Edit, Eye, Loader2, Plus, Search, Trash2 } from "lucide-react";
+import { Edit, Eye, Loader2, Search, Trash2 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -41,6 +43,9 @@ export default function OrdersPage() {
   const { currentBranchId } = useBranch();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [isEditOrder, setIsEditOrder] = useState(false);
+  const [isViewOrder, setIsViewOrder] = useState(false);
+  const [orderId, setOrderId] = useState("");
   const dispatch = useDispatch<AppDispatch>();
   const { items: orders, loading: ordersLoading } = useSelector(
     (state: RootState) => state.orderReducer
@@ -90,11 +95,17 @@ export default function OrdersPage() {
   };
 
   const handleViewOrder = (orderId: string) => {
-    router.push(`/dashboard/orders/${orderId}`);
+    setOrderId(orderId);
+    setIsEditOrder(false);
+    setIsViewOrder(true);
+    return;
   };
 
   const handleEditOrder = (orderId: string) => {
-    router.push(`/dashboard/orders/edit/${orderId}`);
+    setOrderId(orderId);
+    setIsViewOrder(false);
+    setIsEditOrder(true);
+    return;
   };
 
   const handleDeleteOrder = async (orderId: string) => {
@@ -147,12 +158,26 @@ export default function OrdersPage() {
           </h1>
           <p className="text-muted-foreground">Kelola semua pesanan laundry</p>
         </div>
-        <Link href="/dashboard/orders/new">
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="mr-2 h-4 w-4" />
-            Order Baru
-          </Button>
-        </Link>
+      </div>
+
+      {/* Create new order, edit order and view order details */}
+      <div>
+        {(!isEditOrder || !isViewOrder) && !orderId && <NewOrderPage />}
+        {isEditOrder && !isViewOrder && orderId && (
+          <EditOrderPage
+            orderId={orderId}
+            setIsEditOrder={setIsEditOrder}
+            setOrderId={setOrderId}
+          />
+        )}
+        {isViewOrder && !isEditOrder && (
+          <OrderDetailPage
+            orderId={orderId}
+            setIsEditOrder={setIsEditOrder}
+            setIsViewOrder={setIsViewOrder}
+            setOrderId={setOrderId}
+          />
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -198,6 +223,7 @@ export default function OrdersPage() {
         </Card>
       </div>
 
+      {/* filter options */}
       <Card>
         <CardHeader>
           <CardTitle>Filter & Search</CardTitle>

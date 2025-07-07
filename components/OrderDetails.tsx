@@ -2,20 +2,10 @@
 
 import type React from "react";
 
-import {
-  CashTransferReceiptTemplate,
-  InternalReceiptTemplate,
-  ReceiptTemplate,
-} from "@/components/receipt-template";
+import { ReceiptTemplate } from "@/components/receipt-template";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -42,25 +32,31 @@ import jsPDF from "jspdf";
 import {
   AlertTriangle,
   ArrowLeft,
-  Download,
   Edit,
   Loader2,
   MessageSquare,
   Package,
   Phone,
   Printer,
-  Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-export default function OrderDetailPage() {
-  const params = useParams();
-  const router = useRouter();
+interface OrderDetailPageType {
+  orderId: string;
+  setIsViewOrder: Dispatch<SetStateAction<boolean>>;
+  setIsEditOrder: Dispatch<SetStateAction<boolean>>;
+  setOrderId: Dispatch<SetStateAction<string>>;
+}
+
+export default function OrderDetailPage({
+  orderId,
+  setIsViewOrder,
+  setIsEditOrder,
+  setOrderId,
+}: OrderDetailPageType) {
   const dispatch = useDispatch<AppDispatch>();
-  const orderId = params.id as string;
   const [order, setOrder] = useState<Order | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [branch, setBranch] = useState<Branches | undefined>(undefined);
@@ -75,15 +71,6 @@ export default function OrderDetailPage() {
   const receiptTemplate = useRef<HTMLDivElement>(
     null
   ) as React.RefObject<HTMLDivElement>;
-  const cashTransferRef = useRef<HTMLDivElement>(
-    null
-  ) as React.RefObject<HTMLDivElement>;
-  const depositRef = useRef<HTMLDivElement>(
-    null
-  ) as React.RefObject<HTMLDivElement>;
-  const internalRef = useRef<HTMLDivElement>(
-    null
-  ) as React.RefObject<HTMLDivElement>;
 
   const { items: branches } = useSelector(
     (state: RootState) => state.branchReducer
@@ -91,6 +78,12 @@ export default function OrderDetailPage() {
   const { items: orderItems } = useSelector(
     (state: RootState) => state.orderItemsReducer
   );
+
+  const reset = () => {
+    setIsViewOrder(false);
+    setOrderId("");
+    return;
+  };
 
   const fetchOrderData = async () => {
     setLoading(true);
@@ -123,41 +116,6 @@ export default function OrderDetailPage() {
       fetchOrderData();
     }
   }, [orderId]);
-
-  const handleDeleteOrder = async () => {
-    try {
-      // Delete order items first
-      const res = await api.delete(`/api/order-items?order_id=${orderId}`);
-
-      if (res.status !== 200) {
-        toast({
-          title: "Order items delete filed",
-          description: `${res.statusText}`,
-        });
-        return;
-      }
-
-      // Delete order
-      const orderRes = await api.delete(`/api/orders/${orderId}`);
-
-      if (orderRes.status !== 200) {
-        toast({
-          title: "Order delete filed",
-          description: `${res.statusText}`,
-        });
-        return;
-      }
-
-      toast({ title: "Sukses", description: "Order berhasil dihapus." });
-      router.push("/dashboard/orders");
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Gagal menghapus order: ${err.message}`,
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleStatusChange = async (newStatus: Order["order_status"]) => {
     if (!order) return;
@@ -258,14 +216,6 @@ export default function OrderDetailPage() {
 
   const handlePrintReceipt = async () => {
     await generatePDF(receiptTemplate!, "nota-original", true);
-  };
-
-  const handleDownloadCashTransfer = async () => {
-    await generatePDF(cashTransferRef, "nota-cash-transfer");
-  };
-
-  const handleDownloadInternal = async () => {
-    await generatePDF(internalRef, "nota-internal");
   };
 
   const handleWhatsAppNotification = () => {
@@ -380,41 +330,16 @@ export default function OrderDetailPage() {
             Cetak Nota Original
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={pdfLoading}>
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
-                {pdfLoading && (
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={handleDownloadCashTransfer}>
-                <Download className="mr-2 h-4 w-4" />
-                Payment Receipt
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDownloadInternal}>
-                <Download className="mr-2 h-4 w-4" />
-                Internal Print
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Link href={`/dashboard/orders/edit/${order._id}`}>
-            <Button variant="outline">
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-          </Link>
           <Button
             variant="outline"
-            className="text-red-600 hover:text-red-700"
-            onClick={handleDeleteOrder}
+            onClick={() => {
+              setIsViewOrder(false);
+              setIsEditOrder(true);
+              setOrderId(orderId);
+            }}
           >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Hapus
+            <Edit className="mr-2 h-4 w-4" />
+            Edit
           </Button>
         </div>
       </div>
@@ -562,18 +487,6 @@ export default function OrderDetailPage() {
           <>
             <ReceiptTemplate
               ref={receiptTemplate}
-              order={order}
-              orderItems={orderItems!}
-              businessInfo={businessInfo}
-            />
-            <CashTransferReceiptTemplate
-              ref={cashTransferRef}
-              order={order}
-              orderItems={orderItems!}
-              businessInfo={businessInfo}
-            />
-            <InternalReceiptTemplate
-              ref={internalRef}
               order={order}
               orderItems={orderItems!}
               businessInfo={businessInfo}

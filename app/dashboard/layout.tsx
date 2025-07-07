@@ -99,8 +99,6 @@ export default function DashboardLayout({
       branchList.length > 0 &&
       !currentBranchId
     ) {
-      console.log(branchList);
-      console.log(currentBranchId);
       setCurrentBranchId(branchList[0]._id);
     }
   }, [branchesLoading, branchList, currentBranchId, setCurrentBranchId]);
@@ -188,6 +186,8 @@ export default function DashboardLayout({
 
             {/* Right side */}
             <div className="flex items-center space-x-4">
+              {/* Notification Bar here */}
+
               {/* Branch selector */}
               <div className="min-w-[170px]">
                 {branchesLoading ? (
