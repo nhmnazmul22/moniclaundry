@@ -1,6 +1,5 @@
 "use client";
 
-import EditOrderPage from "@/components/EditOrder";
 import NewOrderPage from "@/components/NewOrder";
 import OrderDetailPage from "@/components/OrderDetails";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +31,7 @@ import {
 } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchOrders } from "@/store/orderSlice";
-import { Edit, Eye, Loader2, Search, Trash2 } from "lucide-react";
+import { Eye, Loader, Loader2, Search, Trash2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -43,6 +42,7 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isViewOrder, setIsViewOrder] = useState(false);
   const [orderId, setOrderId] = useState("");
+  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const { items: orders, loading: ordersLoading } = useSelector(
     (state: RootState) => state.orderReducer
@@ -99,6 +99,7 @@ export default function OrdersPage() {
 
   const handleDeleteOrder = async (orderId: string) => {
     try {
+      setLoading(true);
       const orderItemRes = await api.delete(
         `/api/order-items?order_id=${orderId}`
       );
@@ -123,10 +124,19 @@ export default function OrdersPage() {
         return;
       }
 
-      alert("Order berhasil dihapus.");
+      toast({
+        title: "Successful",
+        description: "Order berhasil dihapus.",
+      });
       dispatch(fetchOrders(currentBranchId)); // Refresh data
     } catch (err: any) {
-      alert(`Gagal menghapus order: ${err.message}`);
+      console.error(err);
+      toast({
+        title: "Failed",
+        description: err.message || "Order delete failed",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -316,9 +326,11 @@ export default function OrdersPage() {
                             variant="outline"
                             size="sm"
                             className="text-red-600 hover:text-red-700"
+                            disabled={loading}
                             onClick={() => handleDeleteOrder(order._id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {loading && <Loader className="animate-spin" />}
+                            {!loading && <Trash2 className="h-4 w-4" />}
                           </Button>
                         </>
                       )}

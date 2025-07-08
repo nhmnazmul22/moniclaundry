@@ -14,13 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useBranch } from "@/contexts/branch-context";
 import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchOrderItems } from "@/store/OrderItemSlice";
-import { fetchOrders } from "@/store/orderSlice";
+// import { fetchOrders } from "@/store/orderSlice";
 import { Branches, type Customer, type Order } from "@/types";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -51,7 +50,6 @@ export default function OrderDetailPage({
   setOrderId,
 }: OrderDetailPageType) {
   const { data: session } = useSession();
-  const { currentBranchId } = useBranch();
   const dispatch = useDispatch<AppDispatch>();
   const [order, setOrder] = useState<Order | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -111,32 +109,6 @@ export default function OrderDetailPage({
       fetchOrderData();
     }
   }, [orderId]);
-
-  const handleStatusChange = async (newStatus: Order["order_status"]) => {
-    if (!order) return;
-
-    const res = await api.put(`/api/orders/${orderId}`, {
-      order_status: newStatus,
-    });
-
-    if (res.status !== 201) {
-      toast({
-        title: "Error",
-        description: `Gagal memperbarui status: ${res.statusText}`,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Sukses",
-        description: `Status order diperbarui menjadi ${getStatusLabel(
-          newStatus
-        )}.`,
-      });
-      dispatch(fetchOrders(currentBranchId));
-      setOrder((prev) => (prev ? { ...prev, order_status: newStatus } : null));
-      setCurrentStatus(newStatus);
-    }
-  };
 
   const generatePDF = async (
     templateRef: React.RefObject<HTMLDivElement>,
@@ -336,25 +308,6 @@ export default function OrderDetailPage({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* {(session?.user.role === "owner" ||
-              session?.user.role === "admin") && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Status:</span>
-                <Select
-                  value={currentStatus}
-                  onValueChange={handleStatusChange}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Pilih Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="diterima">Diterima</SelectItem>
-                    <SelectItem value="diproses">Diproses</SelectItem>
-                    <SelectItem value="selesai">Selesai</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )} */}
             {order.order_status === "selesai" && customer?.phone && (
               <Button
                 onClick={handleWhatsAppNotification}
@@ -432,9 +385,8 @@ export default function OrderDetailPage({
       </div>
 
       {/* Edit Order */}
-      {(session?.user.role === "owner" || session?.user.role === "admin") && (
-        <EditOrderPage orderId={orderId} />
-      )}
+
+      <EditOrderPage orderId={orderId} />
 
       {/* Order Items */}
       <Card>
