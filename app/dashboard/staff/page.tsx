@@ -615,6 +615,7 @@ export default function StaffPage() {
                 <SelectItem value="owner">Owner</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="kurir">Kurir</SelectItem>
+                <SelectItem value="kasir">Kasir</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -640,55 +641,68 @@ export default function StaffPage() {
             </TableHeader>
             <TableBody>
               {staffs && staffs.length > 0 ? (
-                staffs?.map((member) => (
-                  <TableRow key={member._id}>
-                    <TableCell className="font-medium">
-                      {member.full_name}
-                    </TableCell>
-                    <TableCell>
-                      <div>{member.email}</div>
-                      <div className="text-sm text-gray-500">
-                        {member.phone || "-"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getRoleColor(member.role)}>
-                        {getRoleLabel(member.role)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatDateTime(member.createdAt)}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(member.is_active)}>
-                        {member.is_active ? "Aktif" : "Non-Aktif"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        {(session?.user?.role === "owner" ||
-                          session?.user?.role === "admin") && ( // Only owner/admin can edit
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEditModal(member)}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canDeleteStaff(member) && ( // Only show delete button if user has permission
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => handleDeleteStaff(member)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                staffs
+                  ?.filter((member) => {
+                    const search = searchTerm.toLowerCase();
+                    const matchSearch =
+                      member.full_name.toLowerCase().includes(search) ||
+                      member.email.toLowerCase().includes(search) ||
+                      (member.phone?.toLowerCase().includes(search) ?? false);
+
+                    const matchRole =
+                      roleFilter === "all" || member.role === roleFilter;
+
+                    return matchSearch && matchRole;
+                  })
+                  .map((member) => (
+                    <TableRow key={member._id}>
+                      <TableCell className="font-medium">
+                        {member.full_name}
+                      </TableCell>
+                      <TableCell>
+                        <div>{member.email}</div>
+                        <div className="text-sm text-gray-500">
+                          {member.phone || "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getRoleColor(member.role)}>
+                          {getRoleLabel(member.role)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatDateTime(member.createdAt)}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(member.is_active)}>
+                          {member.is_active ? "Aktif" : "Non-Aktif"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          {(session?.user?.role === "owner" ||
+                            session?.user?.role === "admin") && ( // Only owner/admin can edit
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditModal(member)}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDeleteStaff(member) && ( // Only show delete button if user has permission
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => handleDeleteStaff(member)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">

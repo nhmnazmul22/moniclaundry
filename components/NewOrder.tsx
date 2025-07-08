@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,8 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
 import { useBranch } from "@/contexts/branch-context";
+import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
@@ -31,6 +29,7 @@ import { fetchOrders } from "@/store/orderSlice";
 import { fetchServices } from "@/store/ServiceSlice";
 import type { Branches } from "@/types";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -45,9 +44,9 @@ interface OrderItemForm {
 
 export default function NewOrderPage() {
   const { currentBranchId } = useBranch();
+  const { data: session } = useSession();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { toast } = useToast();
   const [branchId, setBranchId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { items: branches } = useSelector(
@@ -197,7 +196,7 @@ export default function NewOrderPage() {
     setIsSubmitting(true);
 
     // Generate order number (simple example, consider a more robust solution)
-    const orderNumber = `ML${new Date().getFullYear()}${(
+    const orderNumber = `TX-${new Date().getFullYear()}${(
       new Date().getMonth() + 1
     )
       .toString()
@@ -221,7 +220,8 @@ export default function NewOrderPage() {
       payment_status: paymentMethod === "deposit" ? "lunas" : paymentStatus,
       order_status: "diterima",
       notes: notes,
-      current_branch_id: branchId,
+      current_branch_id:
+        session?.user.role === "owner" ? branchId : currentBranchId,
     };
 
     const result = await api.post("/api/orders", orderData);
@@ -245,7 +245,8 @@ export default function NewOrderPage() {
       quantity: item.quantity,
       unit_price: item.unit_price,
       subtotal: item.subtotal,
-      current_branch_id: branchId,
+      current_branch_id:
+        session?.user.role === "owner" ? branchId : currentBranchId,
     }));
 
     const response = await api.post("/api/order-items", orderItemsData);
@@ -274,7 +275,8 @@ export default function NewOrderPage() {
         payment_method: paymentMethod,
         payment_date: new Date().toISOString(),
         status: "completed",
-        current_branch_id: branchId,
+        current_branch_id:
+          session?.user.role === "owner" ? branchId : currentBranchId,
       };
 
       const res = await api.post("/api/payments", paymentData);
@@ -316,12 +318,6 @@ export default function NewOrderPage() {
                       {customer.name} ({customer.phone || "No Phone"})
                     </SelectItem>
                   ))}
-                <Link
-                  href="/dashboard/customers/new?redirect=/dashboard/orders/new"
-                  className="block p-2 text-sm text-blue-600 hover:bg-gray-100"
-                >
-                  + Tambah Pelanggan Baru
-                </Link>
               </SelectContent>
             </Select>
           </div>
@@ -479,26 +475,28 @@ export default function NewOrderPage() {
             />
           </div>
 
-          <div>
-            <Select
-              name="current_branch_id"
-              value={branchId}
-              onValueChange={setBranchId}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Branch" />
-              </SelectTrigger>
-              <SelectContent>
-                {branches &&
-                  branches.length > 0 &&
-                  branches.map((branch: Branches) => (
-                    <SelectItem key={branch._id} value={branch._id}>
-                      {branch.name} - {`(${branch.type})`}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {session?.user.role === "owner" && (
+            <div>
+              <Select
+                name="current_branch_id"
+                value={branchId}
+                onValueChange={setBranchId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Branch" />
+                </SelectTrigger>
+                <SelectContent>
+                  {branches &&
+                    branches.length > 0 &&
+                    branches.map((branch: Branches) => (
+                      <SelectItem key={branch._id} value={branch._id}>
+                        {branch.name} - {`(${branch.type})`}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-end gap-2">
           <Button

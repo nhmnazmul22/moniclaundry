@@ -21,18 +21,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/components/ui/use-toast";
+import { useBranch } from "@/contexts/branch-context";
+import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchOrderItems } from "@/store/OrderItemSlice";
+import { fetchOrders } from "@/store/orderSlice";
 import { Branches, type Customer, type Order } from "@/types";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
   AlertTriangle,
   ArrowLeft,
-  Edit,
   Loader2,
   MessageSquare,
   Package,
@@ -56,6 +57,7 @@ export default function OrderDetailPage({
   setIsEditOrder,
   setOrderId,
 }: OrderDetailPageType) {
+  const { currentBranchId } = useBranch();
   const dispatch = useDispatch<AppDispatch>();
   const [order, setOrder] = useState<Order | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -67,7 +69,6 @@ export default function OrderDetailPage({
   >("");
   const [pdfLoading, setPdfLoading] = useState(false);
 
-  const { toast } = useToast();
   const receiptTemplate = useRef<HTMLDivElement>(
     null
   ) as React.RefObject<HTMLDivElement>;
@@ -138,6 +139,7 @@ export default function OrderDetailPage({
           newStatus
         )}.`,
       });
+      dispatch(fetchOrders(currentBranchId));
       setOrder((prev) => (prev ? { ...prev, order_status: newStatus } : null));
       setCurrentStatus(newStatus);
     }
@@ -327,18 +329,6 @@ export default function OrderDetailPage({
           >
             <Printer className="mr-2 h-4 w-4" />
             Cetak Nota Original
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => {
-              setIsViewOrder(false);
-              setIsEditOrder(true);
-              setOrderId(orderId);
-            }}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
           </Button>
         </div>
       </div>
