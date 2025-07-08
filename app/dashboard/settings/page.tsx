@@ -20,10 +20,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/router";
 import { useState } from "react";
 
 interface BusinessSettings {
@@ -47,10 +46,8 @@ interface BusinessSettings {
 }
 
 export default function SettingsPage() {
-  const { toast } = useToast();
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
-  const router = useRouter()
   const [settings, setSettings] = useState<BusinessSettings>({
     business_name: "Monic Laundry Galaxy",
     business_phone: "+6287710108075",
@@ -59,7 +56,7 @@ export default function SettingsPage() {
     business_address: "Jl. Taman Galaxy Raya No 301 E",
     tax_rate: 11,
     tax_enabled: true,
-    invoice_prefix: "ML",
+    invoice_prefix: "TX",
     currency: "IDR",
     email_notifications: true,
     sms_notifications: false,

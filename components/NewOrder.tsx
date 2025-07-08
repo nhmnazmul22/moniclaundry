@@ -24,9 +24,10 @@ import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
-import { fetchCustomers } from "@/store/CustomerSlice";
+import { fetchCustomers, updateCustomerBalance } from "@/store/CustomerSlice";
 import { fetchOrders } from "@/store/orderSlice";
 import { fetchServices } from "@/store/ServiceSlice";
+import { processLaundryTransaction } from "@/store/transactionsSlice";
 import type { Branches } from "@/types";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -157,6 +158,64 @@ export default function NewOrderPage() {
   const { subtotal, discount, tax, totalAmount, totalWeight } =
     calculateTotals();
 
+  // Process laundry transaction
+  const handleProcessLaundryTransaction = async (laundryAmount: number) => {
+    const customer = customers.find((c) => c._id === customerId);
+    if (!customer || !laundryAmount) return;
+
+    try {
+      const transactionData: any = {
+        customer_id: customer._id,
+        branch_id: branchId || currentBranchId,
+        amount: laundryAmount,
+        payment_method: "deposit",
+        description: "Laundry service payment",
+      };
+
+      if (customer.deposit_balance! >= laundryAmount) {
+        // Full payment with deposit
+        transactionData.payment_method = "deposit";
+        transactionData.deposit_amount = laundryAmount;
+      } else {
+        // Mixed payment
+        const depositUsed = customer.deposit_balance!;
+        const cashNeeded = laundryAmount - depositUsed;
+
+        if (!paymentMethod) {
+          toast({
+            title: "Failed",
+            description:
+              "Please select payment method for the remaining amount",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        transactionData.payment_method = "mixed";
+        transactionData.deposit_amount = depositUsed;
+        transactionData.cash_amount = cashNeeded;
+      }
+
+      const result = await dispatch(
+        processLaundryTransaction(transactionData)
+      ).unwrap();
+
+      // Update customer balance in Redux state
+      dispatch(
+        updateCustomerBalance({
+          customerId: customer._id!,
+          newBalance: result.customer.deposit_balance,
+        })
+      );
+    } catch (error: any) {
+      toast({
+        title: "Failed",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSubmitOrder = async () => {
     if (!customerId) {
       toast({
@@ -284,6 +343,11 @@ export default function NewOrderPage() {
         await api.delete(`/api/orders/${result.data.data._id}`);
         return;
       }
+    }
+
+    // if customer user deposit payment method
+    if (paymentMethod === "deposit") {
+      handleProcessLaundryTransaction(totalAmount);
     }
 
     toast({
