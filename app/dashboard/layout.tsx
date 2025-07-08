@@ -130,13 +130,13 @@ export default function DashboardLayout({
             className="fixed inset-0 bg-gray-600 bg-opacity-75"
             onClick={() => setSidebarOpen(false)}
           />
-          <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white">
-            <div className="absolute top-0 right-0 -mr-12 pt-2">
+          <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white px-5 pt-3">
+            <div className="absolute top-[20px] right-[75px] -mr-12">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setSidebarOpen(false)}
-                className="text-gray-300 hover:text-white"
+                className="text-black hover:text-black"
               >
                 <X className="h-6 w-6" />
               </Button>
@@ -178,7 +178,7 @@ export default function DashboardLayout({
             </div>
 
             {/* Page title */}
-            <div className="flex-1 lg:flex-none">
+            <div className="hidden lg:block">
               <h1 className="text-xl font-semibold text-gray-900">
                 {navigation(user).find((item) => item?.href === pathname)
                   ?.name || "Dashboard"}

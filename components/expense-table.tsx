@@ -57,7 +57,7 @@ export function ExpenseTable({ refreshTrigger }: ExpenseTableProps) {
 
   useEffect(() => {
     fetchExpenses();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, currentBranchId]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {

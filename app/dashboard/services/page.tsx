@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
+import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
 import type { AppDispatch, RootState } from "@/store";
@@ -50,7 +51,6 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { handleExport, importServicesJSON } from "./actions";
-import { toast } from "@/hooks/use-toast";
 
 export default function ServicesPage() {
   const { currentBranchId } = useBranch();
@@ -358,15 +358,16 @@ export default function ServicesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row gap-2 lg:items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">
           Services Management
         </h1>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
+            size={"sm"}
             onClick={exportFile}
-            className="bg-blue-50 hover:bg-blue-100"
+            className="bg-blue-50 hover:bg-blue-100  w-full sm:w-auto"
             disabled={isSubmitting}
           >
             <Download className="mr-2 h-4 w-4" />
@@ -375,8 +376,9 @@ export default function ServicesPage() {
           <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
             <DialogTrigger asChild>
               <Button
+                size={"sm"}
                 variant="outline"
-                className="bg-green-50 hover:bg-green-100"
+                className="bg-green-50 hover:bg-green-100 w-full sm:w-auto"
               >
                 <Upload className="mr-2 h-4 w-4" />
                 Import Excel
@@ -434,7 +436,8 @@ export default function ServicesPage() {
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button
-                className="bg-blue-600 hover:bg-blue-700"
+                size={"sm"}
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
                 onClick={() => reset()}
               >
                 <Plus className="mr-2 h-4 w-4" />

@@ -1,30 +1,30 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context"; // Import useAuth
+import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard,
-  ShoppingCart,
-  Users,
-  Package,
-  Truck,
   BarChart3,
-  Settings,
-  Shirt,
-  Menu,
-  X,
   CreditCard,
   FileText,
+  LayoutDashboard,
+  Menu,
+  Package,
+  Settings,
+  Shirt,
+  ShoppingCart,
+  Truck,
   UserCheck,
-} from "lucide-react"
-import { useAuth } from "@/contexts/auth-context" // Import useAuth
+  Users,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 
-type SidebarProps = {}
+type SidebarProps = {};
 
-const navigation = {
+const navigation: any = {
   owner: [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Orders", href: "/dashboard/orders", icon: ShoppingCart },
@@ -51,23 +51,29 @@ const navigation = {
     { name: "My Deliveries", href: "/dashboard/my-deliveries", icon: Truck },
     { name: "Route Map", href: "/dashboard/route-map", icon: LayoutDashboard },
   ],
-}
+};
 
 export function Sidebar({}: SidebarProps) {
   // Removed userRole prop
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const pathname = usePathname()
-  const { userProfile } = useAuth() // Get user profile from auth context
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname();
+  const { userProfile } = useAuth(); // Get user profile from auth context
 
-  const userRole = userProfile?.role || "kurir" // Default to kurir if no role found
-  const navItems = navigation[userRole] || []
+  const userRole = userProfile?.role || "kurir"; // Default to kurir if no role found
+  const navItems = navigation[userRole] || [];
 
   return (
     <>
       {/* Mobile sidebar */}
       <div className="lg:hidden">
-        <div className="fixed inset-0 z-50 flex" style={{ display: sidebarOpen ? "flex" : "none" }}>
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 z-50 flex"
+          style={{ display: sidebarOpen ? "flex" : "none" }}
+        >
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-75"
+            onClick={() => setSidebarOpen(false)}
+          />
           <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white">
             <div className="absolute top-0 right-0 -mr-12 pt-2">
               <Button
@@ -93,15 +99,25 @@ export function Sidebar({}: SidebarProps) {
 
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-4 left-4 z-40">
-        <Button variant="outline" size="icon" onClick={() => setSidebarOpen(true)}>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setSidebarOpen(true)}
+        >
           <Menu className="h-6 w-6" />
         </Button>
       </div>
     </>
-  )
+  );
 }
 
-function SidebarContent({ navItems, pathname }: { navItems: any[]; pathname: string }) {
+function SidebarContent({
+  navItems,
+  pathname,
+}: {
+  navItems: any[];
+  pathname: string;
+}) {
   return (
     <>
       <div className="flex h-16 shrink-0 items-center">
@@ -127,13 +143,15 @@ function SidebarContent({ navItems, pathname }: { navItems: any[]; pathname: str
                       pathname === item.href
                         ? "bg-blue-50 text-blue-700"
                         : "text-gray-700 hover:text-blue-700 hover:bg-blue-50",
-                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold",
+                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
                     )}
                   >
                     <item.icon
                       className={cn(
-                        pathname === item.href ? "text-blue-700" : "text-gray-400 group-hover:text-blue-700",
-                        "h-6 w-6 shrink-0",
+                        pathname === item.href
+                          ? "text-blue-700"
+                          : "text-gray-400 group-hover:text-blue-700",
+                        "h-6 w-6 shrink-0"
                       )}
                     />
                     {item.name}
@@ -145,5 +163,5 @@ function SidebarContent({ navItems, pathname }: { navItems: any[]; pathname: str
         </ul>
       </nav>
     </>
-  )
+  );
 }
