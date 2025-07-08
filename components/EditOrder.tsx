@@ -61,9 +61,6 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
   const [hasInitializedOrderItems, setHasInitializedOrderItems] =
     useState(false);
 
-  const { items: customers } = useSelector(
-    (state: RootState) => state.customerReducer
-  );
   const { items: services } = useSelector(
     (state: RootState) => state.serviceReducer
   );
@@ -331,27 +328,6 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid gap-4 md:grid-cols-3">
-              {/* <div className="space-y-2">
-                <Label htmlFor="customer">Customer</Label>
-                <Select
-                  value={formData.customer_id}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, customer_id: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers &&
-                      customers.map((customer) => (
-                        <SelectItem key={customer._id} value={customer._id}>
-                          {customer.name} - {customer.phone}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div> */}
               <div className="space-y-2">
                 <Label htmlFor="order_status">Status Order</Label>
                 <Select

@@ -28,11 +28,13 @@ import {
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
 import { toast } from "@/hooks/use-toast";
+import { addNotification } from "@/lib/api";
 import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchCustomers } from "@/store/CustomerSlice";
-import type { Customer } from "@/types";
+import { fetchNotification } from "@/store/NotificationSlice";
+import type { Customer, NotificationType } from "@/types";
 import {
   Edit,
   Eye,
@@ -60,7 +62,6 @@ export default function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
-
   const dispatch = useDispatch<AppDispatch>();
   const { items: customers, loading: customerLoading } = useSelector(
     (state: RootState) => state.customerReducer
@@ -100,12 +101,23 @@ export default function CustomersPage() {
 
       const result = await api.post("/api/customer", data);
       if (result.status === 201) {
+        const notificationData: NotificationType = {
+          title: "Customer added successfully",
+          description: `Customer ${data.name} added with ${data.email}`,
+          status: "unread",
+          current_branch_id: currentBranchId,
+        };
+        // Send a notification
+        const res = await addNotification(notificationData);
+        if (res?.status === 201) {
+          dispatch(fetchNotification(currentBranchId));
+        }
         toast({
           title: "Success",
           description: "Customer added successfully.",
         });
         setIsAddDialogOpen(false);
-        dispatch(fetchCustomers(currentBranchId)); // Refresh data
+        dispatch(fetchCustomers(currentBranchId));
       }
     } catch (err: any) {
       console.error(err);
@@ -142,6 +154,17 @@ export default function CustomersPage() {
         data
       );
       if (result.status === 201 || result.status === 200) {
+        const notificationData: NotificationType = {
+          title: "Customer updated successfully.",
+          description: `Customer ${data.name} info is updated`,
+          status: "unread",
+          current_branch_id: currentBranchId,
+        };
+        // Send a notification
+        const res = await addNotification(notificationData);
+        if (res?.status === 201) {
+          dispatch(fetchNotification(currentBranchId));
+        }
         toast({
           title: "Success",
           description: "Customer updated successfully.",
@@ -167,6 +190,17 @@ export default function CustomersPage() {
       setLoading(true);
       const result = await api.delete(`/api/customer/${id}`);
       if (result.status === 200 || result.status === 201) {
+        const notificationData: NotificationType = {
+          title: "Customer deleted successfully.",
+          description: `Customer is deleted`,
+          status: "unread",
+          current_branch_id: currentBranchId,
+        };
+        // Send a notification
+        const res = await addNotification(notificationData);
+        if (res?.status === 201) {
+          dispatch(fetchNotification(currentBranchId));
+        }
         toast({
           title: "Success",
           description: "Customer deleted successfully.",

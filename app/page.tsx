@@ -12,6 +12,8 @@ export default function HomePage() {
   useEffect(() => {
     if (!session?.user) {
       router.push("/login");
+    } else {
+      router.push("/dashboard");
     }
   }, [session]);
 

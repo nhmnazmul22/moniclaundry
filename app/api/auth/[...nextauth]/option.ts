@@ -1,5 +1,3 @@
-// import api from "@/lib/config/axios";
-// import rateLimiter from "@/lib/ratelimiter";
 import api from "@/lib/config/axios";
 import { User } from "@/types";
 import bcrypt from "bcrypt";
@@ -11,47 +9,43 @@ interface Admin {
   data: User;
 }
 
+const isProd = process.env.NODE_ENV === "production";
+
 export const authOptions: AuthOptions = {
   providers: [
-    // Admin Authentication
     CredentialsProvider({
       id: "credentials",
-      name: "credentials",
+      name: "Credentials",
       credentials: {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials, req) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
 
         try {
           const response = await api.get(`/api/users/${credentials.email}`);
           const user = response.data.data;
 
-          const isPassword = await bcrypt.compare(
-            credentials?.password,
+          const isPasswordCorrect = await bcrypt.compare(
+            credentials.password,
             user.password!
           );
 
-          if (
-            credentials.email === user.email &&
-            isPassword &&
-            user.is_active
-          ) {
+          if (isPasswordCorrect && user.is_active) {
             return {
-              name: "user",
               id: user._id,
+              name: user.name,
               email: user.email,
               role: user.role,
+              is_active: user.is_active,
               current_branch_id: user.current_branch_id,
             };
           }
 
           return null;
         } catch (error) {
-          console.error(error);
+          console.error("Login error:", error);
           return null;
         }
       },
@@ -68,7 +62,6 @@ export const authOptions: AuthOptions = {
         token.is_active = user.is_active;
         token.current_branch_id = user.current_branch_id;
       }
-
       return token;
     },
 
@@ -87,26 +80,26 @@ export const authOptions: AuthOptions = {
     },
   },
 
-  // cookies: {  // need in https
-  //   sessionToken: {
-  //     name: isProd
-  //       ? "__Secure-next-auth.session-token"
-  //       : "next-auth.session-token",
-  //     options: {
-  //       httpOnly: true,
-  //       sameSite: "lax",
-  //       path: "/",
-  //       secure: isProd,
-  //     },
-  //   },
-  // },
-
-  pages: {
-    signIn: "/login",
+  cookies: {
+    sessionToken: {
+      name: isProd
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: isProd,
+      },
+    },
   },
 
   session: {
     strategy: "jwt",
+  },
+
+  pages: {
+    signIn: "/login",
   },
 
   secret: process.env.NEXTAUTH_SECRET,

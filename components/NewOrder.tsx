@@ -252,6 +252,24 @@ export default function NewOrderPage() {
       return;
     }
 
+    // if customer user deposit payment method
+    if (paymentMethod === "deposit") {
+      const customer = customers.find((c) => c._id === customerId);
+      if (
+        customer?.deposit_balance &&
+        customer?.deposit_balance >= totalAmount
+      ) {
+        handleProcessLaundryTransaction(totalAmount);
+      } else {
+        toast({
+          title: "Failed",
+          description: `Customer deposit balance ${customer?.deposit_balance} is not enough for this order `,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     // Generate order number (simple example, consider a more robust solution)
@@ -343,11 +361,6 @@ export default function NewOrderPage() {
         await api.delete(`/api/orders/${result.data.data._id}`);
         return;
       }
-    }
-
-    // if customer user deposit payment method
-    if (paymentMethod === "deposit") {
-      handleProcessLaundryTransaction(totalAmount);
     }
 
     toast({

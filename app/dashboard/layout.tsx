@@ -1,5 +1,6 @@
 "use client";
 
+import BellNotification from "@/components/BellNotification";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -187,7 +188,7 @@ export default function DashboardLayout({
             {/* Right side */}
             <div className="flex items-center space-x-4">
               {/* Notification Bar here */}
-
+              <BellNotification />
               {/* Branch selector */}
               <div className="min-w-[170px]">
                 {branchesLoading ? (

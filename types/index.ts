@@ -316,3 +316,13 @@ export interface SalesReportItem {
   hargaPenjualan: string;
   metodePembayaran: string;
 }
+
+export interface NotificationType {
+  _id?: string;
+  title: string;
+  description: string;
+  status: string;
+  current_branch_id?: string;
+  createAt?: string;
+  updatedAt?: string;
+}

@@ -31,13 +31,15 @@ import {
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
 import { toast } from "@/hooks/use-toast";
+import { addNotification } from "@/lib/api";
 import api from "@/lib/config/axios";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchDelivery } from "@/store/DeliverySlice";
+import { fetchNotification } from "@/store/NotificationSlice";
 import { fetchOrders } from "@/store/orderSlice";
 import { fetchUsers } from "@/store/StaffSlice";
-import { Customer, Delivery, Order, User } from "@/types";
+import { Customer, Delivery, NotificationType, Order, User } from "@/types";
 import {
   AlertTriangle,
   Edit,
@@ -216,6 +218,17 @@ export default function DeliveriesPage() {
           variant: "destructive",
         });
       } else {
+        const notificationData: NotificationType = {
+          title: "Delivery updated successfully.",
+          description: `Delivery ${selectedDelivery._id} info is updated`,
+          status: "unread",
+          current_branch_id: currentBranchId,
+        };
+        // Send a notification
+        const res = await addNotification(notificationData);
+        if (res?.status === 201) {
+          dispatch(fetchNotification(currentBranchId));
+        }
         toast({
           title: "Sukses",
           description: "Pengiriman berhasil diupdate.",
@@ -252,6 +265,17 @@ export default function DeliveriesPage() {
         variant: "destructive",
       });
     } else {
+      const notificationData: NotificationType = {
+        title: "Delivery deleted successfully.",
+        description: `Delivery ${id} is deleted`,
+        status: "unread",
+        current_branch_id: currentBranchId,
+      };
+      // Send a notification
+      const res = await addNotification(notificationData);
+      if (res?.status === 201) {
+        dispatch(fetchNotification(currentBranchId));
+      }
       toast({ title: "Sukses", description: "Pengiriman berhasil dihapus." });
       fetchPageData();
       dispatch(fetchDelivery(currentBranchId));
@@ -289,20 +313,27 @@ export default function DeliveriesPage() {
         current_branch_id: branchId,
       };
 
-      console.log(customer);
-      console.log("Inserting delivery:", newDelivery);
-
       const res = await api.post("/api/deliveries", newDelivery);
 
       if (res.status !== 201) {
-        console.error("Insert error:", res.statusText);
         toast({
           title: "Error",
           description: `Gagal membuat jadwal pengiriman: ${res.statusText}`,
           variant: "destructive",
         });
       } else {
-        console.log("Delivery created successfully:", res.data);
+        const notificationData: NotificationType = {
+          title: "Delivery Created successfully.",
+          description: `New delivery for order ${newDelivery.order_id} created`,
+          status: "unread",
+          current_branch_id: currentBranchId,
+        };
+        // Send a notification
+        const res = await addNotification(notificationData);
+        if (res?.status === 201) {
+          dispatch(fetchNotification(currentBranchId));
+        }
+
         toast({
           title: "Sukses",
           description: "Jadwal pengiriman berhasil dibuat.",

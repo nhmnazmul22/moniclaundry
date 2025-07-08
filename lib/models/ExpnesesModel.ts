@@ -5,19 +5,6 @@ const ExpenseSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: [
-        "Aqua",
-        "Bensin Kurir",
-        "Bensin Mobil",
-        "Gas",
-        "Kasbon",
-        "Kebutuhan Laundry",
-        "Lainnya",
-        "Lembur",
-        "Medis",
-        "Traktir Karyawan",
-        "Uang Training",
-      ],
     },
     amount: {
       type: Number,

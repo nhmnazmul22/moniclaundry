@@ -49,6 +49,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBranch } from "@/contexts/branch-context";
 import { toast } from "@/hooks/use-toast";
+import { addNotification } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import {
@@ -63,11 +64,13 @@ import {
   fetchDepositTypes,
   updateDepositType,
 } from "@/store/depositTypesSlice";
+import { fetchNotification } from "@/store/NotificationSlice";
 import {
   cancelTransaction,
   fetchTransactions,
   processLaundryTransaction,
 } from "@/store/transactionsSlice";
+import { NotificationType } from "@/types";
 import { format } from "date-fns";
 import {
   AlertTriangle,
@@ -176,11 +179,37 @@ export default function DepositManagement() {
           deposit_value: 0,
           description: "",
         });
+
+        // Send a notification
+        const notificationData: NotificationType = {
+          title: "Deposit type added",
+          description: `New Deposit ${newDepositType.name} type is added`,
+          status: "unread",
+          current_branch_id: branchId,
+        };
+
+        const res = await addNotification(notificationData);
+        if (res?.status === 201) {
+          dispatch(fetchNotification(branchId));
+        }
+
         toast({
           title: "Successful",
           description: "Deposit type created successfully",
         });
       } catch (error: any) {
+        // Send a notification
+        const notificationData: NotificationType = {
+          title: "Deposit type add",
+          description: `New Deposit ${newDepositType.name} type is added failed`,
+          status: "unread",
+          current_branch_id: branchId,
+        };
+
+        const res = await addNotification(notificationData);
+        if (res?.status === 201) {
+          dispatch(fetchNotification(branchId));
+        }
         toast({
           title: "Failed",
           description: error.message || "Failed to create deposit type",
@@ -201,11 +230,36 @@ export default function DepositManagement() {
           })
         ).unwrap();
         setEditingDepositType(null);
+        // Send a notification
+        const notificationData: NotificationType = {
+          title: "Deposit type updated",
+          description: `Deposit ${editingDepositType.name} type is updated`,
+          status: "unread",
+          current_branch_id: branchId,
+        };
+
+        const res = await addNotification(notificationData);
+        if (res?.status === 201) {
+          dispatch(fetchNotification(branchId));
+        }
+
         toast({
           title: "Successful",
           description: "Deposit type updated successfully",
         });
       } catch (error: any) {
+        // Send a notification
+        const notificationData: NotificationType = {
+          title: "Deposit type update",
+          description: `Deposit ${editingDepositType.name} type is updated failed`,
+          status: "unread",
+          current_branch_id: branchId,
+        };
+
+        const res = await addNotification(notificationData);
+        if (res?.status === 201) {
+          dispatch(fetchNotification(branchId));
+        }
         toast({
           title: "Failed",
           description: error.message || "Failed to update deposit type",
@@ -219,11 +273,36 @@ export default function DepositManagement() {
   const handleDeleteDepositType = async (id: string) => {
     try {
       await dispatch(deleteDepositType(id)).unwrap();
+      // Send a notification
+      const notificationData: NotificationType = {
+        title: "Deposit type deleted",
+        description: `Deposit type is deleted successful`,
+        status: "unread",
+        current_branch_id: branchId,
+      };
+
+      const res = await addNotification(notificationData);
+      if (res?.status === 201) {
+        dispatch(fetchNotification(branchId));
+      }
+
       toast({
         title: "Successful",
         description: "Deposit type deleted successfully",
       });
     } catch (error: any) {
+      // Send a notification
+      const notificationData: NotificationType = {
+        title: "Deposit type delete",
+        description: `Deposit type is deleted failed`,
+        status: "unread",
+        current_branch_id: branchId,
+      };
+
+      const res = await addNotification(notificationData);
+      if (res?.status === 201) {
+        dispatch(fetchNotification(branchId));
+      }
       toast({
         title: "Failed",
         description: error.message || "Failed to delete deposit type",
@@ -274,7 +353,7 @@ export default function DepositManagement() {
         processLaundryTransaction(transactionData)
       ).unwrap();
 
-      // Update customer balance in Redux state
+      // Update customer balance
       dispatch(
         updateCustomerBalance({
           customerId: customer._id!,
@@ -285,11 +364,34 @@ export default function DepositManagement() {
       setSelectedCustomer("");
       setLaundryAmount(0);
       setPaymentMethod("");
+      // Send a notification
+      const notificationData: NotificationType = {
+        title: "Transaction",
+        description: `Transaction processed successfully`,
+        status: "unread",
+        current_branch_id: branchId,
+      };
+      const res = await addNotification(notificationData);
+      if (res?.status === 201) {
+        dispatch(fetchNotification(branchId));
+      }
       toast({
         title: "Successful",
-        description: "Transaction processed successfully",
+        description: "Transaction processed failed",
       });
     } catch (error: any) {
+      // Send a notification
+      const notificationData: NotificationType = {
+        title: "Transaction",
+        description: `Transaction processed failed`,
+        status: "unread",
+        current_branch_id: branchId,
+      };
+
+      const res = await addNotification(notificationData);
+      if (res?.status === 201) {
+        dispatch(fetchNotification(branchId));
+      }
       toast({
         title: "Failed",
         description: error.message || "Something went wrong",
@@ -317,12 +419,36 @@ export default function DepositManagement() {
 
       // Refresh transactions to show the new purchase
       dispatch(fetchTransactions({ branchId, limit: 50 }));
+      // Send a notification
+      const notificationData: NotificationType = {
+        title: "Deposit purchased",
+        description: `Deposit purchased successfully`,
+        status: "unread",
+        current_branch_id: branchId,
+      };
+
+      const res = await addNotification(notificationData);
+      if (res?.status === 201) {
+        dispatch(fetchNotification(branchId));
+      }
       toast({
         title: "Successful",
         description: "Deposit purchased successfully",
       });
       setOpenDialogCustomerId(null);
     } catch (error: any) {
+      // Send a notification
+      const notificationData: NotificationType = {
+        title: "Deposit purchased",
+        description: `Deposit purchased failed`,
+        status: "unread",
+        current_branch_id: branchId,
+      };
+
+      const res = await addNotification(notificationData);
+      if (res?.status === 201) {
+        dispatch(fetchNotification(branchId));
+      }
       toast({
         title: "Failed",
         description: error.message || "Something went wrong",
@@ -351,11 +477,36 @@ export default function DepositManagement() {
         );
       }
 
+      // Send a notification
+      const notificationData: NotificationType = {
+        title: "Transaction",
+        description: `Transaction cancelled successfully`,
+        status: "unread",
+        current_branch_id: branchId,
+      };
+
+      const res = await addNotification(notificationData);
+      if (res?.status === 201) {
+        dispatch(fetchNotification(branchId));
+      }
+
       toast({
         title: "Successful",
         description: "Transaction cancelled successfully",
       });
     } catch (error: any) {
+      // Send a notification
+      const notificationData: NotificationType = {
+        title: "Transaction",
+        description: `Transaction cancelled failed`,
+        status: "unread",
+        current_branch_id: branchId,
+      };
+
+      const res = await addNotification(notificationData);
+      if (res?.status === 201) {
+        dispatch(fetchNotification(branchId));
+      }
       toast({
         title: "Failed",
         description: error.message || "Failed to cancel transaction",

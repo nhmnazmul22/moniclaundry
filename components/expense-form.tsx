@@ -289,49 +289,59 @@ export function ExpenseForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Jenis Pengeluaran</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category: value })
-                  }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih kategori pengeluaran" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {expenseCategories &&
-                      expensesCategory?.map((category) => (
-                        <div className="flex gap-2 flex-col relative">
-                          <SelectItem
-                            key={category._id}
-                            value={category.category}
-                          >
-                            <div className="flex flex-row justify-between items-center w-[400px]">
-                              <div>{category.category}</div>
-                            </div>
-                          </SelectItem>
-                          <div className="flex gap-2 justify-end w-full absolute top-[50%] -translate-y-2/4 right-[3%]">
-                            <span
-                              className="cursor-pointer"
-                              onClick={() => {
-                                setIsEditDialogOpen(true);
-                                setCategoryId(category._id);
-                              }}
-                            >
-                              <Edit size={14} />
-                            </span>
-                            <span
-                              className="cursor-pointer"
-                              onClick={() => handleCategoryDelete(category._id)}
-                            >
-                              <Trash size={14} />
-                            </span>
-                          </div>
-                        </div>
+                <div className="flex gap-2 items-center">
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, category: value })
+                    }
+                    required
+                  >
+                    <SelectTrigger className="">
+                      <SelectValue placeholder="Pilih kategori pengeluaran" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {expensesCategory?.map((category) => (
+                        <SelectItem
+                          key={category._id}
+                          value={category.category}
+                        >
+                          {category.category}
+                        </SelectItem>
                       ))}
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
+
+                  {formData.category && (
+                    <>
+                      <Edit
+                        size={16}
+                        className="cursor-pointer"
+                        onClick={() => {
+                          const selected = expensesCategory?.find(
+                            (c) => c.category === formData.category
+                          );
+                          if (selected) {
+                            setCategoryId(selected._id);
+                            setIsEditDialogOpen(true);
+                          }
+                        }}
+                      />
+                      <Trash
+                        size={16}
+                        className="cursor-pointer"
+                        onClick={() => {
+                          const selected = expensesCategory?.find(
+                            (c) => c.category === formData.category
+                          );
+                          if (selected) {
+                            handleCategoryDelete(selected._id);
+                          }
+                        }}
+                      />
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
