@@ -2,11 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
 import { format } from "date-fns";
 import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 interface DepositReportData {
   no: number;
@@ -122,10 +122,17 @@ export function DepositReportExport({
       link.click();
       document.body.removeChild(link);
 
-      toast.success(`Laporan Excel berhasil diekspor: ${filename}`);
-    } catch (error) {
+      toast({
+        title: "Successful",
+        description: `Laporan Excel berhasil diekspor: ${filename}`,
+      });
+    } catch (error: any) {
       console.error("Excel Export error:", error);
-      toast.error("Gagal mengekspor laporan Excel");
+      toast({
+        title: "Failed",
+        description: error.message || "Gagal mengekspor laporan Excel",
+        variant: "destructive",
+      });
     } finally {
       setIsExporting(false);
     }

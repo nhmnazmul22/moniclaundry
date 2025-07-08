@@ -1,6 +1,5 @@
 "use client";
 
-import CustomerReport from "@/components/customerReport";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -28,7 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
@@ -51,12 +50,10 @@ import { useDispatch, useSelector } from "react-redux";
 
 export default function CustomersPage() {
   const { data: session } = useSession();
-
   const { currentBranchId } = useBranch();
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [branchId, setBranchId] = useState<string>("");
-  const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -314,7 +311,7 @@ export default function CustomersPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Daftar Customers ({customers?.length})</CardTitle>

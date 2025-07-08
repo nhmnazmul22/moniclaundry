@@ -7,13 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -40,23 +33,24 @@ import {
   Phone,
   Printer,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import EditOrderPage from "./EditOrder";
 
 interface OrderDetailPageType {
   orderId: string;
   setIsViewOrder: Dispatch<SetStateAction<boolean>>;
-  setIsEditOrder: Dispatch<SetStateAction<boolean>>;
   setOrderId: Dispatch<SetStateAction<string>>;
 }
 
 export default function OrderDetailPage({
   orderId,
   setIsViewOrder,
-  setIsEditOrder,
   setOrderId,
 }: OrderDetailPageType) {
+  const { data: session } = useSession();
   const { currentBranchId } = useBranch();
   const dispatch = useDispatch<AppDispatch>();
   const [order, setOrder] = useState<Order | null>(null);
@@ -82,7 +76,6 @@ export default function OrderDetailPage({
 
   const reset = () => {
     setIsViewOrder(false);
-    setIsEditOrder(false);
     setOrderId("");
     return;
   };
@@ -311,7 +304,7 @@ export default function OrderDetailPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col items-start space-y-4">
           <Button variant="outline" size="sm" onClick={() => reset()}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Kembali
@@ -343,19 +336,25 @@ export default function OrderDetailPage({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Status:</span>
-              <Select value={currentStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Pilih Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="diterima">Diterima</SelectItem>
-                  <SelectItem value="diproses">Diproses</SelectItem>
-                  <SelectItem value="selesai">Selesai</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* {(session?.user.role === "owner" ||
+              session?.user.role === "admin") && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Status:</span>
+                <Select
+                  value={currentStatus}
+                  onValueChange={handleStatusChange}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Pilih Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="diterima">Diterima</SelectItem>
+                    <SelectItem value="diproses">Diproses</SelectItem>
+                    <SelectItem value="selesai">Selesai</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )} */}
             {order.order_status === "selesai" && customer?.phone && (
               <Button
                 onClick={handleWhatsAppNotification}
@@ -431,6 +430,11 @@ export default function OrderDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Order */}
+      {(session?.user.role === "owner" || session?.user.role === "admin") && (
+        <EditOrderPage orderId={orderId} />
+      )}
 
       {/* Order Items */}
       <Card>

@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
 import api from "@/lib/config/axios";
 import { AppDispatch, RootState } from "@/store";
 import { fetchUser } from "@/store/userSlice";
@@ -21,11 +20,11 @@ import { Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
   const { data: session } = useSession();
   const dispatch = useDispatch<AppDispatch>();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",

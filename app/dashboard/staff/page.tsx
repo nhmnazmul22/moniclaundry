@@ -51,10 +51,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 export default function StaffPage() {
   const { data: session } = useSession();
-  const [staff, setStaff] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,9 +69,11 @@ export default function StaffPage() {
   const [password, setPassword] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  const { items: staffs, loading: staffsLoading } = useSelector(
-    (state: RootState) => state.staffsReducer
-  );
+  const {
+    items: staffs,
+    loading: staffsLoading,
+    error: staffsError,
+  } = useSelector((state: RootState) => state.staffsReducer);
 
   const { items: branches } = useSelector(
     (state: RootState) => state.branchReducer
@@ -297,6 +296,7 @@ export default function StaffPage() {
       owner: "Owner",
       admin: "Admin",
       kurir: "Kurir",
+      kasir: "Kasir",
     };
     return labels[roleName] || roleName;
   };
@@ -307,6 +307,7 @@ export default function StaffPage() {
       owner: "bg-purple-100 text-purple-800",
       admin: "bg-blue-100 text-blue-800",
       kurir: "bg-green-100 text-green-800",
+      kasir: "bg-yellow-100 text-yellow-800",
     };
     return colors[roleName] || "bg-gray-200 text-gray-800";
   };
@@ -340,7 +341,7 @@ export default function StaffPage() {
     );
   };
 
-  if (loading && staffs?.length === 0) {
+  if (staffsLoading && staffs?.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
@@ -349,11 +350,11 @@ export default function StaffPage() {
     );
   }
 
-  if (error) {
+  if (staffsError) {
     return (
       <div className="text-center text-red-500 p-8">
         <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
-        <p>{error}</p>
+        <p>{staffsError}</p>
         <Button onClick={() => dispatch(fetchUsers())} className="mt-4">
           Coba Lagi
         </Button>

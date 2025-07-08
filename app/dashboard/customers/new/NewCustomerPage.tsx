@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
 import { RootState } from "@/store";
 import { Loader2 } from "lucide-react";
@@ -29,7 +29,6 @@ import { useSelector } from "react-redux";
 export default function NewCustomerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { toast } = useToast();
   const [branchId, setBranchId] = useState<string>("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");

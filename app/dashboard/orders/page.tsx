@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
+import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
 import {
   formatCurrency,
@@ -33,17 +34,13 @@ import { AppDispatch, RootState } from "@/store";
 import { fetchOrders } from "@/store/orderSlice";
 import { Edit, Eye, Loader2, Search, Trash2 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { toast } from "sonner";
 export default function OrdersPage() {
   const { data: session } = useSession();
-  const router = useRouter();
   const { currentBranchId } = useBranch();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [isEditOrder, setIsEditOrder] = useState(false);
   const [isViewOrder, setIsViewOrder] = useState(false);
   const [orderId, setOrderId] = useState("");
   const dispatch = useDispatch<AppDispatch>();
@@ -96,15 +93,7 @@ export default function OrdersPage() {
 
   const handleViewOrder = (orderId: string) => {
     setOrderId(orderId);
-    setIsEditOrder(false);
     setIsViewOrder(true);
-    return;
-  };
-
-  const handleEditOrder = (orderId: string) => {
-    setOrderId(orderId);
-    setIsViewOrder(false);
-    setIsEditOrder(true);
     return;
   };
 
@@ -115,14 +104,22 @@ export default function OrdersPage() {
       );
 
       if (orderItemRes.status !== 200) {
-        toast.error("Order items delete failed");
+        toast({
+          title: "Failed",
+          description: "Order items delete failed",
+          variant: "destructive",
+        });
         return;
       }
 
       const orderRes = await api.delete(`/api/orders/${orderId}`);
 
       if (orderRes.status !== 200) {
-        toast.error("Order items delete failed");
+        toast({
+          title: "Failed",
+          description: "Order delete failed",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -162,21 +159,15 @@ export default function OrdersPage() {
 
       {/* Create new order, edit order and view order details */}
       <div>
-        {(!isEditOrder || !isViewOrder) && !orderId && <NewOrderPage />}
-        {isEditOrder && !isViewOrder && orderId && (
-          <EditOrderPage
-            orderId={orderId}
-            setIsEditOrder={setIsEditOrder}
-            setOrderId={setOrderId}
-          />
-        )}
-        {isViewOrder && !isEditOrder && (
-          <OrderDetailPage
-            orderId={orderId}
-            setIsEditOrder={setIsEditOrder}
-            setIsViewOrder={setIsViewOrder}
-            setOrderId={setOrderId}
-          />
+        {!isViewOrder && !orderId && <NewOrderPage />}
+        {isViewOrder && orderId && (
+          <>
+            <OrderDetailPage
+              orderId={orderId}
+              setIsViewOrder={setIsViewOrder}
+              setOrderId={setOrderId}
+            />
+          </>
         )}
       </div>
 
@@ -312,20 +303,15 @@ export default function OrdersPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleViewOrder(order._id)}
+                        onClick={() => {
+                          handleViewOrder(order._id);
+                        }}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
                       {(session?.user.role === "owner" ||
                         session?.user.role === "admin") && (
                         <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditOrder(order._id)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
                           <Button
                             variant="outline"
                             size="sm"

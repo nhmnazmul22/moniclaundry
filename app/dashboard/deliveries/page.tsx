@@ -29,8 +29,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/components/ui/use-toast";
 import { useBranch } from "@/contexts/branch-context";
+import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
@@ -76,7 +76,6 @@ export default function DeliveriesPage() {
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(
     null
   );
-  const { toast } = useToast();
   const dispatch = useDispatch<AppDispatch>();
 
   const { items: deliveries, loading: deliveryLoading } = useSelector(

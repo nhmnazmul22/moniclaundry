@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 interface OrderItemForm {
@@ -47,15 +47,9 @@ interface OrderItemForm {
 
 interface EditOrderPageType {
   orderId: string;
-  setIsEditOrder: Dispatch<SetStateAction<boolean>>;
-  setOrderId: Dispatch<SetStateAction<string>>;
 }
 
-export default function EditOrderPage({
-  orderId,
-  setIsEditOrder,
-  setOrderId,
-}: EditOrderPageType) {
+export default function EditOrderPage({ orderId }: EditOrderPageType) {
   const { currentBranchId } = useBranch();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -137,12 +131,6 @@ export default function EditOrderPage({
       setHasInitializedOrderItems(true);
     }
   }, [OrdItems, hasInitializedOrderItems]);
-
-  const reset = () => {
-    setIsEditOrder(false);
-    setOrderId("");
-    return;
-  };
 
   const handleAddOrderItem = () => {
     setOrderItems((prev) => [
@@ -226,7 +214,7 @@ export default function EditOrderPage({
     try {
       // Order Items added or updated
       const orderItemsData = orderItems.map((item) => ({
-        _id: item._id, // optional for existing items
+        _id: item._id,
         service_id: item.service_id,
         quantity: item.quantity,
         unit_price: item.unit_price,
@@ -271,7 +259,6 @@ export default function EditOrderPage({
 
       // Order updated
       const updateData: any = {
-        customer_id: formData.customer_id || null,
         order_status: formData.order_status,
         payment_status: formData.payment_status || null,
         subtotal: subtotal,
@@ -281,7 +268,6 @@ export default function EditOrderPage({
         estimated_completion: formData.estimated_completion
           ? new Date(formData.estimated_completion).toISOString()
           : null,
-        updated_at: new Date().toISOString(),
       };
 
       const res = await api.put(`/api/orders/${orderId}`, updateData);
@@ -297,7 +283,6 @@ export default function EditOrderPage({
         title: "Success",
         description: "Order berhasil diperbarui!",
       });
-      reset();
       dispatch(fetchOrders(currentBranchId));
     } catch (err: any) {
       toast({
@@ -312,7 +297,6 @@ export default function EditOrderPage({
   };
 
   if (loading) {
-    console.log(loading);
     return (
       <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
@@ -340,21 +324,14 @@ export default function EditOrderPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Edit Order</h1>
-          <p className="text-muted-foreground">Order #{order.order_number}</p>
-        </div>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Edit Informasi Order</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* <div className="space-y-2">
                 <Label htmlFor="customer">Customer</Label>
                 <Select
                   value={formData.customer_id}
@@ -374,8 +351,7 @@ export default function EditOrderPage({
                       ))}
                   </SelectContent>
                 </Select>
-              </div>
-
+              </div> */}
               <div className="space-y-2">
                 <Label htmlFor="order_status">Status Order</Label>
                 <Select
@@ -561,10 +537,6 @@ export default function EditOrderPage({
             </div>
 
             <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => reset()}>
-                Batal
-              </Button>
-
               <Button type="submit" disabled={saving}>
                 {saving ? (
                   <>

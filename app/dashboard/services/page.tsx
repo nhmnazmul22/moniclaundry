@@ -31,7 +31,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
-import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
 import type { AppDispatch, RootState } from "@/store";
@@ -51,10 +50,10 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { handleExport, importServicesJSON } from "./actions";
+import { toast } from "@/hooks/use-toast";
 
 export default function ServicesPage() {
   const { currentBranchId } = useBranch();
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [isImportOpen, setIsImportOpen] = useState(false);
   const { currentItems } = useSelector(
