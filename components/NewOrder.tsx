@@ -258,15 +258,6 @@ export default function NewOrderPage() {
       return;
     }
 
-    if (!branchId || !currentBranchId) {
-      toast({
-        title: "Error",
-        description: "Cabang harus dipilih.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     // if customer user deposit payment method
     if (paymentMethod === "deposit") {
       const customer = customers.find((c) => c._id === customerId);

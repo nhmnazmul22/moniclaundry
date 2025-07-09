@@ -58,15 +58,14 @@ const BellNotification = () => {
       <Popover>
         <PopoverTrigger className="relative">
           <Bell size={24} className="" />
-          <Badge
-            className={`absolute top-[-8px] left-[-5px] w-5 h-5 text-[10px] rounded-full flex justify-center items-center ${
-              stats.unread! > 0
-                ? "bg-red-500 hover:bg-red-500"
-                : "bg-yellow-500 hover:bg-yellow-500"
-            }`}
-          >
-            {stats.unread! > 0 ? stats.unread : stats.read}
-          </Badge>
+          {stats.unread && stats?.unread > 0 && (
+            <Badge
+              className={`absolute top-[-8px] left-[-5px] w-5 h-5 text-[10px] rounded-full flex justify-center items-center bg-red-500 hover:bg-red-500`}
+            >
+              {stats.unread > 99 && "99+"}
+              {stats.unread <= 99 && stats.unread}
+            </Badge>
+          )}
         </PopoverTrigger>
         <PopoverContent className="p-2 flex flex-col gap-2 min-w-[320px] max-h-[300px] overflow-y-auto">
           {notification && notification?.length > 0 ? (
