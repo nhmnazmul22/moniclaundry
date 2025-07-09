@@ -21,14 +21,16 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useBranch } from "@/contexts/branch-context";
 import { toast } from "@/hooks/use-toast";
+import { addNotification } from "@/lib/api";
 import api from "@/lib/config/axios";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, generateOrderNumber } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchCustomers, updateCustomerBalance } from "@/store/CustomerSlice";
+import { fetchNotification } from "@/store/NotificationSlice";
 import { fetchOrders } from "@/store/orderSlice";
 import { fetchServices } from "@/store/ServiceSlice";
 import { processLaundryTransaction } from "@/store/transactionsSlice";
-import type { Branches } from "@/types";
+import type { Branches, NotificationType } from "@/types";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -143,19 +145,32 @@ export default function NewOrderPage() {
     const taxRate = 0; // Example 10% tax
     const tax = subtotal * taxRate;
     const totalAmount = subtotal - discount + tax;
+    const sautanItems = orderItems.filter((oi) => {
+      const service = services?.find((s) => s._id === oi.service_id);
+      return service?.type === "Satuan";
+    });
+    const kiloanItems = orderItems.filter((oi) => {
+      const service = services?.find((s) => s._id === oi.service_id);
+      return service?.type === "Kiloan";
+    });
+
     return {
       subtotal,
       discount,
       tax,
       totalAmount,
-      totalWeight: orderItems.reduce(
+      totalWeight: kiloanItems.reduce(
+        (sum, item) => sum + Number(item.quantity),
+        0
+      ),
+      totalUnit: sautanItems.reduce(
         (sum, item) => sum + Number(item.quantity),
         0
       ),
     };
   };
 
-  const { subtotal, discount, tax, totalAmount, totalWeight } =
+  const { subtotal, discount, tax, totalAmount, totalWeight, totalUnit } =
     calculateTotals();
 
   // Process laundry transaction
@@ -243,7 +258,7 @@ export default function NewOrderPage() {
       return;
     }
 
-    if (!branchId) {
+    if (!branchId || !currentBranchId) {
       toast({
         title: "Error",
         description: "Cabang harus dipilih.",
@@ -273,22 +288,19 @@ export default function NewOrderPage() {
     setIsSubmitting(true);
 
     // Generate order number (simple example, consider a more robust solution)
-    const orderNumber = `TX-${new Date().getFullYear()}${(
-      new Date().getMonth() + 1
-    )
-      .toString()
-      .padStart(2, "0")}${new Date()
-      .getDate()
-      .toString()
-      .padStart(2, "0")}${Math.random()
-      .toString()
-      .substring(2, 6)
-      .toUpperCase()}`;
+    let selectedBranch = null;
+    if (branchId) {
+      selectedBranch = branches?.find((b) => b._id === branchId);
+    } else {
+      selectedBranch = branches?.find((b) => b._id === currentBranchId);
+    }
+    const orderNumber = generateOrderNumber(String(selectedBranch?.code));
 
     const orderData = {
       order_number: orderNumber,
       customer_id: customerId,
       total_weight: totalWeight,
+      total_unit: totalUnit,
       subtotal: subtotal,
       discount: discount,
       tax: tax,
@@ -297,8 +309,7 @@ export default function NewOrderPage() {
       payment_status: paymentMethod === "deposit" ? "lunas" : paymentStatus,
       order_status: "diterima",
       notes: notes,
-      current_branch_id:
-        session?.user.role === "owner" ? branchId : currentBranchId,
+      current_branch_id: branchId || currentBranchId,
     };
 
     const result = await api.post("/api/orders", orderData);
@@ -361,6 +372,18 @@ export default function NewOrderPage() {
         await api.delete(`/api/orders/${result.data.data._id}`);
         return;
       }
+    }
+
+    // Send a notification
+    const notificationData: NotificationType = {
+      title: "Order successfully.",
+      description: `Order ${result.data.data.order_number} berhasil dibuat.`,
+      status: "unread",
+      current_branch_id: branchId || currentBranchId,
+    };
+    const res = await addNotification(notificationData);
+    if (res?.status === 201) {
+      dispatch(fetchNotification(currentBranchId));
     }
 
     toast({
@@ -437,7 +460,7 @@ export default function NewOrderPage() {
                           services.map((service) => (
                             <SelectItem key={service._id} value={service._id!}>
                               {service.servicename} (
-                              {formatCurrency(service.price)}/kg)
+                              {formatCurrency(service.price)} kg/pcs)
                             </SelectItem>
                           ))}
                       </SelectContent>
@@ -486,8 +509,11 @@ export default function NewOrderPage() {
               <CardTitle className="text-md mb-2">Ringkasan Biaya</CardTitle>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span>Total Berat/Item:</span>{" "}
-                  <span>{totalWeight.toFixed(1)} kg/pcs</span>
+                  <span>Total Berat:</span>{" "}
+                  <span>{totalWeight.toFixed(1)}kg</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Item:</span> <span>{totalUnit}pcs</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Subtotal:</span> <span>{formatCurrency(subtotal)}</span>

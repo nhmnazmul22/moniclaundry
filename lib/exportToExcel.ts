@@ -51,6 +51,8 @@ export interface SalesReportData {
 }
 
 export const createDummyData = (reportData: ReportData): SalesReportData => {
+  console.log(reportData);
+
   const regularTotalKilo = reportData.serviceBreakdown.kiloan.regular.reduce(
     (acc, item) => acc + item.kilo,
     0
@@ -707,5 +709,3 @@ export const exportSalesReport = async (data: SalesReportData) => {
   });
   saveAs(blob, "laporan-penjualan.xlsx");
 };
-
-

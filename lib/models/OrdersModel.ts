@@ -5,7 +5,8 @@ import mongoose, { Document, Model, ObjectId, Schema } from "mongoose";
 export interface Orders extends Document {
   order_number: string;
   customer_id?: ObjectId;
-  total_weight: number;
+  total_weight?: number;
+  total_unit?: number;
   subtotal: number;
   discount?: number;
   tax?: number;
@@ -27,7 +28,8 @@ const OrderSchema: Schema<Orders> = new mongoose.Schema(
   {
     order_number: { type: String, required: true },
     customer_id: { type: mongoose.Types.ObjectId },
-    total_weight: { type: Number, required: true },
+    total_weight: { type: Number, default: 0 },
+    total_unit: { type: Number, default: 0 },
     subtotal: { type: Number, required: true },
     discount: { type: Number, default: 0 },
     tax: { type: Number, default: 0 },

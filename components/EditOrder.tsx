@@ -16,14 +16,16 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useBranch } from "@/contexts/branch-context";
 import { toast } from "@/hooks/use-toast";
+import { addNotification } from "@/lib/api";
 import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchCustomers } from "@/store/CustomerSlice";
+import { fetchNotification } from "@/store/NotificationSlice";
 import { fetchOrderItems } from "@/store/OrderItemSlice";
 import { fetchOrders } from "@/store/orderSlice";
 import { fetchServices } from "@/store/ServiceSlice";
-import type { Order } from "@/types";
+import type { NotificationType, Order } from "@/types";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -191,17 +193,37 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
 
   const calculateTotals = () => {
     const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+    // Add logic for discount and tax if needed
     const discount = 0;
-    const tax = 0;
+    const taxRate = 0; // Example 10% tax
+    const tax = subtotal * taxRate;
     const totalAmount = subtotal - discount + tax;
-    const totalWeight = orderItems.reduce(
-      (sum, item) => sum + item.quantity,
-      0
-    );
-    return { subtotal, discount, tax, totalAmount, totalWeight };
+    const sautanItems = orderItems.filter((oi) => {
+      const service = services?.find((s) => s._id === oi.service_id);
+      return service?.type === "Satuan";
+    });
+    const kiloanItems = orderItems.filter((oi) => {
+      const service = services?.find((s) => s._id === oi.service_id);
+      return service?.type === "Kiloan";
+    });
+
+    return {
+      subtotal,
+      discount,
+      tax,
+      totalAmount,
+      totalWeight: kiloanItems.reduce(
+        (sum, item) => sum + Number(item.quantity),
+        0
+      ),
+      totalUnit: sautanItems.reduce(
+        (sum, item) => sum + Number(item.quantity),
+        0
+      ),
+    };
   };
 
-  const { subtotal, discount, tax, totalAmount, totalWeight } =
+  const { subtotal, discount, tax, totalAmount, totalWeight, totalUnit } =
     calculateTotals();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -260,6 +282,7 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
         payment_status: formData.payment_status || null,
         subtotal: subtotal,
         total_weight: totalWeight,
+        total_unit: totalUnit,
         total_amount: totalAmount,
         notes: formData.notes || null,
         estimated_completion: formData.estimated_completion
@@ -276,6 +299,17 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
         return;
       }
 
+      // Send a notification
+      const notificationData: NotificationType = {
+        title: "Order successfully.",
+        description: `Order ${order?.order_number} updated successful`,
+        status: "unread",
+        current_branch_id: currentBranchId,
+      };
+      const notiRes = await addNotification(notificationData);
+      if (notiRes?.status === 201) {
+        dispatch(fetchNotification(currentBranchId));
+      }
       toast({
         title: "Success",
         description: "Order berhasil diperbarui!",
@@ -478,8 +512,11 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
                 <CardTitle className="text-md mb-2">Ringkasan Biaya</CardTitle>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <span>Total Berat/Item:</span>{" "}
-                    <span>{totalWeight.toFixed(1)} kg/pcs</span>
+                    <span>Total Berat:</span>{" "}
+                    <span>{totalWeight.toFixed(1)}kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Item:</span> <span>{totalUnit}pcs</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Subtotal:</span>{" "}

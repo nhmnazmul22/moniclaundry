@@ -2,7 +2,11 @@
 
 import type React from "react";
 
-import { ReceiptTemplate } from "@/components/receipt-template";
+import {
+  CashTransferReceiptTemplate,
+  InternalReceiptTemplate,
+  ReceiptTemplate,
+} from "@/components/receipt-template";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +30,7 @@ import jsPDF from "jspdf";
 import {
   AlertTriangle,
   ArrowLeft,
+  Download,
   Loader2,
   MessageSquare,
   Package,
@@ -37,6 +42,12 @@ import Link from "next/link";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import EditOrderPage from "./EditOrder";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 interface OrderDetailPageType {
   orderId: string;
@@ -62,6 +73,15 @@ export default function OrderDetailPage({
   const [pdfLoading, setPdfLoading] = useState(false);
 
   const receiptTemplate = useRef<HTMLDivElement>(
+    null
+  ) as React.RefObject<HTMLDivElement>;
+  const cashTransferRef = useRef<HTMLDivElement>(
+    null
+  ) as React.RefObject<HTMLDivElement>;
+  const depositRef = useRef<HTMLDivElement>(
+    null
+  ) as React.RefObject<HTMLDivElement>;
+  const internalRef = useRef<HTMLDivElement>(
     null
   ) as React.RefObject<HTMLDivElement>;
 
@@ -186,6 +206,14 @@ export default function OrderDetailPage({
     await generatePDF(receiptTemplate!, "nota-original", true);
   };
 
+  const handleDownloadCashTransfer = async () => {
+    await generatePDF(cashTransferRef, "nota-cash-transfer");
+  };
+
+  const handleDownloadInternal = async () => {
+    await generatePDF(internalRef, "nota-internal");
+  };
+
   const handleWhatsAppNotification = () => {
     if (!customer?.phone) {
       toast({
@@ -300,14 +328,28 @@ export default function OrderDetailPage({
             <Printer className="mr-2 h-4 w-4" />
             Cetak Nota Original
           </Button>
-          <Button
-            variant="outline"
-            onClick={handlePrintReceipt}
-            disabled={pdfLoading}
-          >
-            <Printer className="mr-2 h-4 w-4" />
-            Cetak Nota Original
-          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={pdfLoading}>
+                <Download className="mr-2 h-4 w-4" />
+                Download Receipt
+                {pdfLoading && (
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={handleDownloadCashTransfer}>
+                <Download className="mr-2 h-4 w-4" />
+                Payment Receipt
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDownloadInternal}>
+                <Download className="mr-2 h-4 w-4" />
+                Internal Print
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -411,8 +453,8 @@ export default function OrderDetailPage({
             <TableHeader>
               <TableRow>
                 <TableHead>Service</TableHead>
-                <TableHead>Berat (kg)</TableHead>
-                <TableHead>Harga per Kg</TableHead>
+                <TableHead>Berat (kg/pcs)</TableHead>
+                <TableHead>Harga per (kg/pcs)</TableHead>
                 <TableHead>Subtotal</TableHead>
                 <TableHead>Catatan</TableHead>
               </TableRow>
@@ -426,7 +468,10 @@ export default function OrderDetailPage({
                         {item.serviceDetails?.servicename! || "N/A"}
                       </div>
                     </TableCell>
-                    <TableCell>{item.quantity} kg</TableCell>
+                    <TableCell>
+                      {item.quantity}{" "}
+                      {item.serviceDetails.type === "Satuan" ? "pcs" : "kg"}
+                    </TableCell>
                     <TableCell>{formatCurrency(item.unit_price)}</TableCell>
                     <TableCell className="font-semibold">
                       {formatCurrency(item.subtotal)}
@@ -445,6 +490,18 @@ export default function OrderDetailPage({
           <>
             <ReceiptTemplate
               ref={receiptTemplate}
+              order={order}
+              orderItems={orderItems!}
+              businessInfo={businessInfo}
+            />
+            <CashTransferReceiptTemplate
+              ref={cashTransferRef}
+              order={order}
+              orderItems={orderItems!}
+              businessInfo={businessInfo}
+            />
+            <InternalReceiptTemplate
+              ref={internalRef}
               order={order}
               orderItems={orderItems!}
               businessInfo={businessInfo}

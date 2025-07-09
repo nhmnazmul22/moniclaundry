@@ -51,16 +51,19 @@ export function formatDateTime(dateString?: string | Date | null): string {
   }).format(new Date(dateString));
 }
 
-export function generateOrderNumber(): string {
-  const now = new Date();
-  const year = now.getFullYear().toString().slice(-2);
-  const month = (now.getMonth() + 1).toString().padStart(2, "0");
-  const day = now.getDate().toString().padStart(2, "0");
-  const random = Math.floor(Math.random() * 1000)
+export function generateOrderNumber(code: string) {
+  const orderNumber = `${code}${new Date().getFullYear()}${(
+    new Date().getMonth() + 1
+  )
     .toString()
-    .padStart(3, "0");
-
-  return `ML${year}${month}${day}${random}`;
+    .padStart(2, "0")}${new Date()
+    .getDate()
+    .toString()
+    .padStart(2, "0")}${Math.random()
+    .toString()
+    .substring(2, 6)
+    .toUpperCase()}`;
+  return orderNumber;
 }
 
 export function calculateEstimatedCompletion(hours: number): Date {

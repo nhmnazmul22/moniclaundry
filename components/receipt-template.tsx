@@ -1,5 +1,6 @@
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import type { Order, OrderItem } from "@/types";
+import { Dot } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import React from "react";
 
@@ -80,7 +81,10 @@ export const CashTransferReceiptTemplate = React.forwardRef<
                 <tr key={item._id}>
                   <td>{item.serviceDetails?.servicename! || "N/A"}</td>
                   <td colSpan={3}></td>
-                  <td className="text-right">{item.quantity}kg</td>
+                  <td className="text-right">
+                    {item.quantity}
+                    {item.serviceDetails.type === "Satuan" ? "pcs" : "kg"}
+                  </td>
                   <td className="text-center">x</td>
                   <td className="text-right">
                     {formatCurrency(item.serviceDetails?.price)}
@@ -239,7 +243,10 @@ export const InternalReceiptTemplate = React.forwardRef<
               {orderItems.map((item) => (
                 <tr key={item._id}>
                   <td>{item.serviceDetails?.servicename}</td>
-                  <td className="text-left font-bold">{item.quantity} kg</td>
+                  <td className="text-left font-bold">
+                    {item.quantity}
+                    {item.serviceDetails.type === "Satuan" ? "pcs" : "kg"}
+                  </td>
                   <td></td>
                   <td></td>
                   <td></td>
@@ -334,11 +341,9 @@ export const ReceiptTemplate = React.forwardRef<
           </div>
         )}
         <div className="flex justify-between">
-          <span>Selesai</span>
+          <span>Status</span>
           <span>
-            {order.delivery_date
-              ? formatDateTime(order.delivery_date)
-              : "Belum selesai"}
+            {order.order_status[0].toUpperCase() + order.order_status.slice(1)}
           </span>
         </div>
       </div>
@@ -358,7 +363,9 @@ export const ReceiptTemplate = React.forwardRef<
               {item?.serviceDetails?.servicename || "N/A"}
             </span>
             <span className="block">
-              {item.quantity}kg x {formatCurrency(item.unit_price)}
+              {item.quantity}
+              {item.serviceDetails.type === "Satuan" ? "pcs" : "kg"} x{" "}
+              {formatCurrency(item.unit_price)}
             </span>
             <span className="text-right block">
               Subtotal: {formatCurrency(item.subtotal)}
@@ -417,30 +424,49 @@ export const ReceiptTemplate = React.forwardRef<
       </div>
 
       {/* Terms */}
-      <div className="border-t border-b border-dashed py-2 mb-4 text-center">
+      <div className="border-t border-b border-dashed py-2 mb-4 text-left">
         <p>
           Dengan mencuci di {businessInfo.name}, maka Customer telah setuju
           dengan ketentuan yang berlaku:
         </p>
-        <ul className="list-disc list-inside text-left mt-2">
-          <li>
+        <div className="text-left flex flex-col gap-1">
+          <p className="flex gap-1 items-start p-0 m-0">
+            <span>
+              <Dot />
+            </span>
             Pakaian luntur, mudah susut & kerut karena kondisi bahan di luar
             tanggung jawab kami
-          </li>
-          <li>Komplain dgn nota asli & max 3x24 jam</li>
-          <li>Ganti rugi: Total biaya/jumlah cucian x 10</li>
-          <li>
+          </p>
+          <p className="flex gap-1 items-start p-0 m-0">
+            <span>
+              <Dot />
+            </span>
+            Komplain dgn nota asli & max 3x24 jam
+          </p>
+          <p className="flex gap-1 items-start p-0 m-0">
+            <span>
+              <Dot />
+            </span>
+            Ganti rugi: Total biaya/jumlah cucian x 10
+          </p>
+          <p className="flex gap-1 items-start p-0 m-0">
+            <span>
+              <Dot />
+            </span>
             Ganti rugi cuci satuan sesuai harga barang & maksimal: harga biaya
             cuci x 10
-          </li>
-          <li>
+          </p>
+          <p className="flex gap-1 items- p-0 m-0">
+            <span>
+              <Dot />
+            </span>
             Kami tidak bertanggung jawab utk cucian yg tdk diambil dlm waktu 14
             hari
-          </li>
-        </ul>
-        <p className="mt-4">CS : {businessInfo.phone}</p>
-        <p>==========Terima Kasih==========</p>
-        <p className="mt-2">Powered By Monic Laundry POS</p>
+          </p>
+        </div>
+        <p className="mt-4 text-center">CS : {businessInfo.phone}</p>
+        <p className="text-center">==========Terima Kasih==========</p>
+        <p className="mt-2 text-center">Powered By Monic Laundry POS</p>
       </div>
 
       {/* QR Code */}

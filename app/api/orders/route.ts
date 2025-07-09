@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
     const {
       order_number,
       customer_id,
-      total_weight,
       subtotal,
       total_amount,
       payment_method,
@@ -72,7 +71,6 @@ export async function POST(request: NextRequest) {
     if (
       !order_number ||
       !customer_id ||
-      !total_weight ||
       !subtotal ||
       !total_amount ||
       !payment_method ||
