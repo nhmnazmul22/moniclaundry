@@ -3,11 +3,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import api from "@/lib/config/axios";
+import { ExpenseCategoryType } from "@/lib/models/ExpensesCategoryModel";
 import { formatDate } from "@/lib/utils";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Download, FileSpreadsheet } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Expense {
   _id: string;
@@ -31,10 +33,24 @@ export function ExpenseExport({
   endDate,
 }: ExpenseExportProps) {
   const [isExporting, setIsExporting] = useState(false);
+  const [expenseCategory, setExpensesCategory] =
+    useState<ExpenseCategoryType[]>();
   const { toast } = useToast();
 
+  const fetchExpensesCategory = async () => {
+    try {
+      const response = await api.get(`/api/expenses/category`);
+
+      if (response.status === 200) {
+        setExpensesCategory(response.data.data || []);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const filterExpensesByDate = () => {
-    if (startDate && endDate) {
+    if (!startDate && !endDate) {
       return expenses;
     }
 
@@ -81,19 +97,12 @@ export function ExpenseExport({
         };
       }
 
-      const allCategories = [
-        "Aqua",
-        "Bensin Kurir",
-        "Bensin Mobil",
-        "Gas",
-        "Kasbon",
-        "Kebutuhan Laundry",
-        "Lainnya",
-        "Lembur",
-        "Medis",
-        "Traktir Karyawan",
-        "Uang Training",
-      ];
+      const allCategories =
+        (expenseCategory &&
+          expenseCategory.map((e) => {
+            return e.category;
+          })) ||
+        [];
 
       // Group expenses by date
       const expensesByDate: Record<string, typeof filteredExpenses> = {};
@@ -124,22 +133,11 @@ export function ExpenseExport({
           dailyTotal += exp.amount;
         });
 
-        // Insert unused categories with empty values
-        allCategories.forEach((category) => {
-          if (!usedCategories.has(category)) {
-            worksheet.addRow({
-              date: "",
-              category,
-              amount: "",
-            });
-          }
-        });
-
         grandTotal += dailyTotal;
       }
 
       // Add final TOTAL row
-      worksheet.addRow({});
+      // worksheet.addRow({});
       const totalRow = worksheet.addRow({
         category: "TOTAL",
         amount: grandTotal,
@@ -190,6 +188,11 @@ export function ExpenseExport({
       setIsExporting(false);
     }
   };
+
+  useEffect(() => {
+    fetchExpensesCategory();
+  }, []);
+
   return (
     <Card>
       <CardHeader>

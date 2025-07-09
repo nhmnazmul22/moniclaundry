@@ -46,8 +46,18 @@ export async function GET(request: NextRequest) {
       .filter((o) => o.payment_status === "lunas")
       .reduce((sum, o) => sum + o.total_amount, 0);
     const outstandingAmount = totalRevenue - paidAmount;
-    const totalKg = orders.reduce((sum, o) => sum + o.total_weight, 0);
-    const totalUnits = orders.length;
+    const totalKg = orders.reduce((sum, o) => {
+      if (o.total_weight) {
+        return sum + o?.total_weight;
+      }
+      return 0;
+    }, 0);
+    const totalUnits = orders.reduce((sum, o) => {
+      if (o.total_unit) {
+        return sum + o?.total_unit;
+      }
+      return 0;
+    }, 0);
 
     // 💸 Expenses
     const expensesData = await ExpenseModel.find({
