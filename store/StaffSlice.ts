@@ -31,14 +31,17 @@ const staffsSlice = createSlice({
       .addCase(fetchUsers.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.items = [];
       })
       .addCase(fetchUsers.fulfilled, (state, action: PayloadAction<User[]>) => {
         state.loading = false;
+        state.error = null;
         state.items = action.payload;
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message ?? "Something went wrong";
+        state.items = [];
       });
   },
 });

@@ -31,6 +31,7 @@ const servicesSlice = createSlice({
       .addCase(fetchServices.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.items = [];
       })
       .addCase(
         fetchServices.fulfilled,
@@ -42,6 +43,7 @@ const servicesSlice = createSlice({
       .addCase(fetchServices.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message ?? "Something went wrong";
+        state.items = [];
       });
   },
 });

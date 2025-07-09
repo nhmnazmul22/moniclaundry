@@ -16,6 +16,7 @@ const initialState: UsersState = {
     full_name: "",
     role: "owner",
     is_active: true,
+    current_branch_id: [],
   },
   loading: false,
   error: null,
@@ -38,6 +39,7 @@ const userSlice = createSlice({
       .addCase(fetchUser.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.items = initialState.items;
       })
       .addCase(fetchUser.fulfilled, (state, action: PayloadAction<User>) => {
         state.loading = false;
@@ -46,6 +48,7 @@ const userSlice = createSlice({
       .addCase(fetchUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message ?? "Something went wrong";
+        state.items = initialState.items;
       });
   },
 });

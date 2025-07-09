@@ -79,6 +79,7 @@ const customersSlice = createSlice({
       .addCase(fetchCustomers.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.items = [];
       })
       .addCase(
         fetchCustomers.fulfilled,
@@ -90,6 +91,7 @@ const customersSlice = createSlice({
       .addCase(fetchCustomers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        state.items = [];
       })
       // Purchase deposit
       .addCase(purchaseDeposit.fulfilled, (state, action) => {

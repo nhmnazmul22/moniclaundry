@@ -31,6 +31,7 @@ const orderItemsSlice = createSlice({
       .addCase(fetchOrderItems.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.items = [];
       })
       .addCase(
         fetchOrderItems.fulfilled,
@@ -42,6 +43,7 @@ const orderItemsSlice = createSlice({
       .addCase(fetchOrderItems.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message ?? "Something went wrong";
+        state.items = [];
       });
   },
 });

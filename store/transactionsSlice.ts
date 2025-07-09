@@ -105,6 +105,7 @@ const transactionsSlice = createSlice({
       .addCase(fetchTransactions.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.items = [];
       })
       .addCase(
         fetchTransactions.fulfilled,
@@ -116,6 +117,7 @@ const transactionsSlice = createSlice({
       .addCase(fetchTransactions.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        state.items = [];
       })
       // Process laundry transaction
       .addCase(processLaundryTransaction.pending, (state) => {

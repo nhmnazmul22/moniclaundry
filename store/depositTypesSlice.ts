@@ -100,6 +100,7 @@ const depositTypesSlice = createSlice({
       .addCase(fetchDepositTypes.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.items = [];
       })
       .addCase(
         fetchDepositTypes.fulfilled,
@@ -111,11 +112,13 @@ const depositTypesSlice = createSlice({
       .addCase(fetchDepositTypes.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        state.items = [];
       })
       // Create deposit type
       .addCase(createDepositType.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.items = [];
       })
       .addCase(
         createDepositType.fulfilled,
@@ -127,6 +130,7 @@ const depositTypesSlice = createSlice({
       .addCase(createDepositType.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        state.items = [];
       })
       // Update deposit type
       .addCase(
