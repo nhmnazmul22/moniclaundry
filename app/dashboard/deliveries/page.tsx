@@ -389,7 +389,7 @@ export default function DeliveriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex max-sm:flex-col gap-3 items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Deliveries Management
@@ -594,7 +594,7 @@ export default function DeliveriesPage() {
           <CardTitle>Filter & Search</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
+          <div className="flex max-sm:flex-col gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -605,7 +605,7 @@ export default function DeliveriesPage() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Semua Status" />
               </SelectTrigger>
               <SelectContent>

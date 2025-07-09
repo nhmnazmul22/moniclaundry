@@ -129,10 +129,13 @@ export function ExpenseTable({ refreshTrigger }: ExpenseTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex justify-between items-center">
-          <span>Expense Records</span>
+        <CardTitle className="flex flex-col gap-2 sm:flex-row justify-between items-center">
+          <span className="text-md">Expense Records</span>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-lg px-3 py-1">
+            <Badge
+              variant="outline"
+              className="tex-sm sm:text-lg px-2 py-1 w-fit"
+            >
               Total: {formatCurrency(getTotalAmount())}
             </Badge>
           </div>
@@ -161,7 +164,7 @@ export function ExpenseTable({ refreshTrigger }: ExpenseTableProps) {
                       {formatDate(expense.date || expense.createdAt)}
                     </TableCell>
                     <TableCell>
-                      <Badge className={getCategoryColor(expense.category)}>
+                      <Badge className={`${getCategoryColor(expense.category)} max-sm:text-center!`}>
                         {expense.category}
                       </Badge>
                     </TableCell>

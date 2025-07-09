@@ -266,7 +266,7 @@ export function ExpenseForm({
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row justify-between items-center">
+        <CardHeader className="flex sm:flex-row justify-between sm:items-center gap-3">
           <CardTitle>Add New Expense</CardTitle>
           <Button onClick={() => setIsAddDialogOpen(true)}>
             <Plus /> Add new category

@@ -275,9 +275,14 @@ export default function OrderDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col items-start space-y-4">
-          <Button variant="outline" size="sm" onClick={() => reset()}>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+        <div className="flex flex-col items-start space-y-4 max-sm:order-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => reset()}
+            className="max-sm:w-full"
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Kembali
           </Button>
@@ -286,7 +291,15 @@ export default function OrderDetailPage({
             <p className="text-muted-foreground">Order #{order.order_number}</p>
           </div>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex sm:space-x-2 max-sm:order-2 max-sm:flex-col gap-2">
+          <Button
+            variant="outline"
+            onClick={handlePrintReceipt}
+            disabled={pdfLoading}
+          >
+            <Printer className="mr-2 h-4 w-4" />
+            Cetak Nota Original
+          </Button>
           <Button
             variant="outline"
             onClick={handlePrintReceipt}

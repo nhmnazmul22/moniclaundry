@@ -556,9 +556,11 @@ export default function DepositManagement() {
   const expiringDeposits = getExpiringDeposits();
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Sistem Deposit Laundry</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">
+          Sistem Deposit Laundry
+        </h1>
         {expiringDeposits.length > 0 && (
           <Badge variant="destructive" className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4" />
@@ -568,7 +570,7 @@ export default function DepositManagement() {
       </div>
 
       <Tabs defaultValue="transactions" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full max-sm:h-full grid-cols-1 sm:grid-cols-4">
           <TabsTrigger value="transactions">Transaksi</TabsTrigger>
           <TabsTrigger value="customers">Pelanggan</TabsTrigger>
           <TabsTrigger value="deposit-types">Jenis Deposit</TabsTrigger>
@@ -578,143 +580,19 @@ export default function DepositManagement() {
         <TabsContent value="transactions" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Transaksi Laundry Baru</CardTitle>
-              <CardDescription>
-                Proses pembayaran dengan deposit atau campuran
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Pilih Pelanggan</Label>
-                  <Select
-                    value={selectedCustomer}
-                    onValueChange={setSelectedCustomer}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih pelanggan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.items.map((customer) => (
-                        <SelectItem key={customer._id} value={customer._id!}>
-                          {customer.name} - Saldo:{" "}
-                          {formatCurrency(customer.deposit_balance || 0)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Jumlah Transaksi</Label>
-                  <Input
-                    type="number"
-                    value={laundryAmount || ""}
-                    onChange={(e) => setLaundryAmount(Number(e.target.value))}
-                    placeholder="Masukkan jumlah"
-                  />
-                </div>
-              </div>
-
-              {selectedCustomer && laundryAmount > 0 && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <h4 className="font-semibold mb-2">Detail Pembayaran:</h4>
-                  {(() => {
-                    const customer = customers.items.find(
-                      (c) => c._id === selectedCustomer
-                    );
-                    if (!customer) return null;
-
-                    const customerBalance = customer.deposit_balance || 0;
-
-                    if (customerBalance >= laundryAmount) {
-                      return (
-                        <div className="space-y-2">
-                          <p>✅ Pembayaran penuh dengan deposit</p>
-                          <p>
-                            Saldo saat ini: {formatCurrency(customerBalance)}
-                          </p>
-                          <p>
-                            Sisa saldo:{" "}
-                            {formatCurrency(customerBalance - laundryAmount)}
-                          </p>
-                        </div>
-                      );
-                    } else {
-                      const shortfall = laundryAmount - customerBalance;
-                      return (
-                        <div className="space-y-2">
-                          <p>⚠️ Saldo tidak mencukupi - Pembayaran campuran</p>
-                          <p>
-                            Saldo saat ini: {formatCurrency(customerBalance)}
-                          </p>
-                          <p>Kurang: {formatCurrency(shortfall)}</p>
-                          <div className="space-y-2">
-                            <Label>Metode pembayaran untuk kekurangan:</Label>
-                            <Select
-                              value={paymentMethod}
-                              onValueChange={setPaymentMethod}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Pilih metode pembayaran" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="cash">Cash</SelectItem>
-                                <SelectItem value="transfer">
-                                  Transfer
-                                </SelectItem>
-                                <SelectItem value="qris">QRIS</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      );
-                    }
-                  })()}
-                </div>
-              )}
-
-              <Button
-                onClick={handleProcessLaundryTransaction}
-                disabled={
-                  transactions.processing ||
-                  !selectedCustomer ||
-                  !laundryAmount ||
-                  (() => {
-                    const customer = customers.items.find(
-                      (c) => c._id === selectedCustomer
-                    );
-                    const customerBalance = customer?.deposit_balance || 0;
-                    return (
-                      customer &&
-                      customerBalance < laundryAmount &&
-                      !paymentMethod
-                    );
-                  })()
-                }
-                className="w-full"
-              >
-                {transactions.processing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Memproses...
-                  </>
-                ) : (
-                  "Proses Transaksi"
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle>Riwayat Transaksi</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {transactions.items.length === 0 && (
+                  <p className="text-center space-y-3 italic">
+                    No transactions found
+                  </p>
+                )}
                 {transactions.items.map((transaction) => (
                   <div
                     key={transaction._id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
+                    className="flex max-sm:flex-col sm:items-center justify-between gap-2 p-4 border rounded-lg"
                   >
                     <div className="space-y-1">
                       <p className="font-semibold">
@@ -804,10 +682,15 @@ export default function DepositManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {customers.items.length === 0 && (
+                  <p className="text-center space-y-3 italic">
+                    No customers found
+                  </p>
+                )}
                 {customers.items.map((customer) => (
                   <div
                     key={customer._id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
+                    className="flex max-sm:flex-col gap-2  sm:items-center justify-between p-4 border rounded-lg"
                   >
                     <div className="space-y-1">
                       <p className="font-semibold">{customer.name}</p>
@@ -881,7 +764,7 @@ export default function DepositManagement() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Input
                   placeholder="Nama deposit"
                   value={newDepositType.name}
@@ -930,10 +813,15 @@ export default function DepositManagement() {
               <Separator />
 
               <div className="space-y-4">
+                {depositTypes.items.length === 0 && (
+                  <p className="text-center space-y-3 italic">
+                    No deposit types found
+                  </p>
+                )}
                 {depositTypes.items.map((type) => (
                   <div
                     key={type._id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
+                    className="flex max-md:flex-col gap-2 md:items-center justify-between p-4 border rounded-lg"
                   >
                     <div>
                       <h4 className="font-semibold">{type.name}</h4>
