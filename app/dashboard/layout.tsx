@@ -98,11 +98,18 @@ export default function DashboardLayout({
       !branchesLoading &&
       branchList &&
       branchList.length > 0 &&
-      !currentBranchId
+      !currentBranchId &&
+      session?.user.role === "owner"
     ) {
       setCurrentBranchId(branchList[0]._id);
     }
   }, [branchesLoading, branchList, currentBranchId, setCurrentBranchId]);
+
+  useEffect(() => {
+    if (session?.user.current_branch_id) {
+      setCurrentBranchId(session.user.current_branch_id[0]);
+    }
+  }, [session]);
 
   const getInitials = (name: string | undefined) => {
     if (!name) return "??";

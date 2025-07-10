@@ -47,12 +47,14 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { handleExport, importServicesJSON } from "./actions";
 
 export default function ServicesPage() {
+  const { data: session } = useSession();
   const { currentBranchId } = useBranch();
   const [searchTerm, setSearchTerm] = useState("");
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -244,11 +246,15 @@ export default function ServicesPage() {
   };
 
   const handleAddService = async () => {
+    console.log(currentBranchId);
     const serviceData = {
       ...serviceForm,
       type: serviceType || "",
-      current_branch_id: selectedBranchIds,
+      current_branch_id:
+        selectedBranchIds.length > 0 ? selectedBranchIds : [currentBranchId],
     };
+
+    console.log(serviceData);
 
     try {
       setLoading(true);
@@ -279,7 +285,8 @@ export default function ServicesPage() {
     const serviceData = {
       ...serviceForm,
       type: serviceType || "",
-      current_branch_id: selectedBranchIds,
+      current_branch_id:
+        selectedBranchIds.length > 0 ? selectedBranchIds : [currentBranchId],
     };
 
     try {
@@ -508,26 +515,28 @@ export default function ServicesPage() {
                       required
                     />
                   </div>
-                  <div className="col-span-2 flex flex-col gap-2">
-                    {branches &&
-                      branches.map((branch) => (
-                        <div
-                          key={branch._id}
-                          className="flex gap-2 items-center"
-                        >
-                          <Checkbox
-                            id={branch._id}
-                            checked={selectedBranchIds.includes(branch._id)}
-                            onCheckedChange={(checked) =>
-                              handleCheckedChange(!!checked, branch._id)
-                            }
-                          />
-                          <Label htmlFor={branch._id} className="m-0">
-                            {branch.name} - ({branch.type})
-                          </Label>
-                        </div>
-                      ))}
-                  </div>
+                  {session?.user.role === "owner" && (
+                    <div className="col-span-2 flex flex-col gap-2">
+                      {branches &&
+                        branches.map((branch) => (
+                          <div
+                            key={branch._id}
+                            className="flex gap-2 items-center"
+                          >
+                            <Checkbox
+                              id={branch._id}
+                              checked={selectedBranchIds.includes(branch._id)}
+                              onCheckedChange={(checked) =>
+                                handleCheckedChange(!!checked, branch._id)
+                              }
+                            />
+                            <Label htmlFor={branch._id} className="m-0">
+                              {branch.name} - ({branch.type})
+                            </Label>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                   <div className="col-span-2 flex gap-2 items-center space-y-1">
                     <Button
                       variant="outline"
@@ -710,23 +719,25 @@ export default function ServicesPage() {
                   required
                 />
               </div>
-              <div className="col-span-2 flex flex-col gap-2">
-                {branches &&
-                  branches.map((branch) => (
-                    <div key={branch._id} className="flex gap-2 items-center">
-                      <Checkbox
-                        id={branch._id}
-                        checked={selectedBranchIds.includes(branch._id)}
-                        onCheckedChange={(checked) =>
-                          handleCheckedChange(!!checked, branch._id)
-                        }
-                      />
-                      <Label htmlFor={branch._id} className="m-0">
-                        {branch.name} - ({branch.type})
-                      </Label>
-                    </div>
-                  ))}
-              </div>
+              {session?.user.role === "owner" && (
+                <div className="col-span-2 flex flex-col gap-2">
+                  {branches &&
+                    branches.map((branch) => (
+                      <div key={branch._id} className="flex gap-2 items-center">
+                        <Checkbox
+                          id={branch._id}
+                          checked={selectedBranchIds.includes(branch._id)}
+                          onCheckedChange={(checked) =>
+                            handleCheckedChange(!!checked, branch._id)
+                          }
+                        />
+                        <Label htmlFor={branch._id} className="m-0">
+                          {branch.name} - ({branch.type})
+                        </Label>
+                      </div>
+                    ))}
+                </div>
+              )}
               <div className="col-span-2 flex gap-2 items-center space-y-1">
                 <Button
                   variant="outline"

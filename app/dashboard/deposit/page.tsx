@@ -68,7 +68,6 @@ import { fetchNotification } from "@/store/NotificationSlice";
 import {
   cancelTransaction,
   fetchTransactions,
-  processLaundryTransaction,
 } from "@/store/transactionsSlice";
 import { NotificationType } from "@/types";
 import { format } from "date-fns";
@@ -103,10 +102,6 @@ export default function DepositManagement() {
     description: "",
   });
   const [editingDepositType, setEditingDepositType] = useState<any>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
-  const [laundryAmount, setLaundryAmount] = useState<number>(0);
-  const [paymentMethod, setPaymentMethod] = useState<string>("");
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [openDialogCustomerId, setOpenDialogCustomerId] = useState<
     string | null
   >(null);
@@ -120,43 +115,6 @@ export default function DepositManagement() {
       dispatch(fetchDepositReportData(branchId));
     }
   }, [dispatch, branchId]);
-
-  // Handle errors with toast notifications
-  useEffect(() => {
-    if (customers.error) {
-      toast({
-        title: "Failed",
-        description: customers.error || "Failed to fetch Customer data",
-        variant: "destructive",
-      });
-    }
-    if (depositTypes.error) {
-      toast({
-        title: "Failed",
-        description: depositTypes.error || "Failed to fetch Deposit Types data",
-        variant: "destructive",
-      });
-    }
-    if (transactions.error) {
-      toast({
-        title: "Failed",
-        description: transactions.error || "Failed to fetch transaction data",
-        variant: "destructive",
-      });
-    }
-    if (dashboard.error) {
-      toast({
-        title: "Failed",
-        description: dashboard.error || "Failed to fetch dashboard data",
-        variant: "destructive",
-      });
-    }
-  }, [
-    customers.error,
-    depositTypes.error,
-    transactions.error,
-    dashboard.error,
-  ]);
 
   // Add new deposit type
   const handleAddDepositType = async () => {
@@ -306,95 +264,6 @@ export default function DepositManagement() {
       toast({
         title: "Failed",
         description: error.message || "Failed to delete deposit type",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Process laundry transaction
-  const handleProcessLaundryTransaction = async () => {
-    const customer = customers.items.find((c) => c._id === selectedCustomer);
-    if (!customer || !laundryAmount) return;
-
-    try {
-      const transactionData: any = {
-        customer_id: customer._id,
-        branch_id: branchId,
-        amount: laundryAmount,
-        payment_method: "deposit",
-        description: "Laundry service payment",
-      };
-
-      if (customer.deposit_balance! >= laundryAmount) {
-        // Full payment with deposit
-        transactionData.payment_method = "deposit";
-        transactionData.deposit_amount = laundryAmount;
-      } else {
-        // Mixed payment
-        const depositUsed = customer.deposit_balance!;
-        const cashNeeded = laundryAmount - depositUsed;
-
-        if (!paymentMethod) {
-          toast({
-            title: "Failed",
-            description:
-              "Please select payment method for the remaining amount",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        transactionData.payment_method = "mixed";
-        transactionData.deposit_amount = depositUsed;
-        transactionData.cash_amount = cashNeeded;
-      }
-
-      const result = await dispatch(
-        processLaundryTransaction(transactionData)
-      ).unwrap();
-
-      // Update customer balance
-      dispatch(
-        updateCustomerBalance({
-          customerId: customer._id!,
-          newBalance: result.customer.deposit_balance,
-        })
-      );
-
-      setSelectedCustomer("");
-      setLaundryAmount(0);
-      setPaymentMethod("");
-      // Send a notification
-      const notificationData: NotificationType = {
-        title: "Transaction",
-        description: `Transaction processed successfully`,
-        status: "unread",
-        current_branch_id: branchId,
-      };
-      const res = await addNotification(notificationData);
-      if (res?.status === 201) {
-        dispatch(fetchNotification(branchId));
-      }
-      toast({
-        title: "Successful",
-        description: "Transaction processed failed",
-      });
-    } catch (error: any) {
-      // Send a notification
-      const notificationData: NotificationType = {
-        title: "Transaction",
-        description: `Transaction processed failed`,
-        status: "unread",
-        current_branch_id: branchId,
-      };
-
-      const res = await addNotification(notificationData);
-      if (res?.status === 201) {
-        dispatch(fetchNotification(branchId));
-      }
-      toast({
-        title: "Failed",
-        description: error.message || "Something went wrong",
         variant: "destructive",
       });
     }

@@ -183,32 +183,19 @@ export default function NewOrderPage() {
         customer_id: customer._id,
         branch_id: branchId || currentBranchId,
         amount: laundryAmount,
-        payment_method: "deposit",
+        laundry_kiloan: totalWeight,
+        laundry_satuan: totalUnit,
+        payment_method: paymentMethod,
         description: "Laundry service payment",
       };
 
-      if (customer.deposit_balance! >= laundryAmount) {
-        // Full payment with deposit
-        transactionData.payment_method = "deposit";
+      if (
+        paymentMethod === "deposit" &&
+        customer.deposit_balance! >= laundryAmount
+      ) {
         transactionData.deposit_amount = laundryAmount;
       } else {
-        // Mixed payment
-        const depositUsed = customer.deposit_balance!;
-        const cashNeeded = laundryAmount - depositUsed;
-
-        if (!paymentMethod) {
-          toast({
-            title: "Failed",
-            description:
-              "Please select payment method for the remaining amount",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        transactionData.payment_method = "mixed";
-        transactionData.deposit_amount = depositUsed;
-        transactionData.cash_amount = cashNeeded;
+        transactionData.cash_amount = laundryAmount;
       }
 
       const result = await dispatch(
@@ -362,6 +349,11 @@ export default function NewOrderPage() {
       if (res.status !== 201) {
         await api.delete(`/api/orders/${result.data.data._id}`);
         return;
+      }
+
+      // process laundry Transaction
+      if (paymentMethod !== "deposit") {
+        handleProcessLaundryTransaction(totalAmount);
       }
     }
 

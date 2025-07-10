@@ -45,7 +45,10 @@ export async function POST(
       let refundAmount = 0;
       const updateData: any = {};
 
-      if (transaction.type === "laundry") {
+      if (
+        transaction.type === "laundry" &&
+        transaction.payment_method === "deposit"
+      ) {
         // Refund deposit amount if any was used
         if (transaction.deposit_amount && transaction.deposit_amount > 0) {
           refundAmount = transaction.deposit_amount;

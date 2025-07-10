@@ -11,6 +11,8 @@ export interface Transaction extends Document {
   order_id: ObjectId;
   amount: number;
   type: "laundry" | "deposit_purchase" | "refund" | "adjustment";
+  laundry_satuan: number;
+  laundry_kiloan: number;
   payment_method: "deposit" | "cash" | "transfer" | "qris" | "mixed";
   deposit_amount?: number;
   cash_amount?: number;
@@ -46,6 +48,8 @@ const TransactionSchema: Schema<Transaction> = new mongoose.Schema(
       enum: ["laundry", "deposit_purchase", "refund", "adjustment"],
       required: true,
     },
+    laundry_kiloan: { type: Number },
+    laundry_satuan: { type: Number },
     payment_method: {
       type: String,
       enum: ["deposit", "cash", "transfer", "qris", "mixed"],

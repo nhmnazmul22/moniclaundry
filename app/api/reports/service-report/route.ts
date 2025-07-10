@@ -115,60 +115,81 @@ export async function GET(request: NextRequest) {
     let totalRevenue = 0;
     const transactionSet = new Set<string>();
 
-    const reportData = orderItems.map((item: any) => {
-      const { order, service, customer, quantity, unit_price, subtotal } = item;
+    const groupedOrders: Record<string, any> = {};
+
+    orderItems.forEach((item: any) => {
+      const { order, service, customer, quantity, subtotal } = item;
       const type: string = service.type || "Satuan";
+
+      const orderId = order.order_number;
       const orderDate = new Date(order.createdAt);
 
-      transactionSet.add(order.order_number);
-      totalRevenue += subtotal ?? 0;
-      if (type === "Kiloan") {
-        totalKilos += order.total_weight ?? 0;
-      } else if (type === "Satuan") {
-        totalItems += quantity ?? 0;
+      if (!groupedOrders[orderId]) {
+        transactionSet.add(orderId);
+        totalRevenue += order.total_amount ?? 0;
+
+        groupedOrders[orderId] = {
+          tanggalTransaksi: orderDate.toLocaleString("id-ID", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          nomorTransaksi: orderId,
+          namaPelanggan: customer?.name ?? "-",
+          kilogramKategori: "-",
+          kilogramJenis: "-",
+          kilogramTotal: "-",
+          kilogramHarga: "-",
+          satuanKategori: "-",
+          satuanLayanan: "-",
+          satuanTotal: "-",
+          satuanHarga: "-",
+          meterKategori: "-",
+          meterLayanan: "-",
+          meterTotal: "-",
+          meterHarga: "-",
+          statusPembayaran: (order.payment_status ?? "-").toUpperCase(),
+          hargaPenjualan: `Rp. ${Number(order.total_amount || 0).toLocaleString(
+            "id-ID"
+          )}`,
+          metodePembayaran: order.payment_method
+            ? order.payment_method[0].toUpperCase() +
+              order.payment_method.slice(1)
+            : "-",
+        };
       }
 
-      return {
-        tanggalTransaksi: orderDate.toLocaleString("id-ID", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        nomorTransaksi: order.order_number,
-        namaPelanggan: customer?.name ?? "-",
-        kilogramKategori: type === "Kiloan" ? service.category : "-",
-        kilogramJenis: type === "Kiloan" ? service.servicename : "-",
-        kilogramTotal: type === "Kiloan" ? order.total_weight : "-",
-        kilogramHarga:
-          type === "Kiloan"
-            ? `Rp. ${Number(unit_price || 0).toLocaleString("id-ID")}`
-            : "-",
-        satuanKategori: type === "Satuan" ? service.category : "-",
-        satuanLayanan: type === "Satuan" ? service.servicename : "-",
-        satuanTotal: type === "Satuan" ? quantity : "-",
-        satuanHarga:
-          type === "Satuan"
-            ? `Rp. ${Number(subtotal || 0).toLocaleString("id-ID")}`
-            : "-",
-        meterKategori: type === "Meter" ? service.category : "-",
-        meterLayanan: type === "Meter" ? service.servicename : "-",
-        meterTotal: type === "Meter" ? quantity : "-",
-        meterHarga:
-          type === "Meter"
-            ? `Rp. ${Number(subtotal || 0).toLocaleString("id-ID")}`
-            : "-",
-        statusPembayaran: (order.payment_status ?? "-").toUpperCase(),
-        hargaPenjualan: `Rp. ${Number(order.total_amount || 0).toLocaleString(
-          "id-ID"
-        )}`,
-        metodePembayaran: order.payment_method
-          ? order.payment_method[0].toUpperCase() +
-            order.payment_method.slice(1)
-          : "-",
-      };
+      // Assign the correct section based on type
+      if (type === "Kiloan") {
+        totalKilos += quantity ?? 0;
+        groupedOrders[orderId].kilogramKategori = service.category;
+        groupedOrders[orderId].kilogramJenis = service.servicename;
+        groupedOrders[orderId].kilogramTotal =
+          order.total_weight ?? quantity ?? "-";
+        groupedOrders[orderId].kilogramHarga = `Rp. ${Number(
+          subtotal || 0
+        ).toLocaleString("id-ID")}`;
+      } else if (type === "Satuan") {
+        totalItems += quantity ?? 0;
+        groupedOrders[orderId].satuanKategori = service.category;
+        groupedOrders[orderId].satuanLayanan = service.servicename;
+        groupedOrders[orderId].satuanTotal = quantity ?? "-";
+        groupedOrders[orderId].satuanHarga = `Rp. ${Number(
+          subtotal || 0
+        ).toLocaleString("id-ID")}`;
+      } else if (type === "Meter") {
+        groupedOrders[orderId].meterKategori = service.category;
+        groupedOrders[orderId].meterLayanan = service.servicename;
+        groupedOrders[orderId].meterTotal = quantity ?? "-";
+        groupedOrders[orderId].meterHarga = `Rp. ${Number(
+          subtotal || 0
+        ).toLocaleString("id-ID")}`;
+      }
     });
+
+    const reportData = Object.values(groupedOrders);
 
     // Build summary array
     const summaryData: [string, string][] = [

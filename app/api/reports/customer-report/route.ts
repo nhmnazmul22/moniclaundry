@@ -90,28 +90,30 @@ export async function GET(request: NextRequest) {
             },
           },
           jumlahTransaksiKiloan: {
-            $size: {
-              $filter: {
+            $sum: {
+              $map: {
                 input: "$transactions",
                 as: "t",
-                cond: {
-                  $and: [
+                in: {
+                  $cond: [
                     { $eq: ["$$t.type", "laundry"] },
-                    { $eq: ["$$t.laundry_category", "kiloan"] },
+                    { $ifNull: ["$$t.laundry_kiloan", 0] },
+                    0,
                   ],
                 },
               },
             },
           },
           jumlahTransaksiSatuan: {
-            $size: {
-              $filter: {
+            $sum: {
+              $map: {
                 input: "$transactions",
                 as: "t",
-                cond: {
-                  $and: [
+                in: {
+                  $cond: [
                     { $eq: ["$$t.type", "laundry"] },
-                    { $eq: ["$$t.laundry_category", "satuan"] },
+                    { $ifNull: ["$$t.laundry_satuan", 0] },
+                    0,
                   ],
                 },
               },

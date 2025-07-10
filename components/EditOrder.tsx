@@ -20,11 +20,12 @@ import { addNotification } from "@/lib/api";
 import api from "@/lib/config/axios";
 import { formatCurrency } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
-import { fetchCustomers } from "@/store/CustomerSlice";
+import { fetchCustomers, updateCustomerBalance } from "@/store/CustomerSlice";
 import { fetchNotification } from "@/store/NotificationSlice";
 import { fetchOrderItems } from "@/store/OrderItemSlice";
 import { fetchOrders } from "@/store/orderSlice";
 import { fetchServices } from "@/store/ServiceSlice";
+import { processLaundryTransaction } from "@/store/transactionsSlice";
 import type { NotificationType, Order } from "@/types";
 import {
   AlertTriangle,
@@ -34,7 +35,6 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -53,7 +53,6 @@ interface EditOrderPageType {
 
 export default function EditOrderPage({ orderId }: EditOrderPageType) {
   const { currentBranchId } = useBranch();
-  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
@@ -69,7 +68,9 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
   const { items: OrdItems } = useSelector(
     (state: RootState) => state.orderItemsReducer
   );
-
+  const { items: customers } = useSelector(
+    (state: RootState) => state.customerReducer
+  );
   const [formData, setFormData] = useState({
     customer_id: "",
     order_status: "",
@@ -226,6 +227,45 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
   const { subtotal, discount, tax, totalAmount, totalWeight, totalUnit } =
     calculateTotals();
 
+  // Process laundry transaction
+  const handleProcessLaundryTransaction = async (laundryAmount: number) => {
+    const customer = customers.find(
+      (c) => c._id === order?.customerDetails?._id
+    );
+    if (!customer || !laundryAmount) return;
+
+    try {
+      const transactionData: any = {
+        customer_id: customer._id,
+        branch_id: currentBranchId,
+        amount: laundryAmount,
+        laundry_kiloan: totalWeight,
+        laundry_satuan: totalUnit,
+        cash_amount: laundryAmount,
+        payment_method: order?.payment_method,
+        description: "Laundry service payment",
+      };
+
+      const result = await dispatch(
+        processLaundryTransaction(transactionData)
+      ).unwrap();
+
+      // Update customer balance in Redux state
+      dispatch(
+        updateCustomerBalance({
+          customerId: customer._id!,
+          newBalance: result.customer.deposit_balance,
+        })
+      );
+    } catch (error: any) {
+      toast({
+        title: "Failed",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -274,6 +314,9 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
           });
           return;
         }
+
+        // process laundry transaction
+        handleProcessLaundryTransaction(order.total_amount);
       }
 
       // Order updated

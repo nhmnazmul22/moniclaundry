@@ -252,17 +252,17 @@ export default function ReportsPage() {
                 endDate={endDate}
               />
             </div>
-            <div className="col-span-12 md:col-span-4 xl:col-span-3 2xl:col-span-2">
+            <div className="col-span-12 md:col-span-4 xl:col-span-3 2xl:col-span-3">
               <CustomerReport startDate={startDate} endDate={endDate} />
             </div>
-            <div className="col-span-12 md:col-span-4 xl:col-span-3 2xl:col-span-2">
+            <div className="col-span-12 md:col-span-4 xl:col-span-3 2xl:col-span-3">
               <ExpenseExport
                 expenses={expensesData!}
                 startDate={startDate}
                 endDate={endDate}
               />
             </div>
-            <div className="col-span-12 md:col-span-4 xl:col-span-3 2xl:col-span-2">
+            <div className="col-span-12 md:col-span-4 xl:col-span-3 2xl:col-span-3">
               <DepositReportExport
                 branchId={currentBranchId}
                 startDate={startDate}

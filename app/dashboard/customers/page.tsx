@@ -96,7 +96,7 @@ export default function CustomersPage() {
         email: formData.get("email") as string,
         address: formData.get("address") as string,
         total_deposit: Number(formData.get("total_deposit")) as number,
-        current_branch_id: currentBranchId as string,
+        current_branch_id: branchId || (currentBranchId as string),
       };
 
       const result = await api.post("/api/customer", data);
@@ -105,7 +105,7 @@ export default function CustomersPage() {
           title: "Customer added successfully",
           description: `Customer ${data.name} added with ${data.email}`,
           status: "unread",
-          current_branch_id: currentBranchId,
+          current_branch_id: branchId || currentBranchId,
         };
         // Send a notification
         const res = await addNotification(notificationData);
@@ -158,7 +158,7 @@ export default function CustomersPage() {
           title: "Customer updated successfully.",
           description: `Customer ${data.name} info is updated`,
           status: "unread",
-          current_branch_id: currentBranchId,
+          current_branch_id: branchId || currentBranchId,
         };
         // Send a notification
         const res = await addNotification(notificationData);
@@ -194,7 +194,7 @@ export default function CustomersPage() {
           title: "Customer deleted successfully.",
           description: `Customer is deleted`,
           status: "unread",
-          current_branch_id: currentBranchId,
+          current_branch_id: branchId || currentBranchId,
         };
         // Send a notification
         const res = await addNotification(notificationData);
@@ -273,26 +273,28 @@ export default function CustomersPage() {
                 <Label htmlFor="address">Alamat</Label>
                 <Input id="address" name="address" />
               </div>
-              <div>
-                <Select
-                  name="current_branch_id"
-                  value={branchId}
-                  onValueChange={setBranchId}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {branches &&
-                      branches.length > 0 &&
-                      branches.map((branch) => (
-                        <SelectItem key={branch._id} value={branch._id}>
-                          {branch.name} - {`(${branch.type})`}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {session?.user.role === "owner" && (
+                <div>
+                  <Select
+                    name="current_branch_id"
+                    value={branchId}
+                    onValueChange={setBranchId}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches &&
+                        branches.length > 0 &&
+                        branches.map((branch) => (
+                          <SelectItem key={branch._id} value={branch._id}>
+                            {branch.name} - {`(${branch.type})`}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="flex justify-end space-x-2">
                 <Button
                   type="button"

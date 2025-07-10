@@ -18,7 +18,7 @@ import type React from "react";
 import { useEffect, useState } from "react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("kyodaistudio56@gmail.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

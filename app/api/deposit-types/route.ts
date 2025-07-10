@@ -53,9 +53,10 @@ export async function POST(request: NextRequest) {
     await dbConnect();
 
     const body = await request.json();
-    const { name, purchase_price, deposit_value, branch_id } = body;
+    const { name, purchase_price, deposit_value, current_branch_id } = body;
 
-    if (!name || !purchase_price || !deposit_value || !branch_id) {
+    console.log(body);
+    if (!name || !purchase_price || !deposit_value || !current_branch_id) {
       return NextResponse.json(
         {
           status: "Failed",
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     const depositType = await DepositTypeModel.create({
       ...body,
-      current_branch_id: branch_id,
+      current_branch_id: current_branch_id,
     });
 
     if (!depositType) {

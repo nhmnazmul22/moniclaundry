@@ -27,7 +27,10 @@ export const CashTransferReceiptTemplate = React.forwardRef<
         {/* Header */}
         <div className="text-left mb-1">
           <div className="text-[6px] font-semibold ">
-            Bayar Pakai Cash, Transfer, QRIS
+            Bayar Pakai{" "}
+            {order.payment_method &&
+              order.payment_method[0].toUpperCase() +
+                order.payment_method?.slice(1)}
           </div>
         </div>
 
@@ -194,7 +197,7 @@ export const CashTransferReceiptTemplate = React.forwardRef<
   );
 });
 
-// Template 3: Internal Print
+// Template 2: Internal Print
 export const InternalReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps
@@ -204,7 +207,12 @@ export const InternalReceiptTemplate = React.forwardRef<
       <div className="">
         {/* Header */}
         <div className="text-left mb-1">
-          <div className="text-[6px] font-semibold">Bayar Pakai Deposit </div>
+          <div className="text-[6px] font-semibold">
+            Bayar Pakai{" "}
+            {order.payment_method &&
+              order.payment_method[0].toUpperCase() +
+                order.payment_method?.slice(1)}
+          </div>
         </div>
 
         <div className="py-1">
@@ -289,7 +297,7 @@ export const InternalReceiptTemplate = React.forwardRef<
   );
 });
 
-// Template 4:
+// Template 3:
 export const ReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps

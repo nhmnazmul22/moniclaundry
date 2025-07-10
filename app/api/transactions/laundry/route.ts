@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       processed_by,
     } = body;
 
-    if (!customer_id || !branch_id  || !amount || !payment_method) {
+    if (!customer_id || !branch_id || !amount || !payment_method) {
       return NextResponse.json(
         {
           status: "Failed",
@@ -53,53 +53,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate payment method and amounts
-    if (payment_method === "deposit" && customer.deposit_balance! < amount) {
-      return NextResponse.json(
-        {
-          status: "Failed",
-          message: "Insufficient deposit balance",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (payment_method === "mixed") {
-      const totalPayment = (deposit_amount || 0) + (cash_amount || 0);
-      if (totalPayment !== amount) {
-        return NextResponse.json(
-          {
-            status: "Failed",
-            message: "Deposit amount + cash amount must equal total amount",
-          },
-          { status: 400 }
-        );
-      }
-
-      if ((deposit_amount || 0) > customer.deposit_balance!) {
-        return NextResponse.json(
-          {
-            status: "Failed",
-            message: "Insufficient deposit balance for mixed payment",
-          },
-          { status: 400 }
-        );
-      }
-    }
-
     // Start transaction session
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      let balanceDeduction = 0;
-
-      if (payment_method === "deposit") {
-        balanceDeduction = amount;
-      } else if (payment_method === "mixed") {
-        balanceDeduction = deposit_amount || 0;
-      }
-
       // Update customer balance and stats
       const updateData: any = {
         $inc: {
@@ -108,8 +66,8 @@ export async function POST(request: NextRequest) {
         },
       };
 
-      if (balanceDeduction > 0) {
-        updateData.$inc.deposit_balance = -balanceDeduction;
+      if (deposit_amount > 0) {
+        updateData.$inc.deposit_balance = -deposit_amount;
       }
 
       await CustomerModel.findByIdAndUpdate(customer_id, updateData, {
@@ -120,18 +78,14 @@ export async function POST(request: NextRequest) {
       const transaction = await TransactionModel.create(
         [
           {
+            ...body,
             customer_id,
             current_branch_id: branch_id,
             amount,
             type: "laundry",
             payment_method,
-            deposit_amount: balanceDeduction > 0 ? balanceDeduction : undefined,
-            cash_amount:
-              payment_method === "mixed"
-                ? cash_amount
-                : payment_method !== "deposit"
-                ? amount
-                : undefined,
+            deposit_amount,
+            cash_amount,
             description: description || "Laundry service payment",
             reference_id: `LAU-${Date.now()}`,
             processed_by,
@@ -153,13 +107,8 @@ export async function POST(request: NextRequest) {
             customer: updatedCustomer,
             payment_breakdown: {
               total_amount: amount,
-              deposit_used: balanceDeduction,
-              cash_paid:
-                payment_method === "mixed"
-                  ? cash_amount
-                  : payment_method !== "deposit"
-                  ? amount
-                  : 0,
+              deposit_used: deposit_amount,
+              cash_paid: cash_amount,
               remaining_deposit_balance: updatedCustomer?.deposit_balance || 0,
             },
           },
