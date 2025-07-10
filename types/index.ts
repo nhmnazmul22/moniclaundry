@@ -324,7 +324,10 @@ export interface SalesReportData {
     qris: { transactions: number; amount: number };
     deposit: { transactions: number; amount: number };
   };
-  expenses: number;
+  expenses: {
+    total: number;
+    transaction: number;
+  };
   netCash: number;
   transactionCounts: {
     kilo: number;

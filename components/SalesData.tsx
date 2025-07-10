@@ -73,6 +73,7 @@ export default function SalesReport({
         // ----------- Sheet 1: Summary Report -----------
         sheet1.columns = Array(7).fill({ width: 20 });
         sheet1.getCell("B2").value = "Penjualan Hari Ini";
+        sheet1.getCell("B2").font = { bold: true };
 
         // Sales Data
         let row = 3;
@@ -109,8 +110,58 @@ export default function SalesReport({
         sheet1.getCell(`D14`).value = paymentBreakdown.qris.amount;
         sheet1.getCell(`D15`).value = paymentBreakdown.deposit.amount;
 
+        // Styling
+        sheet1.getCell("B11").font = { bold: true };
+        sheet1.getCell("C11").font = { bold: true };
+        sheet1.getCell("D11").font = { bold: true };
+        sheet1.getCell("B12").border = cellBorderStyle;
+        sheet1.getCell("B13").border = cellBorderStyle;
+        sheet1.getCell("B14").border = cellBorderStyle;
+        sheet1.getCell("B15").border = cellBorderStyle;
+        sheet1.getCell("C11").border = cellBorderStyle;
+        sheet1.getCell("C12").border = cellBorderStyle;
+        sheet1.getCell("C13").border = cellBorderStyle;
+        sheet1.getCell("C14").border = cellBorderStyle;
+        sheet1.getCell("C15").border = cellBorderStyle;
+        sheet1.getCell("D11").border = cellBorderStyle;
+        sheet1.getCell("D12").border = cellBorderStyle;
+        sheet1.getCell("D13").border = cellBorderStyle;
+        sheet1.getCell("D14").border = cellBorderStyle;
+        sheet1.getCell("D15").border = cellBorderStyle;
 
-        
+        // Piutang data
+        sheet1.getCell("B18").value = "Piutang";
+        sheet1.getCell("C17").value = "#Transaksi";
+        sheet1.getCell("D17").value = "Nominal";
+
+        sheet1.getCell("C18").value = 0;
+        sheet1.getCell("D18").value = 0;
+
+        sheet1.getCell("C17").font = { bold: true };
+        sheet1.getCell("D17").font = { bold: true };
+        sheet1.getCell("C17").border = cellBorderStyle;
+        sheet1.getCell("D17").border = cellBorderStyle;
+        sheet1.getCell("C18").border = cellBorderStyle;
+        sheet1.getCell("D18").border = cellBorderStyle;
+
+        //  Pengeluaran data
+        const expenses = reportData.expenses;
+        sheet1.getCell("B20").value = "Pengeluaran";
+        sheet1.getCell("C20").value = expenses.transaction;
+        sheet1.getCell("D20").value = expenses.total;
+
+        sheet1.getCell("C20").border = cellBorderStyle;
+        sheet1.getCell("D20").border = cellBorderStyle;
+
+        // Net Cash data
+        sheet1.getCell("C22").value = "Nett Cash";
+        sheet1.getCell("D22").value = reportData.netCash;
+
+        sheet1.getCell("C22").font = { bold: true };
+        sheet1.getCell("D22").border = cellBorderStyle;
+
+
+        // 
 
         // row += 4;
         // sheet1.getCell(`A${row}`).value = "";

@@ -264,7 +264,10 @@ export async function GET(req: NextRequest) {
       dailyBreakdown,
       paymentBreakdown,
       salesData,
-      expenses: totalExpenses,
+      expenses: {
+        total: totalExpenses,
+        transaction: expenses.length,
+      },
       netCash,
       transactionCounts,
       depositData,

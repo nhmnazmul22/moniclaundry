@@ -451,8 +451,17 @@ export const ReceiptTemplate = React.forwardRef<
         </div>
       </div>
 
+      {/* Customer Service */}
+      <div className="mt-5 mb-5">
+        <div className="font-bold">
+          Customer Service :
+          <span className="text-black font-bold">0811-9876-771</span>
+        </div>
+        <div className="font-bold">#laundryapasajabisa</div>
+      </div>
+
       {/* QR Code */}
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center mt-5">
         <QRCodeCanvas value={qrData} size={128} level="H" />
         <div className="text-[8px] text-center max-w-[280px] break-words mt-2">
           <p className="font-bold">QR Data:</p>
