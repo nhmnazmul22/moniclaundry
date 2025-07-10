@@ -322,6 +322,8 @@ const borderStyle = {
   ];
   sheet2.getRow(summaryStart).eachCell(cell => cell.border = borderStyle);
 
+sheet2.getCell("A10").border = {};
+
   let row = summaryStart + 1;
   const renderKiloanGroup = (label: string, data: any[]) => {
     const totalKilo = data.reduce((sum, i) => sum + i.kilo, 0);
