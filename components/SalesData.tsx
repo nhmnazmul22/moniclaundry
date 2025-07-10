@@ -264,140 +264,124 @@ export default function SalesReport({
         sheet1.getCell("C41").font = redBoldFont;
         sheet1.getCell("C42").font = redBoldFont;
 
-        // // ----------- Sheet 2: Detail Breakdown -----------
-        sheet2.columns = Array(7).fill({ width: 20 });
- 
- // Set uniform column widths starting from B
-  sheet2.columns = Array(8).fill({ width: 20 });
+// ---- Sheet 2: Detail Breakdown -----------
 
-  const borderStyle = {
+const borderStyle = {
     top: { style: 'thin' },
-    left: { style: 'thin' },
     bottom: { style: 'thin' },
-    right: { style: 'thin' }
+    left: { style: 'thin' },
+    right: { style: 'thin' },
   };
+
+  sheet2.columns = Array(7).fill({ width: 20 });
 
   // Header
   sheet2.mergeCells("B1:H1");
-  const titleCell = sheet2.getCell("B1");
-  titleCell.value = "Laporan Jenis Cucian";
-  titleCell.font = { bold: true, size: 11 };
-  titleCell.alignment = { horizontal: 'center' };
+  sheet2.getCell("B1").value = "Laporan Jenis Cucian";
+  sheet2.getCell("B1").alignment = { horizontal: "center" };
+  sheet2.getCell("B1").font = { bold: true, size: 14 };
 
-  // Section: Penjualan Hari ini
   sheet2.mergeCells("B4:C4");
-  const penjualanCell = sheet2.getCell("B4");
-  penjualanCell.value = "Penjualan Hari ini";
-  penjualanCell.fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FFFF00' }, // yellow
+  const headerCell = sheet2.getCell("B4");
+  headerCell.value = "Penjualan Hari ini";
+  headerCell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFFFFF00" },
   };
+  headerCell.font = { bold: true };
 
-  // 2. Header titles
-sheet2.getCell("B5").value = "Kategori";
-sheet2.getCell("C5").value = "Group Layanan";
-sheet2.getCell("D5").value = "Jenis Layanan";
+  sheet2.getCell("B5").value = "Kategori";
+  sheet2.getCell("C5").value = "Group Layanan";
+  sheet2.getCell("D5").value = "Jenis Layanan";
 
-// 3. Gather unique services from both regular and express
-const regularServices = reportData.serviceBreakdown.kiloan.regular.map(i => i.service);
-const expressServices = reportData.serviceBreakdown.kiloan.express.map(i => i.service);
-const uniqueServices = Array.from(new Set([...regularServices, ...expressServices]));
+  // Dynamic Jenis Layanan
+  const regular = reportData.serviceBreakdown.kiloan.regular || [];
+  const express = reportData.serviceBreakdown.kiloan.express || [];
+  const uniqueServices = Array.from(new Set([...regular, ...express].map(i => i.service)));
 
-// 4. Fill rows dynamically (starting from row 6)
-let rowIndex = 6;
-uniqueServices.forEach((service, i) => {
-  sheet2.getCell(`B${rowIndex}`).value = i === 0 ? "Kiloan" : ""; // Kategori only once
-  sheet2.getCell(`D${rowIndex}`).value = service;
-  rowIndex++;
-});
+  let rowIdx = 6;
+  uniqueServices.forEach((service, index) => {
+    sheet2.getCell(`B${rowIdx}`).value = index === 0 ? "Kiloan" : "";
+    sheet2.getCell(`D${rowIdx}`).value = service;
+    rowIdx++;
+  });
 
-
-  // Red text for formula
-  sheet2.getCell("B12").value = "Formula :";
-  sheet2.getCell("C12").value = "Dimunculkan jumlah kilonya dan nominal nilai transaksinya";
-  sheet2.getCell("C12").font = { color: { argb: 'FFFF0000' } };
-
-  
-  // === Add Kiloan Data ===
-  let startRow = 14;
-  sheet2.getCell(`B${startRow}`).value = "CONTOH";
-  sheet2.getRow(startRow + 1).values = [, "Kategori", "Group Layanan", "Total Kilo", "Nominal", "Jenis Layanan", "Total Kilo", "Nominal"];
-
-  // Regular
-  const regular = reportData.serviceBreakdown.kiloan.regular;
-  const totalKiloRegular = regular.reduce((sum, item) => sum + item.kilo, 0);
-  const totalAmountRegular = regular.reduce((sum, item) => sum + item.amount, 0);
-  let row = startRow + 2;
-  sheet2.getRow(row).values = [, "Kiloan", "Regular", totalKiloRegular, totalAmountRegular];
-  row++;
-
-  for (const item of regular) {
-    sheet2.getRow(row).values = [, , , , , item.service, item.kilo, item.amount];
-    row++;
-  }
-  const expressStart = row;
-
-  // Express
-  const express = reportData.serviceBreakdown.kiloan.express;
-  const totalKiloExpress = express.reduce((sum, item) => sum + item.kilo, 0);
-  const totalAmountExpress = express.reduce((sum, item) => sum + item.amount, 0);
-
-  sheet2.getRow(row).values = [, "Kiloan", "Express", totalKiloExpress, totalAmountExpress];
-  row++;
-
-  for (const item of express) {
-    sheet2.getRow(row).values = [, , , , , item.service, item.kilo, item.amount];
-    row++;
-  }
-
-  const kiloanEndRow = row - 1;
-  const satuanStart = row + 2;
-
-  // === Satuan Header ===
-  sheet2.getCell(`B${satuanStart}`).value = "Kategori";
-  sheet2.getCell(`C${satuanStart}`).value = "Group Barang";
-  sheet2.getCell(`D${satuanStart}`).value = "Total Barang";
-  sheet2.getCell(`E${satuanStart}`).value = "Nominal";
-  sheet2.getCell(`F${satuanStart}`).value = "Jenis Barang";
-  sheet2.getCell(`G${satuanStart}`).value = "Total Barang";
-  sheet2.getCell(`H${satuanStart}`).value = "Nominal";
-
-  sheet2.getCell(`B${satuanStart + 2}`).value = "CONTOH";
-
-  // Group by Group Barang (e.g., Bed Cover, Sepatu)
-  const groupedSatuan = {};
-  for (const item of reportData.serviceBreakdown.satuan) {
-    const [group, ...rest] = item.item.split(" ");
-    const key = group.trim();
-    if (!groupedSatuan[key]) groupedSatuan[key] = [];
-    groupedSatuan[key].push(item);
-  }
-
-  let satuanRow = satuanStart + 3;
-  for (const [group, items] of Object.entries(groupedSatuan)) {
-    const totalCount = items.reduce((sum, i) => sum + i.count, 0);
-    const totalAmount = items.reduce((sum, i) => sum + i.amount, 0);
-    sheet2.getRow(satuanRow).values = [, "Satuan", group, totalCount, totalAmount];
-    satuanRow++;
-    for (const item of items) {
-      sheet2.getRow(satuanRow).values = [, , , , , item.item, item.count, item.amount];
-      satuanRow++;
+  for (let r = 4; r < rowIdx; r++) {
+    for (let c = 2; c <= 4; c++) {
+      sheet2.getCell(r, c).border = borderStyle;
     }
   }
 
-  // === Apply Borders ===
-  const applyBorders = (fromRow, toRow, fromCol = 2, toCol = 8) => {
-    for (let r = fromRow; r <= toRow; r++) {
-      for (let c = fromCol; c <= toCol; c++) {
-        sheet2.getCell(r, c).border = borderStyle;
-      }
-    }
+  // Kiloan Summary
+  let summaryStart = rowIdx + 2;
+  sheet2.getCell(`B${summaryStart}`).value = "CONTOH";
+  sheet2.getCell(`B${summaryStart + 1}`).value = "Kategori";
+  sheet2.getCell(`C${summaryStart + 1}`).value = "Group Layanan";
+  sheet2.getCell(`D${summaryStart + 1}`).value = "Total Kilo";
+  sheet2.getCell(`E${summaryStart + 1}`).value = "Nominal";
+  sheet2.getCell(`F${summaryStart + 1}`).value = "Jenis Layanan";
+  sheet2.getCell(`G${summaryStart + 1}`).value = "Total Kilo";
+  sheet2.getCell(`H${summaryStart + 1}`).value = "Nominal";
+
+  let row = summaryStart + 2;
+  const renderKiloanGroup = (label: string, data: any[]) => {
+    const totalKilo = data.reduce((sum, i) => sum + i.kilo, 0);
+    const totalAmount = data.reduce((sum, i) => sum + i.amount, 0);
+    sheet2.getCell(`B${row}`).value = "Kiloan";
+    sheet2.getCell(`C${row}`).value = label;
+    sheet2.getCell(`D${row}`).value = totalKilo;
+    sheet2.getCell(`E${row}`).value = totalAmount.toLocaleString();
+
+    data.forEach(i => {
+      row++;
+      sheet2.getCell(`F${row}`).value = i.service;
+      sheet2.getCell(`G${row}`).value = i.kilo;
+      sheet2.getCell(`H${row}`).value = i.amount.toLocaleString();
+    });
+    row++;
   };
 
-  applyBorders(startRow + 1, kiloanEndRow);     // Kiloan table
-  applyBorders(satuanStart + 3, satuanRow - 1); // Satuan table
+  renderKiloanGroup("Regular", regular);
+  renderKiloanGroup("Express", express);
 
+  // Satuan Summary
+  row += 2;
+  sheet2.getCell(`B${row}`).value = "Kategori";
+  sheet2.getCell(`C${row}`).value = "Group Barang";
+  sheet2.getCell(`D${row}`).value = "Total Barang";
+  sheet2.getCell(`E${row}`).value = "Nominal";
+  sheet2.getCell(`F${row}`).value = "Jenis Barang";
+  sheet2.getCell(`G${row}`).value = "Total Barang";
+  sheet2.getCell(`H${row}`).value = "Nominal";
+  row++;
+
+  const groupedItems = reportData.serviceBreakdown.satuan.reduce((acc: any, item: any) => {
+    if (!acc[item.item]) acc[item.item] = [];
+    acc[item.item].push(item);
+    return acc;
+  }, {});
+
+  for (const group in groupedItems) {
+    const items = groupedItems[group];
+    const totalCount = items.reduce((sum: number, i: any) => sum + i.count, 0);
+    const totalNominal = items.reduce((sum: number, i: any) => sum + i.amount, 0);
+
+    sheet2.getCell(`B${row}`).value = "Satuan";
+    sheet2.getCell(`C${row}`).value = group;
+    sheet2.getCell(`D${row}`).value = totalCount;
+    sheet2.getCell(`E${row}`).value = totalNominal.toLocaleString();
+
+    items.forEach(i => {
+      row++;
+      sheet2.getCell(`F${row}`).value = i.item;
+      sheet2.getCell(`G${row}`).value = i.count;
+      sheet2.getCell(`H${row}`).value = i.amount.toLocaleString();
+    });
+    row++;
+  }
+
+        
 
         // Save the file
         const buffer = await workbook.xlsx.writeBuffer();
