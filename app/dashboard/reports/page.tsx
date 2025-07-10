@@ -4,6 +4,7 @@ import ChartData from "@/components/ChartData";
 import CustomerReport from "@/components/customerReport";
 import { DepositReportExport } from "@/components/DepositReportExport";
 import { ExpenseExport } from "@/components/expense-export";
+import SalesReport from "@/components/SalesData";
 import ServiceTransitionReport from "@/components/serviceReport";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +32,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
-import { createDummyData, exportSalesReport } from "@/lib/exportToExcel";
 import { type ReportData } from "@/lib/pdf-generator";
 import { ReportDataProcessor } from "@/lib/report-data-processor";
 import { formatCurrency } from "@/lib/utils";
@@ -41,13 +41,7 @@ import { fetchExpenses } from "@/store/ExpensesSlice";
 import { fetchOrders } from "@/store/orderSlice";
 import { fetchPayments } from "@/store/PaymentSlice";
 import { format } from "date-fns";
-import {
-  AlertTriangle,
-  CalendarDays,
-  Download,
-  FileSpreadsheet,
-  Loader2,
-} from "lucide-react";
+import { AlertTriangle, CalendarDays, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -270,28 +264,11 @@ export default function ReportsPage() {
               />
             </div>
             <div className="col-span-12 md:col-span-4 xl:col-span-3 2xl:col-span-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <FileSpreadsheet className="h-6 w-6" />
-                    Laporan Penjualan
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() =>
-                        exportSalesReport(createDummyData(reportData!))
-                      }
-                      disabled={!reportData || loading}
-                      className="w-full"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Export Report
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <SalesReport
+                branchId={currentBranchId}
+                startDate={startDate}
+                endDate={endDate}
+              />
             </div>
           </div>
           <Card>

@@ -124,7 +124,7 @@ export class ReportDataProcessor {
     const salesData = {
       rupiah: totalRevenue,
       kilo: filteredOrders.reduce((sum, o) => sum + o.total_weight, 0),
-      satuan: filteredOrders.reduce((sum, o) => sum + o.total_weight, 0),
+      satuan: filteredOrders.reduce((sum, o) => sum + o.total_unit, 0),
     };
 
     // Mocked deposit (you can replace this)

@@ -358,6 +358,21 @@ export default function DeliveriesPage() {
     }
   };
 
+  // 1. First filter by status
+  const statusFilteredDelivery = deliveries?.filter((delivery) => {
+    return statusFilter === "all" || delivery.status === statusFilter;
+  });
+
+  // 2. Then filter by search term
+  const filteredDelivery = statusFilteredDelivery?.filter((delivery) => {
+    const search = searchTerm.toLowerCase();
+    return (
+      delivery.orderDetails?.order_number?.toLowerCase().includes(search) ||
+      delivery.customer?.name?.toLowerCase().includes(search) ||
+      delivery.kurirDetails?.email?.includes(search)
+    );
+  });
+
   if (deliveryLoading && deliveries?.length === 0) {
     return (
       <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
@@ -642,7 +657,7 @@ export default function DeliveriesPage() {
             </TableHeader>
             <TableBody>
               {deliveries &&
-                deliveries!.map((delivery) => (
+                filteredDelivery!.map((delivery) => (
                   <TableRow key={delivery._id}>
                     <TableCell>
                       <div>

@@ -48,6 +48,7 @@ export interface Order {
   _id: string;
   order_number: string;
   total_weight: number;
+  total_unit: number;
   subtotal: number;
   discount: number;
   tax: number;
@@ -113,23 +114,6 @@ export interface Payment {
   status: "pending" | "completed" | "failed" | "cancelled";
   created_by: string;
   created_at: string;
-}
-
-export interface InventoryItem {
-  id: string;
-  item_name: string;
-  category?: string;
-  current_stock: number;
-  min_stock: number;
-  max_stock: number;
-  unit?: string;
-  cost_per_unit?: number;
-  selling_price?: number;
-  supplier?: string;
-  last_restock?: string;
-  expiry_date?: string;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface Setting {
@@ -276,18 +260,7 @@ export interface CustomerTransactionReport {
 
 export interface Expense {
   _id?: string;
-  category:
-    | "Aqua"
-    | "Bensin Kurir"
-    | "Bensin Mobil"
-    | "Gas"
-    | "Kasbon"
-    | "Kebutuhan Laundry"
-    | "Lainnya"
-    | "Lembur"
-    | "Medis"
-    | "Traktir Karyawan"
-    | "Uang Training";
+  category: string;
   amount: number;
   description: string;
   date: string;
@@ -325,4 +298,51 @@ export interface NotificationType {
   current_branch_id?: string;
   createAt?: string;
   updatedAt?: string;
+}
+
+export interface SalesReportData {
+  totalRevenue: number;
+  totalOrders: number;
+  avgOrderValue: number;
+  growthRate?: number;
+  dailyBreakdown: Array<{
+    date: string;
+    revenue: number;
+    orders: number;
+    avgPerOrder: number;
+  }>;
+  topServices?: Array<{ name: string; count: number; revenue: number }>;
+  paymentMethods?: { [key: string]: number };
+  salesData: {
+    rupiah: number;
+    kilo: number;
+    satuan: number;
+  };
+  paymentBreakdown: {
+    cash: { transactions: number; amount: number };
+    transfer: { transactions: number; amount: number };
+    qris: { transactions: number; amount: number };
+    deposit: { transactions: number; amount: number };
+  };
+  expenses: number;
+  netCash: number;
+  transactionCounts: {
+    kilo: number;
+    satuan: number;
+  };
+  depositData: {
+    topUp: { transactions: number; amount: number };
+    usage: { transactions: number; amount: number };
+  };
+  customerData: {
+    new: number;
+    existing: number;
+  };
+  serviceBreakdown: {
+    kiloan: {
+      regular: Array<{ service: string; kilo: number; amount: number }>;
+      express: Array<{ service: string; kilo: number; amount: number }>;
+    };
+    satuan: Array<{ item: string; count: number; amount: number }>;
+  };
 }

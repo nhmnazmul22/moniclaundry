@@ -87,9 +87,22 @@ export default function ServicesPage() {
     (state: RootState) => state.branchReducer
   );
 
+  // 2. Then filter by search term
+  const filteredServices = currentItems?.filter((service) => {
+    const search = searchTerm.toLowerCase();
+    if (
+      service.category?.toLowerCase().includes(search) ||
+      service.servicename?.toLowerCase().includes(search)
+    ) {
+      return true;
+    } else if (!searchTerm && searchTerm.length === 0) {
+      return true;
+    }
+  });
+
   useEffect(() => {
     dispatch(fetchServices(currentBranchId));
-  }, [currentBranchId]);
+  }, [currentBranchId, searchTerm]);
 
   useEffect(() => {
     if (currentBranchId && branches) {
@@ -589,8 +602,8 @@ export default function ServicesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {services && currentItems.length > 0 ? (
-                  currentItems.map((service, index) => (
+                {services && filteredServices.length > 0 ? (
+                  filteredServices.map((service, index) => (
                     <TableRow key={`${service.servicename}-${index}`}>
                       <TableCell>
                         <div className="text-sm text-gray-500 line-clamp-2">
