@@ -318,7 +318,7 @@ const borderStyle = {
   sheet2.getCell(`B${summaryStart}`).value = "CONTOH";
   summaryStart++;
   sheet2.getRow(summaryStart).values = [
-    , "Kategori", "Group Layanan", "Total Kilo", "Nominal", "Jenis Layanan", "Total Kilo", "Nominal"
+    " ", "Kategori", "Group Layanan", "Total Kilo", "Nominal", "Jenis Layanan", "Total Kilo", "Nominal"
   ];
   sheet2.getRow(summaryStart).eachCell(cell => cell.border = borderStyle);
 
