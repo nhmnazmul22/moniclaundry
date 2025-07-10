@@ -8,6 +8,7 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { useEffect, useState } from "react";
+import { format, differenceInCalendarMonths, isSameDay, parseISO } from 'date-fns';
 
 interface SalesReportType {
   branchId: string;
@@ -281,15 +282,35 @@ const borderStyle = {
   sheet2.getCell("B1").alignment = { horizontal: "center" };
   sheet2.getCell("B1").font = { bold: true, size: 14 };
 
-  sheet2.mergeCells("B4:C4");
-  const headerCell = sheet2.getCell("B4");
-  headerCell.value = "Penjualan Hari ini";
-  headerCell.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FFFFFF00" },
-  };
-  headerCell.font = { bold: true };
+
+
+const start = parseISO(reportData.startDate);
+const end = parseISO(reportData.endDate);
+
+let headerText = "";
+
+if (isSameDay(start, end)) {
+  headerText = "Penjualan Hari ini";
+} else {
+  const monthDiff = differenceInCalendarMonths(end, start);
+  if (monthDiff === 0 && start.getMonth() === end.getMonth()) {
+    headerText = "Penjualan Bulan Ini";
+  } else {
+    headerText = `Penjualan Periode (${format(start, 'dd/MM/yyyy')} s.d ${format(end, 'dd/MM/yyyy')})`;
+  }
+}
+
+// Apply to header cell
+sheet2.mergeCells("B4:H4");
+const headerCell = sheet2.getCell("B4");
+headerCell.value = headerText;
+headerCell.fill = {
+  type: "pattern",
+  pattern: "solid",
+  fgColor: { argb: "FFFFFF00" },
+};
+headerCell.font = { bold: true };
+
 
   sheet2.getCell("B5").value = "Kategori";
   sheet2.getCell("C5").value = "Group Layanan";
