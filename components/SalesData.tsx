@@ -267,85 +267,89 @@ export default function SalesReport({
 
         // // ----------- Sheet 2: Detail Breakdown -----------
         sheet2.columns = Array(7).fill({ width: 20 });
-        sheet2.mergeCells("B1:H1");
-        sheet2.getCell("B1").value = "Laporan Jenis Cucian";
+ 
+ // Set uniform column widths starting from B
+  sheet2.columns = Array(8).fill({ width: 20 });
 
-        
-// Section Header
-  sheet2.mergeCells("B4:C4");
-  sheet2.getCell("B4").value = "Penjualan Hari ini";
-  sheet2.getCell("B4").fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FFFF00' }, // yellow highlight
+  const borderStyle = {
+    top: { style: 'thin' },
+    left: { style: 'thin' },
+    bottom: { style: 'thin' },
+    right: { style: 'thin' }
   };
 
-  // Sub-headers
+  // Header
+  sheet2.mergeCells("B1:H1");
+  const titleCell = sheet2.getCell("B1");
+  titleCell.value = "Laporan Jenis Cucian";
+  titleCell.font = { bold: true, size: 11 };
+  titleCell.alignment = { horizontal: 'center' };
+
+  // Section: Penjualan Hari ini
+  sheet2.mergeCells("B4:C4");
+  const penjualanCell = sheet2.getCell("B4");
+  penjualanCell.value = "Penjualan Hari ini";
+  penjualanCell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFFF00' }, // yellow
+  };
+
   sheet2.getCell("B5").value = "Kategori";
   sheet2.getCell("C5").value = "Group Layanan";
   sheet2.getCell("D5").value = "Jenis Layanan";
+  sheet2.getCell("B6").value = "Kiloan";
 
-  // Example service types
-  const services = [
-    ["B6", "Kiloan", "C6", "Regular", "D6", "Cuci Kering Setrika"],
-    ["C7", "Setrika"],
-    ["C8", "Cuci Kering Lipat < 5kg"],
-    ["C9", "Cuci Kering Lipat min 5kg"],
-    ["C10", "Cuci Kering Setrika Baju Bayi"],
+  // Jenis Layanan
+  const layanan = [
+    "Cuci Kering Setrika",
+    "Setrika",
+    "Cuci Kering Lipat < 5kg",
+    "Cuci Kering Lipat min 5kg",
+    "Cuci Kering Setrika Baju Bayi"
   ];
-  services.forEach(([c1, v1, c2, v2, c3, v3]) => {
-    if (c1 && v1) sheet2.getCell(c1).value = v1;
-    if (c2 && v2) sheet2.getCell(c2).value = v2;
-    if (c3 && v3) sheet2.getCell(c3).value = v3;
+  layanan.forEach((item, i) => {
+    sheet2.getCell(`D${6 + i}`).value = item;
   });
 
-  // Formula label
+  // Red text for formula
   sheet2.getCell("B12").value = "Formula :";
   sheet2.getCell("C12").value = "Dimunculkan jumlah kilonya dan nominal nilai transaksinya";
-  sheet2.getCell("C12").font = { color: { argb: 'FFFF0000' } }; // red
+  sheet2.getCell("C12").font = { color: { argb: 'FFFF0000' } };
 
+  // CONTOH table
   sheet2.getCell("B14").value = "CONTOH";
+  const header1 = ["Kategori", "Group Layanan", "Total Kilo", "Nominal", "Jenis Layanan", "Total Kilo", "Nominal"];
+  sheet2.getRow(15).values = [, ...header1];
 
-  // Table headers for service breakdown
-  const headerRow1 = [
-    "Kategori", "Group Layanan", "Total Kilo", "Nominal",
-    "Jenis Layanan", "Total Kilo", "Nominal"
-  ];
-  sheet2.getRow(15).values = [, ...headerRow1];
-
-  // Sample data: Regular
+  // Row 16 - Regular
   sheet2.getRow(16).values = [, "Kiloan", "Regular", 136, 1205000];
-  const regularDetails = [
+
+  const regular = [
     ["Cuci Kering Setrika", 100, 900000],
     ["Setrika", 20, 160000],
     ["Cuci Kering Lipat < 5kg", 3, 24000],
     ["Cuci Kering Lipat min 5kg", 3, 21000],
     ["Cuci Kering Setrika Baju Bayi", 1, 10000],
   ];
-  regularDetails.forEach((row, i) => {
-    const r = sheet2.getRow(17 + i);
-    r.getCell(6).value = row[0];
-    r.getCell(7).value = row[1];
-    r.getCell(8).value = row[2];
+  regular.forEach((row, i) => {
+    sheet2.getRow(17 + i).values = [, , , , , ...row];
   });
 
-  // Sample data: Express
+  // Row 23 - Express
   sheet2.getRow(23).values = [, "Kiloan", "Express", 19.3, 160400];
-  const expressDetails = [
+  const express = [
     ["Cuci Kering Setrika", 3, 27000],
     ["Setrika", 3, 48000],
     ["Cuci Kering Lipat < 5kg", 4.3, 47000],
     ["Cuci Kering Lipat min 5kg", 3, 21000],
     ["Cuci Kering Setrika Baju Bayi", 2, 17000],
   ];
-  expressDetails.forEach((row, i) => {
-    const r = sheet2.getRow(24 + i);
-    r.getCell(6).value = row[0];
-    r.getCell(7).value = row[1];
-    r.getCell(8).value = row[2];
+  express.forEach((row, i) => {
+    sheet2.getRow(24 + i).values = [, , , , , ...row];
   });
 
-  // Barang Satuan Section
+  // Section: Kategori Barang
   sheet2.getCell("B31").value = "Kategori";
   sheet2.getCell("C31").value = "Group Barang";
   sheet2.getCell("D31").value = "Total Barang";
@@ -360,32 +364,42 @@ export default function SalesReport({
 
   sheet2.getCell("B35").value = "CONTOH";
 
+  // Bed Cover
   sheet2.getRow(36).values = [, "Satuan", "Bed Cover", 16, 520000];
-  const bedCoverDetails = [
+  const bedCovers = [
     ["Bed Cover >200 cm", 10, 350000],
     ["Bed Cover 180-200 cm", 4, 120000],
     ["Bed Cover Max 160 cm", 2, 50000],
   ];
-  bedCoverDetails.forEach((row, i) => {
-    const r = sheet2.getRow(37 + i);
-    r.getCell(6).value = row[0];
-    r.getCell(7).value = row[1];
-    r.getCell(8).value = row[2];
+  bedCovers.forEach((row, i) => {
+    sheet2.getRow(37 + i).values = [, , , , , ...row];
   });
 
-  sheet2.getRow(41).values = [, "", "Sepatu", 18, 900000];
-  const sepatuDetails = [
+  // Sepatu
+  sheet2.getRow(41).values = [, , "Sepatu", 18, 900000];
+  const sepatus = [
     ["Sepatu Boots", 2, 150000],
     ["Sepatu Dewasa", 13, 650000],
     ["Sepatu Flat/Teplek", 2, 40000],
     ["Sepatu Kulit/Suede/Prem", 1, 60000],
   ];
-  sepatuDetails.forEach((row, i) => {
-    const r = sheet2.getRow(42 + i);
-    r.getCell(6).value = row[0];
-    r.getCell(7).value = row[1];
-    r.getCell(8).value = row[2];
+  sepatus.forEach((row, i) => {
+    sheet2.getRow(42 + i).values = [, , , , , ...row];
   });
+
+  // Apply borders to table areas
+  const applyBorderToRange = (fromRow, toRow, fromCol, toCol) => {
+    for (let row = fromRow; row <= toRow; row++) {
+      for (let col = fromCol; col <= toCol; col++) {
+        sheet2.getCell(row, col).border = borderStyle;
+      }
+    }
+  };
+
+  applyBorderToRange(15, 22, 2, 8);  // Regular service table
+  applyBorderToRange(23, 29, 2, 8);  // Express service table
+  applyBorderToRange(36, 40, 2, 8);  // Bed cover table
+  applyBorderToRange(41, 45, 2, 8);  // Sepatu table
 
 
 
