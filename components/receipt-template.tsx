@@ -432,49 +432,23 @@ export const ReceiptTemplate = React.forwardRef<
       </div>
 
       {/* Terms */}
-      <div className="border-t border-b border-dashed py-2 mb-4 text-left">
-        <p>
-          Dengan mencuci di {businessInfo.name}, maka Customer telah setuju
-          dengan ketentuan yang berlaku:
-        </p>
-        <div className="text-left flex flex-col gap-1">
-          <p className="flex gap-1 items-start p-0 m-0">
+      <div className="mt-3 mb-5">
+        <div className="mb-1">Ketentuan Penting:</div>
+        <div className=" flex flex-col gap-2">
+          <p className="flex gap-1 p-0 m-0">
             <span>
-              <Dot />
+              <Dot size={16} />
             </span>
-            Pakaian luntur, mudah susut & kerut karena kondisi bahan di luar
-            tanggung jawab kami
+            Kusut, susut, luntur karena kondisi bahan bukan tanggung jawab
+            laundry
           </p>
-          <p className="flex gap-1 items-start p-0 m-0">
+          <p className="flex gap-1 p-0 m-0">
             <span>
-              <Dot />
+              <Dot size={16} />
             </span>
-            Komplain dgn nota asli & max 3x24 jam
-          </p>
-          <p className="flex gap-1 items-start p-0 m-0">
-            <span>
-              <Dot />
-            </span>
-            Ganti rugi: Total biaya/jumlah cucian x 10
-          </p>
-          <p className="flex gap-1 items-start p-0 m-0">
-            <span>
-              <Dot />
-            </span>
-            Ganti rugi cuci satuan sesuai harga barang & maksimal: harga biaya
-            cuci x 10
-          </p>
-          <p className="flex gap-1 items- p-0 m-0">
-            <span>
-              <Dot />
-            </span>
-            Kami tidak bertanggung jawab utk cucian yg tdk diambil dlm waktu 14
-            hari
+            Komplain maksimal 3 hari dan wajib video unboxing
           </p>
         </div>
-        <p className="mt-4 text-center">CS : {businessInfo.phone}</p>
-        <p className="text-center">==========Terima Kasih==========</p>
-        <p className="mt-2 text-center">Powered By Monic Laundry POS</p>
       </div>
 
       {/* QR Code */}
