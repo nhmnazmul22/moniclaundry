@@ -49,19 +49,8 @@ export default function SalesReport({
       if (reportData) {
         const workbook = new ExcelJS.Workbook();
 
-        const sheet1 = workbook.addWorksheet("Laporan Harian");
-        const sheet2 = workbook.addWorksheet("Detail Layanan");
-
-        const headerStyle = {
-          font: { bold: true },
-          alignment: { horizontal: "center" },
-          border: {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            bottom: { style: "thin" },
-            right: { style: "thin" },
-          },
-        };
+        const sheet1 = workbook.addWorksheet("Laporan Penjualan");
+        const sheet2 = workbook.addWorksheet("Laporan Jenis Cucian");
 
         const cellBorderStyle: Partial<ExcelJS.Borders> = {
           top: { style: "thin" },
@@ -89,6 +78,8 @@ export default function SalesReport({
         sheet1.getCell("C3").border = cellBorderStyle;
         sheet1.getCell("C4").border = cellBorderStyle;
         sheet1.getCell("C5").border = cellBorderStyle;
+
+        sheet1.spliceRows(7, 9);
 
         // Payment Methods data
         const paymentBreakdown = reportData.paymentBreakdown;
@@ -138,6 +129,7 @@ export default function SalesReport({
         sheet1.getCell("D18").value = 0;
 
         sheet1.getCell("C17").font = { bold: true };
+        sheet1.getCell("B18").font = { bold: true };
         sheet1.getCell("D17").font = { bold: true };
         sheet1.getCell("C17").border = cellBorderStyle;
         sheet1.getCell("D17").border = cellBorderStyle;
@@ -154,110 +146,87 @@ export default function SalesReport({
         sheet1.getCell("D20").border = cellBorderStyle;
 
         // Net Cash data
-        sheet1.getCell("C22").value = "Nett Cash";
+        sheet1.getCell("B22").value = "Nett Cash";
         sheet1.getCell("D22").value = reportData.netCash;
 
         sheet1.getCell("C22").font = { bold: true };
+        sheet1.getCell("B20").font = { bold: true };
         sheet1.getCell("D22").border = cellBorderStyle;
 
+        // transasction data
+        sheet1.getCell("B26").value = "Jumlah Transaksi";
+        sheet1.getCell("C25").value = "#Transaksi Kilo";
+        sheet1.getCell("D25").value = "#Transaksi Satuan";
 
-        // 
+        sheet1.getCell("C26").value = reportData.transactionCounts.kilo;
+        sheet1.getCell("D26").value = reportData.transactionCounts.satuan;
 
-        // row += 4;
-        // sheet1.getCell(`A${row}`).value = "";
-        // sheet1.getCell(`A${row}`).style = headerStyle;
-        // sheet1
-        //   .addRow(["", "#Transaksi", "Nominal"])
-        //   .eachCell((c) => (c.style = headerStyle));
+        sheet1.getCell("B26").font = { bold: true };
+        sheet1.getCell("C25").font = { bold: true };
+        sheet1.getCell("D25").font = { bold: true };
+        sheet1.getCell("C25").border = cellBorderStyle;
+        sheet1.getCell("D25").border = cellBorderStyle;
+        sheet1.getCell("C26").border = cellBorderStyle;
+        sheet1.getCell("D26").border = cellBorderStyle;
 
-        // const methods = ["cash", "transfer", "qris", "deposit"];
-        // methods.forEach((method) => {
-        //   const data = reportData.paymentBreakdown?.[method] || {};
-        //   sheet1
-        //     .addRow([
-        //       method.toUpperCase(),
-        //       data.transactions || 0,
-        //       data.amount || 0,
-        //     ])
-        //     .eachCell((c) => (c.style = cellStyle));
-        // });
+        // Deposit data
+        sheet1.getCell("B30").value = "Deposit";
+        sheet1.getCell("B31").value = "Top Up Deposit";
+        sheet1.getCell("B32").value = "Transaksi Deposit";
+        sheet1.getCell("C30").value = "#Transaksi";
+        sheet1.getCell("D30").value = "Nominal";
 
-        // // Expenses
-        // sheet1.addRow([]);
-        // sheet1
-        //   .addRow(["Pengeluaran", reportData.expenses || 0])
-        //   .eachCell((c) => (c.style = cellStyle));
-        // sheet1
-        //   .addRow(["Nett Cash", reportData.netCash || 0])
-        //   .eachCell((c) => (c.style = cellStyle));
+        sheet1.getCell("C31").value = reportData.depositData.topUp.transactions;
+        sheet1.getCell("D31").value = reportData.depositData.topUp.amount;
+        sheet1.getCell("C32").value = reportData.depositData.usage.transactions;
+        sheet1.getCell("D32").value = reportData.depositData.usage.amount;
 
-        // // Transaction counts
-        // sheet1.addRow([]);
-        // sheet1.getCell(`A${sheet1.lastRow.number + 1}`).value =
-        //   "Jumlah Transaksi";
-        // sheet1.getCell(`A${sheet1.lastRow.number}`).style = headerStyle;
-        // sheet1
-        //   .addRow(["", "#Transaksi Kilo", "#Transaksi Satuan"])
-        //   .eachCell((c) => (c.style = headerStyle));
-        // sheet1
-        //   .addRow([
-        //     "",
-        //     reportData.transactionCounts?.kilo || 0,
-        //     reportData.transactionCounts?.satuan || 0,
-        //   ])
-        //   .eachCell((c) => (c.style = cellStyle));
+        sheet1.getCell("B30").font = { bold: true };
+        sheet1.getCell("C30").font = { bold: true };
+        sheet1.getCell("D30").font = { bold: true };
+        sheet1.getCell("C30").border = cellBorderStyle;
+        sheet1.getCell("D30").border = cellBorderStyle;
+        sheet1.getCell("C31").border = cellBorderStyle;
+        sheet1.getCell("D31").border = cellBorderStyle;
+        sheet1.getCell("C32").border = cellBorderStyle;
+        sheet1.getCell("D32").border = cellBorderStyle;
 
-        // // Deposit
-        // sheet1.addRow([]);
-        // sheet1.getCell(`A${sheet1.lastRow.number + 1}`).value = "Deposit";
-        // sheet1.getCell(`A${sheet1.lastRow.number}`).style = headerStyle;
-        // sheet1
-        //   .addRow(["", "#Transaksi", "Nominal"])
-        //   .eachCell((c: any) => (c.style = headerStyle));
+        // Customer Data
+        sheet1.getCell("C35").value = "Baru";
+        sheet1.getCell("D35").value = "Lama";
+        sheet1.getCell("B36").value = "Transaksi Customer";
 
-        // sheet1
-        //   .addRow([
-        //     "Top Up Deposit",
-        //     reportData.depositData?.topUp.transactions || 0,
-        //     reportData.depositData?.topUp.amount || 0,
-        //   ])
-        //   .eachCell((c: any) => (c.style = cellStyle));
-        // sheet1
-        //   .addRow([
-        //     "Transaksi Deposit",
-        //     reportData.depositData?.usage.transactions || 0,
-        //     reportData.depositData?.usage.amount || 0,
-        //   ])
-        //   .eachCell((c) => (c.style = cellStyle));
+        sheet1.getCell("C36").value = reportData.customerData.existing;
+        sheet1.getCell("D36").value = reportData.customerData.new;
 
-        // // Customer Data
-        // sheet1.addRow([]);
-        // sheet1
-        //   .addRow(["Transaksi Customer", "Baru", "Lama"])
-        //   .eachCell((c: any) => (c.style = headerStyle));
-        // sheet1
-        //   .addRow([
-        //     "",
-        //     reportData.customerData?.new || 0,
-        //     reportData.customerData?.existing || 0,
-        //   ])
-        //   .eachCell((c: any) => (c.style = cellStyle));
+        sheet1.getCell("C35").font = { bold: true };
+        sheet1.getCell("D35").font = { bold: true };
+        sheet1.getCell("B38").font = { bold: true };
+        sheet1.getCell("C35").border = cellBorderStyle;
+        sheet1.getCell("D35").border = cellBorderStyle;
+        sheet1.getCell("C36").border = cellBorderStyle;
+        sheet1.getCell("D36").border = cellBorderStyle;
 
         // // ----------- Sheet 2: Detail Breakdown -----------
-        // sheet2.columns = Array(7).fill({ width: 20 });
-        // sheet2.mergeCells("A1:G1");
-        // sheet2.getCell("A1").value = "Laporan Jenis Cucian";
-        // sheet2.getCell("A1").style = headerStyle;
+        sheet2.columns = Array(7).fill({ width: 20 });
+        sheet2.mergeCells("B1:H1");
+        sheet2.getCell("B1").value = "Laporan Jenis Cucian";
 
-        // sheet2
-        //   .addRow([
-        //     "Kategori",
-        //     "Group",
-        //     "Jenis Layanan",
-        //     "Total Kilo",
-        //     "Nominal",
-        //   ])
-        //   .eachCell((c: any) => (c.style = headerStyle));
+        sheet2.mergeCells("B4:C4");
+        sheet2.getCell("B4").value = "Penjualan Hari ini";
+        sheet2.getCell("B5").value = "Kategori";
+        sheet2.getCell("C5").value = "Group Layanan";
+        sheet2.getCell("D5").value = "Jenis Layanan";
+
+        sheet2
+          .addRow([
+            "Kategori",
+            "Group",
+            "Jenis Layanan",
+            "Total Kilo",
+            "Nominal",
+          ])
+          .eachCell((c: any) => (c.style = cellBorderStyle));
 
         // const kiloan = reportData.serviceBreakdown?.kiloan || {};
         // const renderKiloan = (groupName: string, data: any[]) => {
