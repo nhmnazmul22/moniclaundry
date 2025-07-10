@@ -79,8 +79,6 @@ export default function SalesReport({
         sheet1.getCell("C4").border = cellBorderStyle;
         sheet1.getCell("C5").border = cellBorderStyle;
 
-        sheet1.spliceRows(7, 9);
-
         // Payment Methods data
         const paymentBreakdown = reportData.paymentBreakdown;
         sheet1.getCell(`B11`).value = "Cara Bayar";
@@ -192,20 +190,80 @@ export default function SalesReport({
         sheet1.getCell("D32").border = cellBorderStyle;
 
         // Customer Data
-        sheet1.getCell("C35").value = "Baru";
-        sheet1.getCell("D35").value = "Lama";
-        sheet1.getCell("B36").value = "Transaksi Customer";
+        sheet1.getCell("C37").value = "Baru";
+        sheet1.getCell("D37").value = "Lama";
+        sheet1.getCell("B38").value = "Transaksi Customer";
 
-        sheet1.getCell("C36").value = reportData.customerData.existing;
-        sheet1.getCell("D36").value = reportData.customerData.new;
+        sheet1.getCell("C38").value = reportData.customerData.existing;
+        sheet1.getCell("D38").value = reportData.customerData.new;
 
-        sheet1.getCell("C35").font = { bold: true };
-        sheet1.getCell("D35").font = { bold: true };
+        sheet1.getCell("C37").font = { bold: true };
+        sheet1.getCell("D37").font = { bold: true };
         sheet1.getCell("B38").font = { bold: true };
-        sheet1.getCell("C35").border = cellBorderStyle;
-        sheet1.getCell("D35").border = cellBorderStyle;
-        sheet1.getCell("C36").border = cellBorderStyle;
-        sheet1.getCell("D36").border = cellBorderStyle;
+        sheet1.getCell("C37").border = cellBorderStyle;
+        sheet1.getCell("D37").border = cellBorderStyle;
+        sheet1.getCell("C38").border = cellBorderStyle;
+        sheet1.getCell("D38").border = cellBorderStyle;
+
+        // Sheet 1 formulas
+        sheet1.getCell("B6").value = "Formula:";
+        sheet1.getCell("B7").value = "Penjualan Rupiah";
+        sheet1.getCell("B8").value = "Penjualan Kilo";
+        sheet1.getCell("B9").value = "Penjualan Satuan";
+
+        sheet1.getCell("C7").value =
+          "Nilai transaksi nett setelah dikurangi diskon(bila ada)";
+        sheet1.getCell("C8").value =
+          "Jumlah kilo hasil dari transaksi laundry kiloan";
+        sheet1.getCell("C9").value =
+          "Jumlah satuan hasil dari transaksi laundry satuan";
+
+        sheet1.getCell("B23").value = "(formula : cash - pengeluaran)";
+
+        sheet1.getCell("B27").value =
+          "(formula : berdasarkan jumlah nota yang dibuat sesuai jenis kategori cucian)";
+
+        sheet1.getCell("B33").value = "Formula:";
+        sheet1.getCell("B34").value = "Top Up Deposit";
+        sheet1.getCell("B33").value = "Transaksi Deposit";
+
+        sheet1.getCell("C34").value =
+          "Customer yang melakukan pembelian  deposit";
+        sheet1.getCell("C35").value =
+          "Customer yang membayar laundry pakai deposit";
+
+        sheet1.getCell("B40").value = "Formula:";
+        sheet1.getCell("B41").value = "Transaksi Customer Baru";
+        sheet1.getCell("B42").value = "Transaksi Customer Lama";
+
+        sheet1.getCell("C41").value =
+          "Jumlah transaksi customer yang baru pertama kali laundry";
+        sheet1.getCell("C42").value =
+          "Jumlah transaksi customer yang sudah pernah laundry";
+
+        /// Sheet 1 formula
+        const redBoldFont = {
+          bold: true,
+          color: { argb: "FF0000" },
+        };
+
+        sheet1.getCell("B6").font = redBoldFont;
+        sheet1.getCell("B7").font = redBoldFont;
+        sheet1.getCell("B8").font = redBoldFont;
+        sheet1.getCell("B9").font = redBoldFont;
+        sheet1.getCell("C7").font = redBoldFont;
+        sheet1.getCell("C8").font = redBoldFont;
+        sheet1.getCell("C9").font = redBoldFont;
+        sheet1.getCell("B23").font = redBoldFont;
+        sheet1.getCell("B27").font = redBoldFont;
+        sheet1.getCell("B33").font = redBoldFont;
+        sheet1.getCell("B34").font = redBoldFont;
+        sheet1.getCell("B35").font = redBoldFont;
+        sheet1.getCell("B40").font = redBoldFont;
+        sheet1.getCell("B41").font = redBoldFont;
+        sheet1.getCell("B42").font = redBoldFont;
+        sheet1.getCell("C41").font = redBoldFont;
+        sheet1.getCell("C42").font = redBoldFont;
 
         // // ----------- Sheet 2: Detail Breakdown -----------
         sheet2.columns = Array(7).fill({ width: 20 });
@@ -217,16 +275,7 @@ export default function SalesReport({
         sheet2.getCell("B5").value = "Kategori";
         sheet2.getCell("C5").value = "Group Layanan";
         sheet2.getCell("D5").value = "Jenis Layanan";
-
-        sheet2
-          .addRow([
-            "Kategori",
-            "Group",
-            "Jenis Layanan",
-            "Total Kilo",
-            "Nominal",
-          ])
-          .eachCell((c: any) => (c.style = cellBorderStyle));
+        sheet2.getCell("B6").value = "Kiloan";
 
         // const kiloan = reportData.serviceBreakdown?.kiloan || {};
         // const renderKiloan = (groupName: string, data: any[]) => {
@@ -276,7 +325,7 @@ export default function SalesReport({
 
   useEffect(() => {
     fetchReportData();
-  }, []);
+  }, [startDate, endDate, branchId]);
 
   // console.log(reportData);
   return (
