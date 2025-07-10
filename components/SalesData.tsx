@@ -316,15 +316,13 @@ const borderStyle = {
   // Kiloan Summary
   let summaryStart = rowIdx + 2;
   sheet2.getCell(`B${summaryStart}`).value = "CONTOH";
-  sheet2.getCell(`B${summaryStart + 1}`).value = "Kategori";
-  sheet2.getCell(`C${summaryStart + 1}`).value = "Group Layanan";
-  sheet2.getCell(`D${summaryStart + 1}`).value = "Total Kilo";
-  sheet2.getCell(`E${summaryStart + 1}`).value = "Nominal";
-  sheet2.getCell(`F${summaryStart + 1}`).value = "Jenis Layanan";
-  sheet2.getCell(`G${summaryStart + 1}`).value = "Total Kilo";
-  sheet2.getCell(`H${summaryStart + 1}`).value = "Nominal";
+  summaryStart++;
+  sheet2.getRow(summaryStart).values = [
+    , "Kategori", "Group Layanan", "Total Kilo", "Nominal", "Jenis Layanan", "Total Kilo", "Nominal"
+  ];
+  sheet2.getRow(summaryStart).eachCell(cell => cell.border = borderStyle);
 
-  let row = summaryStart + 2;
+  let row = summaryStart + 1;
   const renderKiloanGroup = (label: string, data: any[]) => {
     const totalKilo = data.reduce((sum, i) => sum + i.kilo, 0);
     const totalAmount = data.reduce((sum, i) => sum + i.amount, 0);
@@ -332,12 +330,14 @@ const borderStyle = {
     sheet2.getCell(`C${row}`).value = label;
     sheet2.getCell(`D${row}`).value = totalKilo;
     sheet2.getCell(`E${row}`).value = totalAmount.toLocaleString();
+    sheet2.getRow(row).eachCell(cell => cell.border = borderStyle);
 
     data.forEach(i => {
       row++;
       sheet2.getCell(`F${row}`).value = i.service;
       sheet2.getCell(`G${row}`).value = i.kilo;
       sheet2.getCell(`H${row}`).value = i.amount.toLocaleString();
+      sheet2.getRow(row).eachCell(cell => cell.border = borderStyle);
     });
     row++;
   };
@@ -346,7 +346,7 @@ const borderStyle = {
   renderKiloanGroup("Express", express);
 
   // Satuan Summary
-  row += 2;
+  row++;
   sheet2.getCell(`B${row}`).value = "Kategori";
   sheet2.getCell(`C${row}`).value = "Group Barang";
   sheet2.getCell(`D${row}`).value = "Total Barang";
@@ -354,6 +354,7 @@ const borderStyle = {
   sheet2.getCell(`F${row}`).value = "Jenis Barang";
   sheet2.getCell(`G${row}`).value = "Total Barang";
   sheet2.getCell(`H${row}`).value = "Nominal";
+  sheet2.getRow(row).eachCell(cell => cell.border = borderStyle);
   row++;
 
   const groupedItems = reportData.serviceBreakdown.satuan.reduce((acc: any, item: any) => {
@@ -371,16 +372,17 @@ const borderStyle = {
     sheet2.getCell(`C${row}`).value = group;
     sheet2.getCell(`D${row}`).value = totalCount;
     sheet2.getCell(`E${row}`).value = totalNominal.toLocaleString();
+    sheet2.getRow(row).eachCell(cell => cell.border = borderStyle);
 
     items.forEach(i => {
       row++;
       sheet2.getCell(`F${row}`).value = i.item;
       sheet2.getCell(`G${row}`).value = i.count;
       sheet2.getCell(`H${row}`).value = i.amount.toLocaleString();
+      sheet2.getRow(row).eachCell(cell => cell.border = borderStyle);
     });
     row++;
   }
-
         
 
         // Save the file
