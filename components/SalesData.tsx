@@ -65,7 +65,6 @@ export default function SalesReport({
         sheet1.getCell("B2").font = { bold: true };
 
         // Sales Data
-        let row = 3;
         const sales = reportData.salesData || {};
         sheet1.getCell(`B3`).value = "Rupiah";
         sheet1.getCell("B4").value = "Jumlah Kilo";
