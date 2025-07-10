@@ -317,91 +317,85 @@ export default function SalesReport({
   sheet2.getCell("C12").value = "Dimunculkan jumlah kilonya dan nominal nilai transaksinya";
   sheet2.getCell("C12").font = { color: { argb: 'FFFF0000' } };
 
-  // CONTOH table
-  sheet2.getCell("B14").value = "CONTOH";
-  const header1 = ["Kategori", "Group Layanan", "Total Kilo", "Nominal", "Jenis Layanan", "Total Kilo", "Nominal"];
-  sheet2.getRow(15).values = [, ...header1];
+  
+  // === Add Kiloan Data ===
+  let startRow = 14;
+  sheet2.getCell(`B${startRow}`).value = "CONTOH";
+  sheet2.getRow(startRow + 1).values = [, "Kategori", "Group Layanan", "Total Kilo", "Nominal", "Jenis Layanan", "Total Kilo", "Nominal"];
 
-  // Row 16 - Regular
-  sheet2.getRow(16).values = [, "Kiloan", "Regular", 136, 1205000];
+  // Regular
+  const regular = reportData.serviceBreakdown.kiloan.regular;
+  const totalKiloRegular = regular.reduce((sum, item) => sum + item.kilo, 0);
+  const totalAmountRegular = regular.reduce((sum, item) => sum + item.amount, 0);
+  let row = startRow + 2;
+  sheet2.getRow(row).values = [, "Kiloan", "Regular", totalKiloRegular, totalAmountRegular];
+  row++;
 
-  const regular = [
-    ["Cuci Kering Setrika", 100, 900000],
-    ["Setrika", 20, 160000],
-    ["Cuci Kering Lipat < 5kg", 3, 24000],
-    ["Cuci Kering Lipat min 5kg", 3, 21000],
-    ["Cuci Kering Setrika Baju Bayi", 1, 10000],
-  ];
-  regular.forEach((row, i) => {
-    sheet2.getRow(17 + i).values = [, , , , , ...row];
-  });
+  for (const item of regular) {
+    sheet2.getRow(row).values = [, , , , , item.service, item.kilo, item.amount];
+    row++;
+  }
+  const expressStart = row;
 
-  // Row 23 - Express
-  sheet2.getRow(23).values = [, "Kiloan", "Express", 19.3, 160400];
-  const express = [
-    ["Cuci Kering Setrika", 3, 27000],
-    ["Setrika", 3, 48000],
-    ["Cuci Kering Lipat < 5kg", 4.3, 47000],
-    ["Cuci Kering Lipat min 5kg", 3, 21000],
-    ["Cuci Kering Setrika Baju Bayi", 2, 17000],
-  ];
-  express.forEach((row, i) => {
-    sheet2.getRow(24 + i).values = [, , , , , ...row];
-  });
+  // Express
+  const express = reportData.serviceBreakdown.kiloan.express;
+  const totalKiloExpress = express.reduce((sum, item) => sum + item.kilo, 0);
+  const totalAmountExpress = express.reduce((sum, item) => sum + item.amount, 0);
 
-  // Section: Kategori Barang
-  sheet2.getCell("B31").value = "Kategori";
-  sheet2.getCell("C31").value = "Group Barang";
-  sheet2.getCell("D31").value = "Total Barang";
-  sheet2.getCell("E31").value = "Nominal";
-  sheet2.getCell("F31").value = "Jenis Barang";
-  sheet2.getCell("G31").value = "Total Barang";
-  sheet2.getCell("H31").value = "Nominal";
+  sheet2.getRow(row).values = [, "Kiloan", "Express", totalKiloExpress, totalAmountExpress];
+  row++;
 
-  sheet2.getCell("B33").value = "Formula :";
-  sheet2.getCell("C33").value = "Dimunculkan jumlah total barangnya dan nilai nominal transaksinya";
-  sheet2.getCell("C33").font = { color: { argb: 'FFFF0000' } };
+  for (const item of express) {
+    sheet2.getRow(row).values = [, , , , , item.service, item.kilo, item.amount];
+    row++;
+  }
 
-  sheet2.getCell("B35").value = "CONTOH";
+  const kiloanEndRow = row - 1;
+  const satuanStart = row + 2;
 
-  // Bed Cover
-  sheet2.getRow(36).values = [, "Satuan", "Bed Cover", 16, 520000];
-  const bedCovers = [
-    ["Bed Cover >200 cm", 10, 350000],
-    ["Bed Cover 180-200 cm", 4, 120000],
-    ["Bed Cover Max 160 cm", 2, 50000],
-  ];
-  bedCovers.forEach((row, i) => {
-    sheet2.getRow(37 + i).values = [, , , , , ...row];
-  });
+  // === Satuan Header ===
+  sheet2.getCell(`B${satuanStart}`).value = "Kategori";
+  sheet2.getCell(`C${satuanStart}`).value = "Group Barang";
+  sheet2.getCell(`D${satuanStart}`).value = "Total Barang";
+  sheet2.getCell(`E${satuanStart}`).value = "Nominal";
+  sheet2.getCell(`F${satuanStart}`).value = "Jenis Barang";
+  sheet2.getCell(`G${satuanStart}`).value = "Total Barang";
+  sheet2.getCell(`H${satuanStart}`).value = "Nominal";
 
-  // Sepatu
-  sheet2.getRow(41).values = [, , "Sepatu", 18, 900000];
-  const sepatus = [
-    ["Sepatu Boots", 2, 150000],
-    ["Sepatu Dewasa", 13, 650000],
-    ["Sepatu Flat/Teplek", 2, 40000],
-    ["Sepatu Kulit/Suede/Prem", 1, 60000],
-  ];
-  sepatus.forEach((row, i) => {
-    sheet2.getRow(42 + i).values = [, , , , , ...row];
-  });
+  sheet2.getCell(`B${satuanStart + 2}`).value = "CONTOH";
 
-  // Apply borders to table areas
-  const applyBorderToRange = (fromRow, toRow, fromCol, toCol) => {
-    for (let row = fromRow; row <= toRow; row++) {
-      for (let col = fromCol; col <= toCol; col++) {
-        sheet2.getCell(row, col).border = borderStyle;
+  // Group by Group Barang (e.g., Bed Cover, Sepatu)
+  const groupedSatuan = {};
+  for (const item of reportData.serviceBreakdown.satuan) {
+    const [group, ...rest] = item.item.split(" ");
+    const key = group.trim();
+    if (!groupedSatuan[key]) groupedSatuan[key] = [];
+    groupedSatuan[key].push(item);
+  }
+
+  let satuanRow = satuanStart + 3;
+  for (const [group, items] of Object.entries(groupedSatuan)) {
+    const totalCount = items.reduce((sum, i) => sum + i.count, 0);
+    const totalAmount = items.reduce((sum, i) => sum + i.amount, 0);
+    sheet2.getRow(satuanRow).values = [, "Satuan", group, totalCount, totalAmount];
+    satuanRow++;
+    for (const item of items) {
+      sheet2.getRow(satuanRow).values = [, , , , , item.item, item.count, item.amount];
+      satuanRow++;
+    }
+  }
+
+  // === Apply Borders ===
+  const applyBorders = (fromRow, toRow, fromCol = 2, toCol = 8) => {
+    for (let r = fromRow; r <= toRow; r++) {
+      for (let c = fromCol; c <= toCol; c++) {
+        sheet2.getCell(r, c).border = borderStyle;
       }
     }
   };
 
-  applyBorderToRange(15, 22, 2, 8);  // Regular service table
-  applyBorderToRange(23, 29, 2, 8);  // Express service table
-  applyBorderToRange(36, 40, 2, 8);  // Bed cover table
-  applyBorderToRange(41, 45, 2, 8);  // Sepatu table
-
-
+  applyBorders(startRow + 1, kiloanEndRow);     // Kiloan table
+  applyBorders(satuanStart + 3, satuanRow - 1); // Satuan table
 
 
         // Save the file
