@@ -294,22 +294,24 @@ export default function SalesReport({
     fgColor: { argb: 'FFFF00' }, // yellow
   };
 
-  sheet2.getCell("B5").value = "Kategori";
-  sheet2.getCell("C5").value = "Group Layanan";
-  sheet2.getCell("D5").value = "Jenis Layanan";
-  sheet2.getCell("B6").value = "Kiloan";
+  // 2. Header titles
+sheet2.getCell("B5").value = "Kategori";
+sheet2.getCell("C5").value = "Group Layanan";
+sheet2.getCell("D5").value = "Jenis Layanan";
 
-  // Jenis Layanan
-  const layanan = [
-    "Cuci Kering Setrika",
-    "Setrika",
-    "Cuci Kering Lipat < 5kg",
-    "Cuci Kering Lipat min 5kg",
-    "Cuci Kering Setrika Baju Bayi"
-  ];
-  layanan.forEach((item, i) => {
-    sheet2.getCell(`D${6 + i}`).value = item;
-  });
+// 3. Gather unique services from both regular and express
+const regularServices = reportData.serviceBreakdown.kiloan.regular.map(i => i.service);
+const expressServices = reportData.serviceBreakdown.kiloan.express.map(i => i.service);
+const uniqueServices = Array.from(new Set([...regularServices, ...expressServices]));
+
+// 4. Fill rows dynamically (starting from row 6)
+let rowIndex = 6;
+uniqueServices.forEach((service, i) => {
+  sheet2.getCell(`B${rowIndex}`).value = i === 0 ? "Kiloan" : ""; // Kategori only once
+  sheet2.getCell(`D${rowIndex}`).value = service;
+  rowIndex++;
+});
+
 
   // Red text for formula
   sheet2.getCell("B12").value = "Formula :";
