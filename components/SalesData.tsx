@@ -270,43 +270,125 @@ export default function SalesReport({
         sheet2.mergeCells("B1:H1");
         sheet2.getCell("B1").value = "Laporan Jenis Cucian";
 
-        sheet2.mergeCells("B4:C4");
-        sheet2.getCell("B4").value = "Penjualan Hari ini";
-        sheet2.getCell("B5").value = "Kategori";
-        sheet2.getCell("C5").value = "Group Layanan";
-        sheet2.getCell("D5").value = "Jenis Layanan";
-        sheet2.getCell("B6").value = "Kiloan";
+        
+// Section Header
+  sheet2.mergeCells("B4:C4");
+  sheet2.getCell("B4").value = "Penjualan Hari ini";
+  sheet2.getCell("B4").fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFFF00' }, // yellow highlight
+  };
 
-        // const kiloan = reportData.serviceBreakdown?.kiloan || {};
-        // const renderKiloan = (groupName: string, data: any[]) => {
-        //   data.forEach((service) => {
-        //     sheet2
-        //       .addRow([
-        //         "Kiloan",
-        //         groupName,
-        //         service.service,
-        //         service.kilo,
-        //         service.amount,
-        //       ])
-        //       .eachCell((c) => (c.style = cellStyle));
-        //   });
-        // };
+  // Sub-headers
+  sheet2.getCell("B5").value = "Kategori";
+  sheet2.getCell("C5").value = "Group Layanan";
+  sheet2.getCell("D5").value = "Jenis Layanan";
 
-        // renderKiloan("Regular", kiloan.regular || []);
-        // renderKiloan("Express", kiloan.express || []);
+  // Example service types
+  const services = [
+    ["B6", "Kiloan", "C6", "Regular", "D6", "Cuci Kering Setrika"],
+    ["C7", "Setrika"],
+    ["C8", "Cuci Kering Lipat < 5kg"],
+    ["C9", "Cuci Kering Lipat min 5kg"],
+    ["C10", "Cuci Kering Setrika Baju Bayi"],
+  ];
+  services.forEach(([c1, v1, c2, v2, c3, v3]) => {
+    if (c1 && v1) sheet2.getCell(c1).value = v1;
+    if (c2 && v2) sheet2.getCell(c2).value = v2;
+    if (c3 && v3) sheet2.getCell(c3).value = v3;
+  });
 
-        // // Satuan
-        // sheet2.addRow([]);
-        // sheet2
-        //   .addRow(["Kategori", "Jenis Barang", "Total Barang", "Nominal"])
-        //   .eachCell((c) => (c.style = headerStyle));
+  // Formula label
+  sheet2.getCell("B12").value = "Formula :";
+  sheet2.getCell("C12").value = "Dimunculkan jumlah kilonya dan nominal nilai transaksinya";
+  sheet2.getCell("C12").font = { color: { argb: 'FFFF0000' } }; // red
 
-        // const satuan = reportData.serviceBreakdown?.satuan || [];
-        // satuan.forEach((item) => {
-        //   sheet2
-        //     .addRow(["Satuan", item.item, item.count, item.amount])
-        //     .eachCell((c) => (c.style = cellStyle));
-        // });
+  sheet2.getCell("B14").value = "CONTOH";
+
+  // Table headers for service breakdown
+  const headerRow1 = [
+    "Kategori", "Group Layanan", "Total Kilo", "Nominal",
+    "Jenis Layanan", "Total Kilo", "Nominal"
+  ];
+  sheet2.getRow(15).values = [, ...headerRow1];
+
+  // Sample data: Regular
+  sheet2.getRow(16).values = [, "Kiloan", "Regular", 136, 1205000];
+  const regularDetails = [
+    ["Cuci Kering Setrika", 100, 900000],
+    ["Setrika", 20, 160000],
+    ["Cuci Kering Lipat < 5kg", 3, 24000],
+    ["Cuci Kering Lipat min 5kg", 3, 21000],
+    ["Cuci Kering Setrika Baju Bayi", 1, 10000],
+  ];
+  regularDetails.forEach((row, i) => {
+    const r = sheet2.getRow(17 + i);
+    r.getCell(6).value = row[0];
+    r.getCell(7).value = row[1];
+    r.getCell(8).value = row[2];
+  });
+
+  // Sample data: Express
+  sheet2.getRow(23).values = [, "Kiloan", "Express", 19.3, 160400];
+  const expressDetails = [
+    ["Cuci Kering Setrika", 3, 27000],
+    ["Setrika", 3, 48000],
+    ["Cuci Kering Lipat < 5kg", 4.3, 47000],
+    ["Cuci Kering Lipat min 5kg", 3, 21000],
+    ["Cuci Kering Setrika Baju Bayi", 2, 17000],
+  ];
+  expressDetails.forEach((row, i) => {
+    const r = sheet2.getRow(24 + i);
+    r.getCell(6).value = row[0];
+    r.getCell(7).value = row[1];
+    r.getCell(8).value = row[2];
+  });
+
+  // Barang Satuan Section
+  sheet2.getCell("B31").value = "Kategori";
+  sheet2.getCell("C31").value = "Group Barang";
+  sheet2.getCell("D31").value = "Total Barang";
+  sheet2.getCell("E31").value = "Nominal";
+  sheet2.getCell("F31").value = "Jenis Barang";
+  sheet2.getCell("G31").value = "Total Barang";
+  sheet2.getCell("H31").value = "Nominal";
+
+  sheet2.getCell("B33").value = "Formula :";
+  sheet2.getCell("C33").value = "Dimunculkan jumlah total barangnya dan nilai nominal transaksinya";
+  sheet2.getCell("C33").font = { color: { argb: 'FFFF0000' } };
+
+  sheet2.getCell("B35").value = "CONTOH";
+
+  sheet2.getRow(36).values = [, "Satuan", "Bed Cover", 16, 520000];
+  const bedCoverDetails = [
+    ["Bed Cover >200 cm", 10, 350000],
+    ["Bed Cover 180-200 cm", 4, 120000],
+    ["Bed Cover Max 160 cm", 2, 50000],
+  ];
+  bedCoverDetails.forEach((row, i) => {
+    const r = sheet2.getRow(37 + i);
+    r.getCell(6).value = row[0];
+    r.getCell(7).value = row[1];
+    r.getCell(8).value = row[2];
+  });
+
+  sheet2.getRow(41).values = [, "", "Sepatu", 18, 900000];
+  const sepatuDetails = [
+    ["Sepatu Boots", 2, 150000],
+    ["Sepatu Dewasa", 13, 650000],
+    ["Sepatu Flat/Teplek", 2, 40000],
+    ["Sepatu Kulit/Suede/Prem", 1, 60000],
+  ];
+  sepatuDetails.forEach((row, i) => {
+    const r = sheet2.getRow(42 + i);
+    r.getCell(6).value = row[0];
+    r.getCell(7).value = row[1];
+    r.getCell(8).value = row[2];
+  });
+
+
+
 
         // Save the file
         const buffer = await workbook.xlsx.writeBuffer();
