@@ -78,10 +78,7 @@ if (
   start1.getDate() === end1.getDate()
 ) {
   headerText1 = "Penjualan Hari ini";
-} else if (
-  start1.getFullYear() === end1.getFullYear() &&
-  start1.getMonth() === end1.getMonth()
-) {
+} else if (start1.getMonth() === end1.getMonth()) {
   headerText1 = "Penjualan Bulan Ini";
 } else {
   headerText1 = `Penjualan Periode (${startDate} s.d ${endDate})`;
@@ -324,10 +321,7 @@ if (
   start.getDate() === end.getDate()
 ) {
   headerText = "Penjualan Hari ini";
-} else if (
-  start.getFullYear() === end.getFullYear() &&
-  start.getMonth() === end.getMonth()
-) {
+} else if (start.getMonth() === end.getMonth()) {
   headerText = "Penjualan Bulan Ini";
 } else {
   headerText = `Penjualan Periode (${startDate} s.d ${endDate})`;
