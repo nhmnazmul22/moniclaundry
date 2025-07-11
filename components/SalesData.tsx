@@ -285,8 +285,8 @@ const borderStyle = {
 
 
 // Parse ISO strings
-const start = new Date(startStr);
-const end = new Date(endStr);
+const start = new Date(startDate);
+const end = new Date(endDate);
 
 let headerText = "";
 
