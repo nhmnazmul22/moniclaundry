@@ -63,7 +63,35 @@ export default function SalesReport({
 
         // ----------- Sheet 1: Summary Report -----------
         sheet1.columns = Array(7).fill({ width: 20 });
-        sheet1.getCell("B2").value = "Penjualan Hari Ini";
+
+
+
+// Parse ISO strings
+const start1 = new Date(startDate);
+const end1 = new Date(endDate);
+
+let headerText1 = "";
+
+if (
+  start1.getFullYear() === end1.getFullYear() &&
+  start1.getMonth() === end1.getMonth() &&
+  start1.getDate() === end1.getDate()
+) {
+  headerText1 = "Penjualan Hari ini";
+} else if (
+  start1.getFullYear() === end1.getFullYear() &&
+  start1.getMonth() === end1.getMonth()
+) {
+  headerText1 = "Penjualan Bulan Ini";
+} else {
+  headerText1 = `Penjualan Periode (${startDate} s.d ${endDate})`;
+}
+
+
+
+
+
+        sheet1.getCell("B2").value = headerText1;
         sheet1.getCell("B2").font = { bold: true };
 
         // Sales Data
