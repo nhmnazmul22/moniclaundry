@@ -70,15 +70,21 @@ export default function SalesReport({
 const start1 = new Date(startDate);
 const end1 = new Date(endDate);
 
+// Remove time
+const startdate = new Date(start1.getFullYear(), start1.getMonth(), start1.getDate());
+const enddate = new Date(end1.getFullYear(), end1.getMonth(), end1.getDate());
+
+
+
 let headerText1 = "";
 
 if (
-  start1.getFullYear() === end1.getFullYear() &&
-  start1.getMonth() === end1.getMonth() &&
-  start1.getDate() === end1.getDate()
+  startdate.getFullYear() === startdate.getFullYear() &&
+  startdate.getMonth() === startdate.getMonth() &&
+  startdate.getDate() === startdate.getDate()
 ) {
   headerText1 = "Penjualan Hari ini";
-} else if (start1.getMonth() === end1.getMonth()) {
+} else if (startdate.getMonth() === startdate.getMonth() && startdate.getFullYear() === startdate.getFullYear()) {
   headerText1 = "Penjualan Bulan Ini";
 } else {
   headerText1 = `Penjualan Periode (${startDate} s.d ${endDate})`;
