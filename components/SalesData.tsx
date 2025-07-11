@@ -284,7 +284,11 @@ const borderStyle = {
 const start = new Date(reportData.startDate);
 const end = new Date(reportData.endDate);
 
-// Helper: Format date to dd/mm/yyyy
+// Remove time part for clean comparison
+const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+// Format helper
 const formatDate = (date: Date) => {
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -294,20 +298,17 @@ const formatDate = (date: Date) => {
 
 let headerText = "";
 
-if (
-  start.getDate() === end.getDate() &&
-  start.getMonth() === end.getMonth() &&
-  start.getFullYear() === end.getFullYear()
-) {
+if (startDate.getTime() === endDate.getTime()) {
   headerText = "Penjualan Hari ini";
 } else if (
-  start.getMonth() === end.getMonth() &&
-  start.getFullYear() === end.getFullYear()
+  startDate.getMonth() === endDate.getMonth() &&
+  startDate.getFullYear() === endDate.getFullYear()
 ) {
   headerText = "Penjualan Bulan Ini";
 } else {
-  headerText = `Penjualan Periode (${formatDate(start)} s.d ${formatDate(end)})`;
+  headerText = `Penjualan Periode (${formatDate(startDate)} s.d ${formatDate(endDate)})`;
 }
+
 
 // Apply to header cell
 sheet2.mergeCells("B4:H4");
