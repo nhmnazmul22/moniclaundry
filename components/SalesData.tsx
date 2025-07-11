@@ -43,20 +43,6 @@ export default function SalesReport({
   };
 
 
-function formatDate(date: Date): string {
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const yyyy = date.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
-}
-
-function parseYYYYMMDD(str: string): Date {
-  const [year, month, day] = str.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-
-
 
   const generateExcel = async () => {
     setIsExporting(true);
@@ -298,31 +284,47 @@ const borderStyle = {
   sheet2.getCell("B1").font = { bold: true, size: 14 };
 
 
-const startDate = parseYYYYMMDD(reportData.startDate); // "2025-06-30"
-const endDate = parseYYYYMMDD(reportData.endDate);     // "2025-07-10"
+const startStr = reportData.startDate; // "2025-06-30"
+const endStr = reportData.endDate;     // "2025-07-10"
+
+// Parse ISO strings
+const start = new Date(startStr);
+const end = new Date(endStr);
+
+// Helper: format to dd/mm/yyyy using Intl
+const formatDate = (date: Date) =>
+  new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(date);
 
 let headerText = "";
 
-if (startDate.getTime() === endDate.getTime()) {
+if (
+  start.getFullYear() === end.getFullYear() &&
+  start.getMonth() === end.getMonth() &&
+  start.getDate() === end.getDate()
+) {
   headerText = "Penjualan Hari ini";
 } else if (
-  startDate.getMonth() === endDate.getMonth() &&
-  startDate.getFullYear() === endDate.getFullYear()
+  start.getFullYear() === end.getFullYear() &&
+  start.getMonth() === end.getMonth()
 ) {
   headerText = "Penjualan Bulan Ini";
 } else {
-  headerText = `Penjualan Periode (${formatDate(startDate)} s.d ${formatDate(endDate)})`;
+  headerText = `Penjualan Periode (${formatDate(start)} s.d ${formatDate(end)})`;
 }
 
-sheet2.mergeCells("B4:H4");
+// Apply to Excel
+sheet2.mergeCells("B4:C4");
 const headerCell = sheet2.getCell("B4");
 headerCell.value = headerText;
-headerCell.fill = {
-  type: "pattern",
-  pattern: "solid",
-  fgColor: { argb: "FFFFFF00" },
-};
 headerCell.font = { bold: true };
+headerCell.alignment = { horizontal: "center" };
+
+
+
 
   sheet2.getCell("B5").value = "Kategori";
   sheet2.getCell("C5").value = "Group Layanan";
