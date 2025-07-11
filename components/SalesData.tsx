@@ -327,7 +327,7 @@ if (
   start.getDate() === end.getDate()
 ) {
   headerText = "Penjualan Hari ini";
-} else if (start.getMonth() === end.getMonth()) {
+} else if (start.getMonth() === end.getMonth() &&   start.getFullYear() === end.getFullYear()) {
   headerText = "Penjualan Bulan Ini";
 } else {
   headerText = `Penjualan Periode (${startDate} s.d ${endDate})`;
