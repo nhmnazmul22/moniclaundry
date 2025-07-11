@@ -156,7 +156,7 @@ export const CashTransferReceiptTemplate = React.forwardRef<
                 </span>
               </div>
               <div className="flex justify-start font-bold">
-                <span className="w-28">Saldo Deposit</span>
+                <span className="w-28">Sisa Deposit</span>
                 <span className="uppercase ms-2">
                   {formatCurrency(order.customerDetails?.deposit_balance)}
                 </span>
@@ -423,12 +423,20 @@ export const ReceiptTemplate = React.forwardRef<
             <span>{formatCurrency(totalPaid)}</span>
           </div>
         )}
-        {change > 0 && (
+        <div className="flex justify-between">
+          <span>Sisa Deposit:</span>
+          <span>
+            {order.customerDetails &&
+              formatCurrency(order.customerDetails?.deposit_balance)}
+          </span>
+        </div>
+
+        {/* {change > 0 && (
           <div className="flex justify-between">
             <span>Kembali:</span>
             <span>{formatCurrency(change)}</span>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Terms */}

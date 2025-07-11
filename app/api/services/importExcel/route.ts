@@ -45,17 +45,17 @@ export async function POST(request: NextRequest) {
     const serviceData = body.slice(4);
     const filteredService = serviceData.filter((value: any) => value.price > 0);
 
-    // const service = await ServiceModel.create(filteredService);
+    const service = await ServiceModel.create(filteredService);
 
-    // if (!service) {
-    //   return NextResponse.json(
-    //     {
-    //       status: "Failed",
-    //       message: "Service create filed",
-    //     },
-    //     { status: 500 }
-    //   );
-    // }
+    if (!service) {
+      return NextResponse.json(
+        {
+          status: "Failed",
+          message: "Service create filed",
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(
       {

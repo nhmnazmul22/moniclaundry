@@ -4,8 +4,8 @@ import * as XLSX from "xlsx";
 import api from "@/lib/config/axios";
 import { Branches, Service } from "@/types";
 
-// Simple JSON import function
-export async function importServicesJSON(
+// Simple import function
+export async function importServices(
   formData: FormData,
   branchIds: string[]
 ): Promise<{ success: boolean; message: string; count: number }> {
@@ -18,9 +18,9 @@ export async function importServicesJSON(
     const data = await excelFile.arrayBuffer();
     const workbook = XLSX.read(data, { type: "array" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rawJson: any = XLSX.utils.sheet_to_json(sheet);
+    const rawExcel: any = XLSX.utils.sheet_to_json(sheet);
 
-    if (rawJson[2].KATEGORI === "Branch Id") {
+    if (rawExcel[2].KATEGORI === "Branch Id") {
       return {
         success: false,
         message:
@@ -28,12 +28,11 @@ export async function importServicesJSON(
         count: 0,
       };
     }
-
-    const services: Service[] = rawJson.map((row: any) => ({
-      type: row.__EMPTY || "Satuan",
-      category: row.__EMPTY_1 || "No Category",
-      servicename: row.__EMPTY_2 || "No Service Name",
-      price: Number(row.__EMPTY_3) || Number("00.00"),
+    const services: Service[] = rawExcel.map((row: any) => ({
+      type: row.KATEGORI || "Satuan",
+      category: row["Laundry Satuan"] || row["Laundry Kiloan"] || "No Category",
+      servicename: row.__EMPTY || "No Service Name",
+      price: Number(row.__EMPTY_1) || Number("00.00"),
       current_branch_id: branchIds,
     }));
 

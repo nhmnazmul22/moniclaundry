@@ -51,7 +51,7 @@ import { useSession } from "next-auth/react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { handleExport, importServicesJSON } from "./actions";
+import { handleExport, importServices } from "./actions";
 
 export default function ServicesPage() {
   const { data: session } = useSession();
@@ -150,9 +150,10 @@ export default function ServicesPage() {
       let branchIds: string[] = [];
 
       if (branch) {
-        secondBranch = branches?.filter(
-          (b) => b.code.split("-")[0] === branch[0].code.split("-")[0]
-        );
+        secondBranch = branches?.filter((b) => {
+          const searchTerm = branch[0].code[1] + branch[0].code[2];
+          return b.code.includes(searchTerm);
+        });
         branchIds.push(secondBranch![0]._id!);
         branchIds.push(secondBranch![1]._id!);
       }
@@ -166,7 +167,7 @@ export default function ServicesPage() {
         return;
       }
 
-      const result = await importServicesJSON(formData, branchIds!);
+      const result = await importServices(formData, branchIds!);
 
       if (result.success) {
         toast({
@@ -184,6 +185,7 @@ export default function ServicesPage() {
         });
       }
     } catch (error) {
+      console.log(error);
       toast({
         title: "Import Error",
         description: "An error occurred during import",
