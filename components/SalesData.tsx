@@ -79,12 +79,12 @@ const enddate = new Date(end1.getFullYear(), end1.getMonth(), end1.getDate());
 let headerText1 = "";
 
 if (
-  startdate.getFullYear() === startdate.getFullYear() &&
-  startdate.getMonth() === startdate.getMonth() &&
-  startdate.getDate() === startdate.getDate()
+  startdate.getFullYear() === enddate.getFullYear() &&
+  startdate.getMonth() === enddate.getMonth() &&
+  startdate.getDate() === enddate.getDate()
 ) {
   headerText1 = "Penjualan Hari ini";
-} else if (startdate.getMonth() === startdate.getMonth() && startdate.getFullYear() === startdate.getFullYear()) {
+} else if (startdate.getMonth() === enddate.getMonth() && startdate.getFullYear() === enddate.getFullYear()) {
   headerText1 = "Penjualan Bulan Ini";
 } else {
   headerText1 = `Penjualan Periode (${startDate} s.d ${endDate})`;
