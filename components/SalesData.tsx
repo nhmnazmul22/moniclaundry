@@ -281,20 +281,20 @@ const borderStyle = {
   sheet2.getCell("B1").alignment = { horizontal: "center" };
   sheet2.getCell("B1").font = { bold: true, size: 14 };
 
-const start = new Date(reportData.startDate);
-const end = new Date(reportData.endDate);
-
-// Remove time part for clean comparison
-const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-
-// Format helper
-const formatDate = (date: Date) => {
+function formatDate(date: Date): string {
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const yyyy = date.getFullYear();
   return `${dd}/${mm}/${yyyy}`;
-};
+}
+
+// Parse dates
+const start = new Date(reportData.startDate); // e.g., "2025-06-30"
+const end = new Date(reportData.endDate);     // e.g., "2025-06-30"
+
+// Strip time for safe comparison
+const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
 
 let headerText = "";
 
@@ -306,9 +306,19 @@ if (startDate.getTime() === endDate.getTime()) {
 ) {
   headerText = "Penjualan Bulan Ini";
 } else {
-  headerText = `Penjualan Periode (${startDate} s.d ${endDate})`;
+  headerText = `Penjualan Periode (${formatDate(startDate)} s.d ${formatDate(endDate)})`;
 }
 
+// Set to Excel cell
+sheet2.mergeCells("B4:H4");
+const headerCell = sheet2.getCell("B4");
+headerCell.value = headerText;
+headerCell.fill = {
+  type: "pattern",
+  pattern: "solid",
+  fgColor: { argb: "FFFFFF00" },
+};
+headerCell.font = { bold: true };
 
 // Apply to header cell
 sheet2.mergeCells("B4:H4");
