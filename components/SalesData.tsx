@@ -320,18 +320,6 @@ headerCell.fill = {
 };
 headerCell.font = { bold: true };
 
-// Apply to header cell
-sheet2.mergeCells("B4:H4");
-const headerCell = sheet2.getCell("B4");
-headerCell.value = headerText;
-headerCell.fill = {
-  type: "pattern",
-  pattern: "solid",
-  fgColor: { argb: "FFFFFF00" },
-};
-headerCell.font = { bold: true };
-
-
 
   sheet2.getCell("B5").value = "Kategori";
   sheet2.getCell("C5").value = "Group Layanan";
