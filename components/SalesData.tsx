@@ -284,9 +284,6 @@ const borderStyle = {
   sheet2.getCell("B1").font = { bold: true, size: 14 };
 
 
-const startStr = reportData.startDate; // "2025-06-30"
-const endStr = reportData.endDate;     // "2025-07-10"
-
 // Parse ISO strings
 const start = new Date(startStr);
 const end = new Date(endStr);
