@@ -42,6 +42,22 @@ export default function SalesReport({
     }
   };
 
+
+function formatDate(date: Date): string {
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function parseYYYYMMDD(str: string): Date {
+  const [year, month, day] = str.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+
+
+
   const generateExcel = async () => {
     setIsExporting(true);
 
@@ -281,17 +297,6 @@ const borderStyle = {
   sheet2.getCell("B1").alignment = { horizontal: "center" };
   sheet2.getCell("B1").font = { bold: true, size: 14 };
 
-function formatDate(date: Date): string {
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const yyyy = date.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
-}
-
-function parseYYYYMMDD(str: string): Date {
-  const [year, month, day] = str.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
 
 const startDate = parseYYYYMMDD(reportData.startDate); // "2025-06-30"
 const endDate = parseYYYYMMDD(reportData.endDate);     // "2025-07-10"
