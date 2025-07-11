@@ -8,7 +8,6 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { useEffect, useState } from "react";
-import { format, differenceInCalendarMonths, isSameDay, parseISO } from 'date-fns';
 
 interface SalesReportType {
   branchId: string;
@@ -282,22 +281,32 @@ const borderStyle = {
   sheet2.getCell("B1").alignment = { horizontal: "center" };
   sheet2.getCell("B1").font = { bold: true, size: 14 };
 
+const start = new Date(reportData.startDate);
+const end = new Date(reportData.endDate);
 
-
-const start = parseISO(reportData.startDate);
-const end = parseISO(reportData.endDate);
+// Helper: Format date to dd/mm/yyyy
+const formatDate = (date: Date) => {
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+};
 
 let headerText = "";
 
-if (isSameDay(start, end)) {
+if (
+  start.getDate() === end.getDate() &&
+  start.getMonth() === end.getMonth() &&
+  start.getFullYear() === end.getFullYear()
+) {
   headerText = "Penjualan Hari ini";
+} else if (
+  start.getMonth() === end.getMonth() &&
+  start.getFullYear() === end.getFullYear()
+) {
+  headerText = "Penjualan Bulan Ini";
 } else {
-  const monthDiff = differenceInCalendarMonths(end, start);
-  if (monthDiff === 0 && start.getMonth() === end.getMonth()) {
-    headerText = "Penjualan Bulan Ini";
-  } else {
-    headerText = `Penjualan Periode (${format(start, 'dd/MM/yyyy')} s.d ${format(end, 'dd/MM/yyyy')})`;
-  }
+  headerText = `Penjualan Periode (${formatDate(start)} s.d ${formatDate(end)})`;
 }
 
 // Apply to header cell
@@ -310,6 +319,7 @@ headerCell.fill = {
   fgColor: { argb: "FFFFFF00" },
 };
 headerCell.font = { bold: true };
+
 
 
   sheet2.getCell("B5").value = "Kategori";
