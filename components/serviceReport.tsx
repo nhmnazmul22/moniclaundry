@@ -331,7 +331,7 @@ export default function ServiceReport({
 
   useEffect(() => {
     fetchReportData();
-  }, []);
+  }, [branchId, startDate, endDate]);
 
   useEffect(() => {
     dispatch(fetchBranches());
