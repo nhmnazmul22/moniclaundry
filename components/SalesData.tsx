@@ -288,13 +288,13 @@ function formatDate(date: Date): string {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-// Parse dates
-const start = new Date(reportData.startDate); // e.g., "2025-06-30"
-const end = new Date(reportData.endDate);     // e.g., "2025-06-30"
+function parseYYYYMMDD(str: string): Date {
+  const [year, month, day] = str.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
 
-// Strip time for safe comparison
-const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+const startDate = parseYYYYMMDD(reportData.startDate); // "2025-06-30"
+const endDate = parseYYYYMMDD(reportData.endDate);     // "2025-07-10"
 
 let headerText = "";
 
@@ -309,7 +309,6 @@ if (startDate.getTime() === endDate.getTime()) {
   headerText = `Penjualan Periode (${formatDate(startDate)} s.d ${formatDate(endDate)})`;
 }
 
-// Set to Excel cell
 sheet2.mergeCells("B4:H4");
 const headerCell = sheet2.getCell("B4");
 headerCell.value = headerText;
@@ -319,7 +318,6 @@ headerCell.fill = {
   fgColor: { argb: "FFFFFF00" },
 };
 headerCell.font = { bold: true };
-
 
   sheet2.getCell("B5").value = "Kategori";
   sheet2.getCell("C5").value = "Group Layanan";
