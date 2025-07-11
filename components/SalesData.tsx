@@ -313,7 +313,7 @@ if (
 ) {
   headerText = "Penjualan Bulan Ini";
 } else {
-  headerText = `Penjualan Periode (${formatDate(start)} s.d ${formatDate(end)})`;
+  headerText = `Penjualan Periode (${startDate} s.d ${endDate})`;
 }
 
 // Apply to Excel
