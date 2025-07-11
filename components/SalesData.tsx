@@ -306,7 +306,7 @@ if (startDate.getTime() === endDate.getTime()) {
 ) {
   headerText = "Penjualan Bulan Ini";
 } else {
-  headerText = `Penjualan Periode (${formatDate(startDate)} s.d ${formatDate(endDate)})`;
+  headerText = `Penjualan Periode (${startDate} s.d ${endDate})`;
 }
 
 
