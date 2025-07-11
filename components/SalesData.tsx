@@ -288,14 +288,6 @@ const borderStyle = {
 const start = new Date(startStr);
 const end = new Date(endStr);
 
-// Helper: format to dd/mm/yyyy using Intl
-const formatDate = (date: Date) =>
-  new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-  }).format(date);
-
 let headerText = "";
 
 if (
