@@ -328,28 +328,15 @@ export default function OrderDetailPage({
             <Printer className="mr-2 h-4 w-4" />
             Cetak Nota Original
           </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={pdfLoading}>
-                <Download className="mr-2 h-4 w-4" />
-                Download Receipt
-                {pdfLoading && (
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={handleDownloadCashTransfer}>
-                <Download className="mr-2 h-4 w-4" />
-                Payment Receipt
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDownloadInternal}>
-                <Download className="mr-2 h-4 w-4" />
-                Internal Print
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="outline"
+            disabled={pdfLoading}
+            onClick={handleDownloadCashTransfer}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Internal Receipt
+            {pdfLoading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+          </Button>
         </div>
       </div>
 
@@ -388,6 +375,15 @@ export default function OrderDetailPage({
               <span className="text-sm font-medium">Tanggal Order:</span>
               <span>{formatDateTime(order.createdAt)}</span>
             </div>
+            {order.payment_method && (
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">Metode Pembayaran:</span>
+                <span>
+                  {order.payment_method[0].toUpperCase() +
+                    order.payment_method?.slice(1)}
+                </span>
+              </div>
+            )}
             {order.estimated_completion && (
               <div className="flex justify-between">
                 <span className="text-sm font-medium">Estimasi Selesai:</span>

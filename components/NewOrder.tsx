@@ -52,6 +52,7 @@ export default function NewOrderPage() {
   const dispatch = useDispatch<AppDispatch>();
   const [branchId, setBranchId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [estimated_completion, setEstimated_completion] = useState();
   const { items: branches } = useSelector(
     (state: RootState) => state.branchReducer
   );
@@ -286,6 +287,9 @@ export default function NewOrderPage() {
       payment_method: paymentMethod,
       payment_status: paymentMethod === "deposit" ? "lunas" : paymentStatus,
       order_status: "diterima",
+      estimated_completion: estimated_completion
+        ? new Date(estimated_completion).toISOString()
+        : null,
       notes: notes,
       current_branch_id: branchId || currentBranchId,
     };
@@ -516,7 +520,7 @@ export default function NewOrderPage() {
           )}
 
           {/* Payment Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="paymentMethod">Metode Pembayaran</Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
@@ -547,6 +551,15 @@ export default function NewOrderPage() {
                   <SelectItem value="dp">DP</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="estimated_completion">Estimasi Selesai</Label>
+              <Input
+                id="estimated_completion"
+                type="datetime-local"
+                value={estimated_completion}
+                onChange={(e: any) => setEstimated_completion(e.target.value)}
+              />
             </div>
           </div>
 

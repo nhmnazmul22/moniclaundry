@@ -36,8 +36,6 @@ export default function LoginPage() {
       redirect: false,
     });
 
-    console.log(res);
-
     if (res?.error) {
       setError("Email atau password salah.");
       setLoading(false);
@@ -93,6 +91,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
+                placeholder="Masukkan email Anda"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

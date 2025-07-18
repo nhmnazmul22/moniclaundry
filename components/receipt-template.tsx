@@ -24,16 +24,6 @@ export const CashTransferReceiptTemplate = React.forwardRef<
   return (
     <div ref={ref} className="w-[260px] p-2 bg-white text-[8px] leading-[1.1] ">
       <div className="">
-        {/* Header */}
-        <div className="text-left mb-1">
-          <div className="text-[6px] font-semibold ">
-            Bayar Pakai{" "}
-            {order.payment_method &&
-              order.payment_method[0].toUpperCase() +
-                order.payment_method?.slice(1)}
-          </div>
-        </div>
-
         <div className="py-1">
           <div className="flex items-start gap-1">
             <div className="flex-1 space-y-0.5">
@@ -65,11 +55,11 @@ export const CashTransferReceiptTemplate = React.forwardRef<
         {/* Transaction Info */}
         <div className="py-1 text-[7px] space-y-1">
           <div className="flex justify-start gap-2">
-            <span className="w-28">Transaksi</span>
+            <span className="w-[70px]">Transaksi</span>
             <span>OFFLINE</span>
           </div>
           <div className="flex justify-start gap-2">
-            <span className="w-28">Kasir</span>
+            <span className="w-[70px]">Kasir</span>
             <span>Sri</span>
           </div>
         </div>
@@ -79,46 +69,53 @@ export const CashTransferReceiptTemplate = React.forwardRef<
           <div className="font-bold mb-1">TRANSAKSI</div>
 
           <table className="w-full text-left">
-            <tbody>
+            <tbody className="flex flex-col gap-1">
               {orderItems.map((item) => (
                 <tr key={item._id}>
-                  <td>{item.serviceDetails?.servicename! || "N/A"}</td>
-                  <td colSpan={3}></td>
-                  <td className="text-right">
+                  <td width={"78px"} className="text-[7px]">
+                    {item.serviceDetails?.servicename! || "N/A"}
+                  </td>
+                  <td className="text-left w-[30px]">
                     {item.quantity}
-                    {item.serviceDetails.type === "Satuan" ? "pcs" : "kg"}
+                    {item.serviceDetails.type === "Satuan" ? " pcs" : " kg"}
                   </td>
-                  <td className="text-center">x</td>
-                  <td className="text-right">
-                    {formatCurrency(item.serviceDetails?.price)}
-                  </td>
-                  <td className="text-right">
-                    {formatCurrency(
-                      item.quantity * item?.serviceDetails?.price!
-                    )}
-                  </td>
+                  <td className="text-center w-[20px]">x</td>
+                  {item.serviceDetails.price && (
+                    <td className="text-right w-[40px]">
+                      {formatCurrency(item.serviceDetails.price)
+                        .replace("Rp", "")
+                        .replace(".", ",")}
+                    </td>
+                  )}
+                  {item.serviceDetails && item.quantity && (
+                    <td className="text-right w-[40px]">
+                      {formatCurrency(item.quantity * item.serviceDetails.price)
+                        .replace("Rp", "")
+                        .replace(".", ",")}
+                    </td>
+                  )}
                 </tr>
               ))}
-              <tr className="h-1" />
               <tr>
-                <td>Total Harga</td>
-                <td colSpan={6}></td>
-                <td className="text-right">
-                  {formatCurrency(order.total_amount)}
+                <td className="w-[173px]">Total Harga</td>
+                <td className="text-right font-semibold w-[40px]">
+                  {order.total_amount &&
+                    formatCurrency(order.total_amount)
+                      .replace("Rp", "")
+                      .replace(".", ",")}
                 </td>
               </tr>
               <tr>
-                <td>Diskon</td>
-                <td colSpan={6}></td>
-                <td className="text-right">-</td>
+                <td className="w-[173px]">Diskon</td>
+                <td className="text-center w-[40px]">-</td>
               </tr>
-              <tr className="h-2" />
               <tr className="font-normal">
-                <td colSpan={4}></td>
-                <td className="text-right">Harus dibayar</td>
-                <td colSpan={2}></td>
-                <td className="text-right font-semibold">
-                  {formatCurrency(order.total_amount - order.discount)}
+                <td colSpan={4} className="w-[78px]"></td>
+                <td className="text-left w-[94px]">Harus dibayar</td>
+                <td className="text-right font-semibold w-[40px]">
+                  {formatCurrency(order.total_amount - order.discount)
+                    .replace("Rp", "")
+                    .replace(".", ",")}
                 </td>
               </tr>
             </tbody>
@@ -128,36 +125,36 @@ export const CashTransferReceiptTemplate = React.forwardRef<
         {/* Date and Status */}
         <div className="py-2 text-[7px] space-y-1">
           <div className="flex justify-start ">
-            <span className="w-28">Tanggal Masuk</span>
-            <span className="font-bold ms-2">
+            <span className="w-[78px]">Tanggal Masuk</span>
+            <span className="font-bold">
               {formatDateTime(order.createdAt)}
             </span>
           </div>
           <div className="flex justify-start">
-            <span className="w-28">Estimasi Selesai</span>
-            <span className="font-bold ms-2">
+            <span className="w-[78px]">Estimasi Selesai</span>
+            <span className="font-bold">
               {formatDateTime(order.estimated_completion)}
             </span>
           </div>
           <div className="flex justify-start font-bold">
-            <span className="w-28">Pembayaran</span>
-            <span className="uppercase ms-2">{order.payment_method}</span>
+            <span className="w-[78px]">Pembayaran</span>
+            <span className="uppercase">{order.payment_method}</span>
           </div>
           <div className="flex justify-start font-bold">
-            <span className="w-28">Status</span>
-            <span className="uppercase ms-2">{order.payment_status}</span>
+            <span className="w-[78px]">Status</span>
+            <span className="uppercase">{order.payment_status}</span>
           </div>
           {order.payment_method === "deposit" && (
             <>
               <div className="flex justify-start font-bold">
-                <span className="w-28">Nilai Potong Deposit</span>
-                <span className="uppercase ms-2">
+                <span className="w-[78px]">Nilai Potong Deposit</span>
+                <span className="uppercase">
                   {formatCurrency(order.total_amount)}
                 </span>
               </div>
               <div className="flex justify-start font-bold">
-                <span className="w-28">Sisa Deposit</span>
-                <span className="uppercase ms-2">
+                <span className="w-[78px]">Sisa Deposit</span>
+                <span className="uppercase">
                   {formatCurrency(order.customerDetails?.deposit_balance)}
                 </span>
               </div>
@@ -168,20 +165,10 @@ export const CashTransferReceiptTemplate = React.forwardRef<
         <div className="text-left text-[7px] mb-2 mt-5">Catatan</div>
         <div className="flex flex-col gap-1">
           <div className="w-full h-[0.5px] bg-black"></div>
-          <p className="text-[7px] italic text-center">free tex</p>
+          <p className="text-[7px] italic text-center">
+            {order.notes || "No notes"}
+          </p>
           <div className="w-full h-[0.5px] bg-black"></div>
-        </div>
-
-        {/* Terms Section */}
-        <div className="mt-3 text-[6px] leading-[1.1]">
-          <div className="mb-1">Ketentuan Penting:</div>
-          <ol className="list-decimal ml-4 space-y-1">
-            <li>
-              Kusut, susut, luntur karena kondisi bahan bukan tanggung jawab
-              laundry
-            </li>
-            <li>Komplain maksimal 3 hari dan wajib video unboxing</li>
-          </ol>
         </div>
 
         {/* Customer Service */}
@@ -348,12 +335,6 @@ export const ReceiptTemplate = React.forwardRef<
             <span>{formatDateTime(order.estimated_completion)}</span>
           </div>
         )}
-        <div className="flex justify-between">
-          <span>Status</span>
-          <span>
-            {order.order_status[0].toUpperCase() + order.order_status.slice(1)}
-          </span>
-        </div>
       </div>
 
       {/* Customer Info */}

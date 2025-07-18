@@ -52,17 +52,11 @@ export function formatDateTime(dateString?: string | Date | null): string {
 }
 
 export function generateOrderNumber(code: string) {
-  const orderNumber = `${code}${new Date().getFullYear()}${(
-    new Date().getMonth() + 1
-  )
-    .toString()
-    .padStart(2, "0")}${new Date()
-    .getDate()
-    .toString()
-    .padStart(2, "0")}${Math.random()
-    .toString()
-    .substring(2, 6)
-    .toUpperCase()}`;
+  const orderNumber = `${code}${new Date().getMilliseconds().toFixed()}${Number(
+    Math.random() * 99
+  ).toFixed()}`;
+  console.log(orderNumber);
+  console.log(new Date().getMilliseconds().toFixed());
   return orderNumber;
 }
 
