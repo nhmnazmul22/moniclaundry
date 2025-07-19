@@ -42,8 +42,6 @@ export default function SalesReport({
     }
   };
 
-
-
   const generateExcel = async () => {
     setIsExporting(true);
 
@@ -64,35 +62,38 @@ export default function SalesReport({
         // ----------- Sheet 1: Summary Report -----------
         sheet1.columns = Array(7).fill({ width: 20 });
 
+        // Parse ISO strings
+        const start1 = new Date(startDate);
+        const end1 = new Date(endDate);
 
+        // Remove time
+        const startdate = new Date(
+          start1.getFullYear(),
+          start1.getMonth(),
+          start1.getDate()
+        );
+        const enddate = new Date(
+          end1.getFullYear(),
+          end1.getMonth(),
+          end1.getDate()
+        );
 
-// Parse ISO strings
-const start1 = new Date(startDate);
-const end1 = new Date(endDate);
+        let headerText1 = "";
 
-// Remove time
-const startdate = new Date(start1.getFullYear(), start1.getMonth(), start1.getDate());
-const enddate = new Date(end1.getFullYear(), end1.getMonth(), end1.getDate());
-
-
-
-let headerText1 = "";
-
-if (
-  startdate.getFullYear() === enddate.getFullYear() &&
-  startdate.getMonth() === enddate.getMonth() &&
-  startdate.getDate() === enddate.getDate()
-) {
-  headerText1 = "Penjualan Hari ini";
-} else if (startdate.getMonth() === enddate.getMonth() && startdate.getFullYear() === enddate.getFullYear()) {
-  headerText1 = "Penjualan Bulan Ini";
-} else {
-  headerText1 = `Penjualan Periode (${startDate} s.d ${endDate})`;
-}
-
-
-
-
+        if (
+          startdate.getFullYear() === enddate.getFullYear() &&
+          startdate.getMonth() === enddate.getMonth() &&
+          startdate.getDate() === enddate.getDate()
+        ) {
+          headerText1 = "Penjualan Hari ini";
+        } else if (
+          startdate.getMonth() === enddate.getMonth() &&
+          startdate.getFullYear() === enddate.getFullYear()
+        ) {
+          headerText1 = "Penjualan Bulan Ini";
+        } else {
+          headerText1 = `Penjualan Periode (${startDate} to ${endDate})`;
+        }
 
         sheet1.getCell("B2").value = headerText1;
         sheet1.getCell("B2").font = { bold: true };
@@ -297,147 +298,164 @@ if (
         sheet1.getCell("C41").font = redBoldFont;
         sheet1.getCell("C42").font = redBoldFont;
 
-// ---- Sheet 2: Detail Breakdown -----------
+        // ---- Sheet 2: Detail Breakdown -----------
 
-const borderStyle = {
-    top: { style: 'thin' },
-    bottom: { style: 'thin' },
-    left: { style: 'thin' },
-    right: { style: 'thin' },
-  };
+        const borderStyle: Partial<ExcelJS.Borders> = {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+        };
 
-  sheet2.columns = Array(7).fill({ width: 20 });
+        sheet2.columns = Array(7).fill({ width: 20 });
 
-  // Header
-  sheet2.mergeCells("B1:H1");
-  sheet2.getCell("B1").value = "Laporan Jenis Cucian";
-  sheet2.getCell("B1").alignment = { horizontal: "center" };
-  sheet2.getCell("B1").font = { bold: true, size: 14 };
+        // Header
+        sheet2.mergeCells("B1:H1");
+        sheet2.getCell("B1").value = "Laporan Jenis Cucian";
+        sheet2.getCell("B1").alignment = { horizontal: "center" };
+        sheet2.getCell("B1").font = { bold: true, size: 14 };
 
+        // Parse ISO strings
+        const start = new Date(startDate);
+        const end = new Date(endDate);
 
-// Parse ISO strings
-const start = new Date(startDate);
-const end = new Date(endDate);
+        let headerText = "";
 
-let headerText = "";
+        if (
+          start.getFullYear() === end.getFullYear() &&
+          start.getMonth() === end.getMonth() &&
+          start.getDate() === end.getDate()
+        ) {
+          headerText = "Penjualan Hari ini";
+        } else if (
+          start.getMonth() === end.getMonth() &&
+          start.getFullYear() === end.getFullYear()
+        ) {
+          headerText = "Penjualan Bulan Ini";
+        } else {
+          headerText = `Penjualan Periode (${startDate} to ${endDate})`;
+        }
 
-if (
-  start.getFullYear() === end.getFullYear() &&
-  start.getMonth() === end.getMonth() &&
-  start.getDate() === end.getDate()
-) {
-  headerText = "Penjualan Hari ini";
-} else if (start.getMonth() === end.getMonth() &&   start.getFullYear() === end.getFullYear()) {
-  headerText = "Penjualan Bulan Ini";
-} else {
-  headerText = `Penjualan Periode (${startDate} s.d ${endDate})`;
-}
+        // Apply to Excel
+        sheet2.mergeCells("B4:C4");
+        const headerCell = sheet2.getCell("B4");
+        headerCell.value = headerText;
+        headerCell.font = { bold: true };
+        headerCell.alignment = { horizontal: "center" };
 
-// Apply to Excel
-sheet2.mergeCells("B4:C4");
-const headerCell = sheet2.getCell("B4");
-headerCell.value = headerText;
-headerCell.font = { bold: true };
-headerCell.alignment = { horizontal: "center" };
+        sheet2.getCell("B5").value = "Kategori";
+        sheet2.getCell("C5").value = "Group Layanan";
+        sheet2.getCell("D5").value = "Jenis Layanan";
 
+        // Dynamic Jenis Layanan
+        const regular = reportData.serviceBreakdown.kiloan.regular || [];
+        const express = reportData.serviceBreakdown.kiloan.express || [];
+        const uniqueServices = Array.from(
+          new Set([...regular, ...express].map((i) => i.service))
+        );
 
+        let rowIdx = 6;
+        uniqueServices.forEach((service, index) => {
+          sheet2.getCell(`B${rowIdx}`).value = index === 0 ? "Kiloan" : "";
+          sheet2.getCell(`D${rowIdx}`).value = service;
+          rowIdx++;
+        });
 
+        for (let r = 4; r < rowIdx; r++) {
+          for (let c = 2; c <= 4; c++) {
+            sheet2.getCell(r, c).border = borderStyle;
+          }
+        }
 
-  sheet2.getCell("B5").value = "Kategori";
-  sheet2.getCell("C5").value = "Group Layanan";
-  sheet2.getCell("D5").value = "Jenis Layanan";
+        // Kiloan Summary
+        let summaryStart = rowIdx + 2;
+        summaryStart++;
+        sheet2.getRow(summaryStart).values = [
+          " ",
+          "Kategori",
+          "Group Layanan",
+          "Total Kilo",
+          "Nominal",
+          "Jenis Layanan",
+          "Total Kilo",
+          "Nominal",
+        ];
+        sheet2
+          .getRow(summaryStart)
+          .eachCell((cell) => (cell.border = borderStyle));
 
-  // Dynamic Jenis Layanan
-  const regular = reportData.serviceBreakdown.kiloan.regular || [];
-  const express = reportData.serviceBreakdown.kiloan.express || [];
-  const uniqueServices = Array.from(new Set([...regular, ...express].map(i => i.service)));
+        sheet2.getCell("A10").border = {};
 
-  let rowIdx = 6;
-  uniqueServices.forEach((service, index) => {
-    sheet2.getCell(`B${rowIdx}`).value = index === 0 ? "Kiloan" : "";
-    sheet2.getCell(`D${rowIdx}`).value = service;
-    rowIdx++;
-  });
+        let row = summaryStart + 1;
+        const renderKiloanGroup = (label: string, data: any[]) => {
+          const totalKilo = data.reduce((sum, i) => sum + i.kilo, 0);
+          const totalAmount = data.reduce((sum, i) => sum + i.amount, 0);
+          sheet2.getCell(`B${row}`).value = "Kiloan";
+          sheet2.getCell(`C${row}`).value = label;
+          sheet2.getCell(`D${row}`).value = totalKilo;
+          sheet2.getCell(`E${row}`).value = totalAmount.toLocaleString();
+          sheet2.getRow(row).eachCell((cell) => (cell.border = borderStyle));
 
-  for (let r = 4; r < rowIdx; r++) {
-    for (let c = 2; c <= 4; c++) {
-      sheet2.getCell(r, c).border = borderStyle;
-    }
-  }
+          data.forEach((i) => {
+            row++;
+            sheet2.getCell(`F${row}`).value = i.service;
+            sheet2.getCell(`G${row}`).value = i.kilo;
+            sheet2.getCell(`H${row}`).value = i.amount.toLocaleString();
+            sheet2.getRow(row).eachCell((cell) => (cell.border = borderStyle));
+          });
+          row++;
+        };
 
-  // Kiloan Summary
-  let summaryStart = rowIdx + 2;
-  sheet2.getCell(`B${summaryStart}`).value = "CONTOH";
-  summaryStart++;
-  sheet2.getRow(summaryStart).values = [
-    " ", "Kategori", "Group Layanan", "Total Kilo", "Nominal", "Jenis Layanan", "Total Kilo", "Nominal"
-  ];
-  sheet2.getRow(summaryStart).eachCell(cell => cell.border = borderStyle);
+        renderKiloanGroup("Regular", regular);
+        renderKiloanGroup("Express", express);
 
-sheet2.getCell("A10").border = {};
+        // Satuan Summary
+        row++;
+        sheet2.getCell(`B${row}`).value = "Kategori";
+        sheet2.getCell(`C${row}`).value = "Group Barang";
+        sheet2.getCell(`D${row}`).value = "Total Barang";
+        sheet2.getCell(`E${row}`).value = "Nominal";
+        sheet2.getCell(`F${row}`).value = "Jenis Barang";
+        sheet2.getCell(`G${row}`).value = "Total Barang";
+        sheet2.getCell(`H${row}`).value = "Nominal";
+        sheet2.getRow(row).eachCell((cell) => (cell.border = borderStyle));
+        row++;
 
-  let row = summaryStart + 1;
-  const renderKiloanGroup = (label: string, data: any[]) => {
-    const totalKilo = data.reduce((sum, i) => sum + i.kilo, 0);
-    const totalAmount = data.reduce((sum, i) => sum + i.amount, 0);
-    sheet2.getCell(`B${row}`).value = "Kiloan";
-    sheet2.getCell(`C${row}`).value = label;
-    sheet2.getCell(`D${row}`).value = totalKilo;
-    sheet2.getCell(`E${row}`).value = totalAmount.toLocaleString();
-    sheet2.getRow(row).eachCell(cell => cell.border = borderStyle);
+        const groupedItems = reportData.serviceBreakdown.satuan.reduce(
+          (acc: any, item: any) => {
+            if (!acc[item.item]) acc[item.item] = [];
+            acc[item.item].push(item);
+            return acc;
+          },
+          {}
+        );
 
-    data.forEach(i => {
-      row++;
-      sheet2.getCell(`F${row}`).value = i.service;
-      sheet2.getCell(`G${row}`).value = i.kilo;
-      sheet2.getCell(`H${row}`).value = i.amount.toLocaleString();
-      sheet2.getRow(row).eachCell(cell => cell.border = borderStyle);
-    });
-    row++;
-  };
+        for (const group in groupedItems) {
+          const items = groupedItems[group];
+          const totalCount = items.reduce(
+            (sum: number, i: any) => sum + i.count,
+            0
+          );
+          const totalNominal = items.reduce(
+            (sum: number, i: any) => sum + i.amount,
+            0
+          );
 
-  renderKiloanGroup("Regular", regular);
-  renderKiloanGroup("Express", express);
+          sheet2.getCell(`B${row}`).value = "Satuan";
+          sheet2.getCell(`C${row}`).value = group;
+          sheet2.getCell(`D${row}`).value = totalCount;
+          sheet2.getCell(`E${row}`).value = totalNominal.toLocaleString();
+          sheet2.getRow(row).eachCell((cell) => (cell.border = borderStyle));
 
-  // Satuan Summary
-  row++;
-  sheet2.getCell(`B${row}`).value = "Kategori";
-  sheet2.getCell(`C${row}`).value = "Group Barang";
-  sheet2.getCell(`D${row}`).value = "Total Barang";
-  sheet2.getCell(`E${row}`).value = "Nominal";
-  sheet2.getCell(`F${row}`).value = "Jenis Barang";
-  sheet2.getCell(`G${row}`).value = "Total Barang";
-  sheet2.getCell(`H${row}`).value = "Nominal";
-  sheet2.getRow(row).eachCell(cell => cell.border = borderStyle);
-  row++;
-
-  const groupedItems = reportData.serviceBreakdown.satuan.reduce((acc: any, item: any) => {
-    if (!acc[item.item]) acc[item.item] = [];
-    acc[item.item].push(item);
-    return acc;
-  }, {});
-
-  for (const group in groupedItems) {
-    const items = groupedItems[group];
-    const totalCount = items.reduce((sum: number, i: any) => sum + i.count, 0);
-    const totalNominal = items.reduce((sum: number, i: any) => sum + i.amount, 0);
-
-    sheet2.getCell(`B${row}`).value = "Satuan";
-    sheet2.getCell(`C${row}`).value = group;
-    sheet2.getCell(`D${row}`).value = totalCount;
-    sheet2.getCell(`E${row}`).value = totalNominal.toLocaleString();
-    sheet2.getRow(row).eachCell(cell => cell.border = borderStyle);
-
-    items.forEach(i => {
-      row++;
-      sheet2.getCell(`F${row}`).value = i.item;
-      sheet2.getCell(`G${row}`).value = i.count;
-      sheet2.getCell(`H${row}`).value = i.amount.toLocaleString();
-      sheet2.getRow(row).eachCell(cell => cell.border = borderStyle);
-    });
-    row++;
-  }
-        
+          items.forEach((i: any) => {
+            row++;
+            sheet2.getCell(`F${row}`).value = i.item;
+            sheet2.getCell(`G${row}`).value = i.count;
+            sheet2.getCell(`H${row}`).value = i.amount.toLocaleString();
+            sheet2.getRow(row).eachCell((cell) => (cell.border = borderStyle));
+          });
+          row++;
+        }
 
         // Save the file
         const buffer = await workbook.xlsx.writeBuffer();
@@ -458,7 +476,6 @@ sheet2.getCell("A10").border = {};
     fetchReportData();
   }, [startDate, endDate, branchId]);
 
-  // console.log(reportData);
   return (
     <Card>
       <CardHeader>

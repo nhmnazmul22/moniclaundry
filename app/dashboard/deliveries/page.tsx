@@ -285,11 +285,6 @@ export default function DeliveriesPage() {
 
   const handleCreateDelivery = async () => {
     if (!selectedOrder || !selectedKurir || !scheduledTime) {
-      console.log("Validation failed:", {
-        selectedOrder,
-        selectedKurir,
-        scheduledTime,
-      });
       toast({
         title: "Error",
         description: "Mohon lengkapi semua field yang diperlukan.",

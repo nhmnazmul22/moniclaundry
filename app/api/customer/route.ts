@@ -50,7 +50,6 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
-    console.log(body);
     const { name, phone, email, current_branch_id } = body;
 
     if (!name || !phone || !email || !current_branch_id) {

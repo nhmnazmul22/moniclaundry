@@ -316,7 +316,6 @@ function SidebarContent({
   pathname: string;
   userProfile: any;
 }) {
-  console.log(userProfile);
   return (
     <>
       {/* Logo */}

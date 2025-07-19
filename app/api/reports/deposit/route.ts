@@ -108,7 +108,6 @@ export async function GET(request: NextRequest) {
     const todayTransactions = await TransactionModel.countDocuments(
       todayTransactionMatchStage
     );
-    console.log(todayTransactions);
 
     // Expiring deposits (within 2 weeks)
     const twoWeeksFromNow = new Date();

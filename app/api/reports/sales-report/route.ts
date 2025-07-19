@@ -142,6 +142,18 @@ export async function GET(req: NextRequest) {
       : null;
 
     const kiloanRegular = await OrderItemModel.aggregate([
+      ...(startDate && endDate
+        ? [
+            {
+              $match: {
+                createdAt: {
+                  $gte: new Date(startDate),
+                  $lte: new Date(endDate),
+                },
+              },
+            },
+          ]
+        : []),
       {
         $lookup: {
           from: "services",
@@ -180,6 +192,18 @@ export async function GET(req: NextRequest) {
     ]);
 
     const kiloanExpress = await OrderItemModel.aggregate([
+      ...(startDate && endDate
+        ? [
+            {
+              $match: {
+                createdAt: {
+                  $gte: new Date(startDate),
+                  $lte: new Date(endDate),
+                },
+              },
+            },
+          ]
+        : []),
       {
         $lookup: {
           from: "services",
@@ -220,6 +244,18 @@ export async function GET(req: NextRequest) {
     ]);
 
     const satuan = await OrderItemModel.aggregate([
+      ...(startDate && endDate
+        ? [
+            {
+              $match: {
+                createdAt: {
+                  $gte: new Date(startDate),
+                  $lte: new Date(endDate),
+                },
+              },
+            },
+          ]
+        : []),
       {
         $lookup: {
           from: "services",

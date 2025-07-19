@@ -528,16 +528,16 @@ export const DepositReceiptTemplate = React.forwardRef<
   }, [customer]);
 
   return (
-    <div ref={ref} className="w-[200px] p-3 bg-white text-[7px] leading-[1.1]">
+    <div ref={ref} className="w-[200px] p-3 bg-white text-[6px] leading-[1.1]">
       <div className="">
         <div className="py-1">
           <div className="flex items-start justify-between gap-1">
             <div className="w-[160px] space-y-0.5">
-              <div className="font-semibold text-[8px]">
+              <div className="font-semibold text-[7px]">
                 {businessInfo.name || ""}
               </div>
-              <div className="text-[7px]">{businessInfo.address || ""}</div>
-              <div className="text-[7px]">{businessInfo.phone || ""}</div>
+              <div className="text-[6px]">{businessInfo.address || ""}</div>
+              <div className="text-[6px]">{businessInfo.phone || ""}</div>
             </div>
             <div className="w-10 h-10">
               <img src="/pdf-logo.png" alt="Pdf logo" />
@@ -547,36 +547,36 @@ export const DepositReceiptTemplate = React.forwardRef<
 
         {/* Customer Section */}
         <div className="py-1 flex flex-col space-y-0.5 items-center text-center">
-          <div className="text-center font-semibold text-[7px]">
+          <div className="text-center font-semibold text-[6px]">
             Nota Deposit
           </div>
-          <div className="text-center font-semibold text-[10px]">
+          <div className="text-center font-semibold text-[8px]">
             {customer?.name}
           </div>
-          <div className="text-center font-semibold text-[7px]">
+          <div className="text-center font-semibold text-[6px]">
             Nota : DP{customer?._id.slice(0, 5).toUpperCase()}
           </div>
         </div>
 
         {/* Items */}
-        <div className="py-1 text-[8px]">
+        <div className="py-1 text-[7px]">
           <div className="font-bold mb-1 opacity-0">Deposit Info</div>
-          <div className="pb-2 text-[8px] space-y-1">
+          <div className="pb-2 text-[7px] space-y-1">
             <div className="flex justify-start">
               <span className="w-20">Deposit Type</span>
-              <span className="font-bold ms-2 text-left w-[135px]">
+              <span className="font-bold ms-2 text-left w-[150px]">
                 {customer?.deposit_type}
               </span>
             </div>
             <div className="flex justify-start">
               <span className="w-20">Deposit Purchase Price</span>
-              <span className="font-bold ms-2 text-left w-[135px]">
+              <span className="font-bold ms-2 text-left w-[150px]">
                 {formatCurrency(depositType?.purchase_price)}
               </span>
             </div>
             <div className="flex justify-start font-bold">
               <span className="w-20">Deposit Value</span>
-              <span className="uppercase ms-2 text-left w-[135px]">
+              <span className="uppercase ms-2 text-left w-[150px]">
                 {" "}
                 {formatCurrency(depositType?.deposit_value)}
               </span>
@@ -584,7 +584,7 @@ export const DepositReceiptTemplate = React.forwardRef<
             {customer?.has_expiry && customer.expiry_date && (
               <div className="flex justify-start font-bold">
                 <span className="w-20">Expire Date</span>
-                <span className="uppercase ms-2 text-left w-[135px]">
+                <span className="uppercase ms-2 text-left w-[150px]">
                   {formatDateTime(customer?.expiry_date)}
                 </span>
               </div>
@@ -592,12 +592,10 @@ export const DepositReceiptTemplate = React.forwardRef<
           </div>
         </div>
 
-        <div className="text-left text-[7px] mb-2 mt-3">Catatan</div>
-        <div className="flex flex-col gap-1">
-          <div className="w-full h-[0.5px] bg-black"></div>
-          <p className="text-[7px] italic text-center">
-            {depositType?.description || "No notes"}
-          </p>
+        <div className="text-left text-[7px] mb-2 mt-3 opacity-0">Catatan</div>
+        <div className="flex flex-col gap-1 opacity-0">
+          <div className="w-full h-[0.5px] bg-black "></div>
+          <p className="text-[7px] italic text-center">No notes</p>
           <div className="w-full h-[0.5px] bg-black"></div>
         </div>
       </div>

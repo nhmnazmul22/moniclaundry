@@ -79,8 +79,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(body);
-
     // Create new Branched data
     const user = await UsersModel.create({ ...body, password: hashedPassword });
 

@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, purchase_price, deposit_value, current_branch_id } = body;
 
-    console.log(body);
     if (!name || !purchase_price || !deposit_value || !current_branch_id) {
       return NextResponse.json(
         {

@@ -261,15 +261,12 @@ export default function ServicesPage() {
   };
 
   const handleAddService = async () => {
-    console.log(currentBranchId);
     const serviceData = {
       ...serviceForm,
       type: serviceType || "",
       current_branch_id:
         selectedBranchIds.length > 0 ? selectedBranchIds : [currentBranchId],
     };
-
-    console.log(serviceData);
 
     try {
       setLoading(true);
