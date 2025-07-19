@@ -210,11 +210,11 @@ export const InternalReceiptTemplate = React.forwardRef<
   ReceiptTemplateProps
 >(({ order, orderItems, businessInfo, receiptInfo }, ref) => {
   return (
-    <div ref={ref} className="w-[300px] p-3 bg-white text-[8px] leading-[1.1] ">
+    <div ref={ref} className="w-[58mm] p-3 bg-white text-[8px] leading-[1.1]">
       <div className="">
         <div className="py-1">
           <div className="flex items-start justify-between gap-1">
-            <div className="w-[240px] space-y-0.5">
+            <div className="w-fit space-y-0.5">
               <div className="font-semibold text-[8px]">
                 {businessInfo.name || ""}
               </div>
@@ -250,18 +250,14 @@ export const InternalReceiptTemplate = React.forwardRef<
               {orderItems &&
                 orderItems.map((item) => (
                   <tr key={item._id}>
-                    <td className="w-32 text-left">
+                    <td className="w-24 text-left">
                       {item.serviceDetails?.servicename}
                     </td>
-                    <td className="text-left font-bold ms-2">
+                    <td className="text-left font-bold ms-3">
                       {item.quantity}
                       {item.serviceDetails.type === "Satuan" ? " pcs" : " kg"}
                     </td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <td colSpan={5}></td>
                   </tr>
                 ))}
             </tbody>
@@ -271,14 +267,14 @@ export const InternalReceiptTemplate = React.forwardRef<
         {/* Date and Status */}
         <div className="pb-2 text-[8px] space-y-1">
           <div className="flex justify-start ">
-            <span className="w-28">Tanggal Masuk</span>
+            <span className="w-24">Tanggal Masuk</span>
             <span className="font-bold ms-2">
               {formatDateTime(order?.createdAt)}
             </span>
           </div>
           {receiptInfo?.show_estimated_completion && (
             <div className="flex justify-start">
-              <span className="w-28">Estimasi Selesai</span>
+              <span className="w-24">Estimasi Selesai</span>
               <span className="font-bold ms-2">
                 {formatDateTime(order?.estimated_completion)}
               </span>
@@ -286,7 +282,7 @@ export const InternalReceiptTemplate = React.forwardRef<
           )}
           {receiptInfo?.internal_print_show_payment_info && (
             <div className="flex justify-start font-bold">
-              <span className="w-28">Status</span>
+              <span className="w-24">Status</span>
               <span className="uppercase ms-2">{order?.payment_status}</span>
             </div>
           )}
