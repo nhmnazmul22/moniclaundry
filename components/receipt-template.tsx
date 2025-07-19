@@ -4,7 +4,13 @@ import { toast } from "@/hooks/use-toast";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchDepositTypes } from "@/store/depositTypesSlice";
-import type { Customer, DepositType, Order, OrderItem } from "@/types";
+import type {
+  BusinessSetting,
+  Customer,
+  DepositType,
+  Order,
+  OrderItem,
+} from "@/types";
 import { Dot } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { QRCodeCanvas } from "qrcode.react";
@@ -23,6 +29,7 @@ interface ReceiptTemplateProps {
   orderItems?: OrderItem[];
   businessInfo: BusinessInfo;
   customer?: Customer;
+  receiptInfo?: BusinessSetting;
 }
 
 // Template 1: Cash/Transfer/QRIS/Deposit Payment
@@ -202,7 +209,7 @@ export const CashTransferReceiptTemplate = React.forwardRef<
 export const InternalReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps
->(({ order, orderItems, businessInfo }, ref) => {
+>(({ order, orderItems, businessInfo, receiptInfo }, ref) => {
   return (
     <div ref={ref} className="w-[300px] p-3 bg-white text-[8px] leading-[1.1] ">
       <div className="">
@@ -216,7 +223,9 @@ export const InternalReceiptTemplate = React.forwardRef<
               <div className="text-[7px]">{businessInfo.phone || ""}</div>
             </div>
             <div className="w-10 h-10">
-              <img src="/pdf-logo.png" alt="Pdf logo" />
+              {receiptInfo?.internal_print_show_logo && (
+                <img src="/pdf-logo.png" alt="Pdf logo" />
+              )}
             </div>
           </div>
         </div>
@@ -268,23 +277,29 @@ export const InternalReceiptTemplate = React.forwardRef<
               {formatDateTime(order?.createdAt)}
             </span>
           </div>
-          <div className="flex justify-start">
-            <span className="w-28">Estimasi Selesai</span>
-            <span className="font-bold ms-2">
-              {formatDateTime(order?.estimated_completion)}
-            </span>
-          </div>
-          <div className="flex justify-start font-bold">
-            <span className="w-28">Status</span>
-            <span className="uppercase ms-2">{order?.payment_status}</span>
-          </div>
+          {receiptInfo?.show_estimated_completion && (
+            <div className="flex justify-start">
+              <span className="w-28">Estimasi Selesai</span>
+              <span className="font-bold ms-2">
+                {formatDateTime(order?.estimated_completion)}
+              </span>
+            </div>
+          )}
+          {receiptInfo?.internal_print_show_payment_info && (
+            <div className="flex justify-start font-bold">
+              <span className="w-28">Status</span>
+              <span className="uppercase ms-2">{order?.payment_status}</span>
+            </div>
+          )}
         </div>
 
         <div className="text-left text-[7px] mb-2 mt-3">Catatan</div>
         <div className="flex flex-col gap-1">
           <div className="w-full h-[0.5px] bg-black"></div>
           <p className="text-[7px] italic text-center">
-            {order?.notes || "No notes"}
+            {order?.notes ||
+              receiptInfo?.internal_print_free_text ||
+              "No notes"}
           </p>
           <div className="w-full h-[0.5px] bg-black"></div>
         </div>
@@ -297,7 +312,7 @@ export const InternalReceiptTemplate = React.forwardRef<
 export const ReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps
->(({ order, orderItems, businessInfo }, ref) => {
+>(({ order, orderItems, businessInfo, receiptInfo }, ref) => {
   // const totalPaid = order.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
   const totalPaid = order?.total_amount;
   // const change =
@@ -318,7 +333,9 @@ export const ReceiptTemplate = React.forwardRef<
     >
       {/* Header */}
       <div className="text-center mb-4">
-        <img src="/pdf-logo.png" className="w-20 h-auto mx-auto" />
+        {receiptInfo?.original_receipt_show_logo && (
+          <img src="/pdf-logo.png" className="w-20 h-auto mx-auto" />
+        )}
         <h1 className="text-lg font-bold mt-[-10pxs]">{businessInfo.name}</h1>
         <p>{businessInfo.address}</p>
         <p>{businessInfo.phone}</p>
@@ -414,15 +431,16 @@ export const ReceiptTemplate = React.forwardRef<
             <span>{formatCurrency(totalPaid)}</span>
           </div>
         )}
-        {order?.payment_method === "deposit" && (
-          <div className="flex justify-between">
-            <span>Sisa Deposit:</span>
-            <span>
-              {order.customerDetails &&
-                formatCurrency(order.customerDetails?.deposit_balance)}
-            </span>
-          </div>
-        )}
+        {order?.payment_method === "deposit" &&
+          receiptInfo?.show_customer_deposit && (
+            <div className="flex justify-between">
+              <span>Sisa Deposit:</span>
+              <span>
+                {order.customerDetails &&
+                  formatCurrency(order.customerDetails?.deposit_balance)}
+              </span>
+            </div>
+          )}
 
         {/* {change > 0 && (
           <div className="flex justify-between">
@@ -440,14 +458,13 @@ export const ReceiptTemplate = React.forwardRef<
             <span>
               <Dot size={16} />
             </span>
-            Kusut, susut, luntur karena kondisi bahan bukan tanggung jawab
-            laundry
+            {receiptInfo?.original_receipt_terms_condition_1}
           </p>
           <p className="flex gap-1 p-0 m-0">
             <span>
               <Dot size={16} />
             </span>
-            Komplain maksimal 3 hari dan wajib video unboxing
+            {receiptInfo?.original_receipt_terms_condition_2}
           </p>
         </div>
       </div>
@@ -456,19 +473,23 @@ export const ReceiptTemplate = React.forwardRef<
       <div className="mt-5 mb-5">
         <div className="font-bold">
           Customer Service :
-          <span className="text-black font-bold">0811-9876-771</span>
+          <span className="text-black font-bold">
+            {receiptInfo?.original_receipt_customer_service}
+          </span>
         </div>
-        <div className="font-bold">#laundryapasajabisa</div>
+        <div className="font-bold">{receiptInfo?.original_receipt_hashtag}</div>
       </div>
 
       {/* QR Code */}
-      <div className="flex flex-col items-center mt-5">
-        <QRCodeCanvas value={qrData} size={128} level="H" />
-        <div className="text-[8px] text-center max-w-[280px] break-words mt-2">
-          <p className="font-bold">QR Data:</p>
-          <p>{qrData}</p>
+      {receiptInfo?.original_receipt_show_qr && (
+        <div className="flex flex-col items-center mt-5">
+          <QRCodeCanvas value={qrData} size={128} level="H" />
+          <div className="text-[8px] text-center max-w-[280px] break-words mt-2">
+            <p className="font-bold">QR Data:</p>
+            <p>{qrData}</p>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 });

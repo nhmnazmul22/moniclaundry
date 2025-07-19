@@ -24,7 +24,7 @@ import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchOrderItems } from "@/store/OrderItemSlice";
 // import { fetchOrders } from "@/store/orderSlice";
-import { Branches, type Customer, type Order } from "@/types";
+import { Branches, BusinessSetting, type Customer, type Order } from "@/types";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
@@ -65,6 +65,7 @@ export default function OrderDetailPage({
     Order["order_status"] | ""
   >("");
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [settings, setSettings] = useState<BusinessSetting>();
 
   const receiptTemplate = useRef<HTMLDivElement>(
     null
@@ -117,12 +118,32 @@ export default function OrderDetailPage({
     }
   };
 
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+
+      const res = await api.get("/api/setting");
+      if (res.status === 200) {
+        setSettings(res.data.data);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (orderId) {
       dispatch(fetchOrderItems(orderId));
       fetchOrderData();
     }
   }, [orderId]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const generatePDF = async (
     templateRef: React.RefObject<HTMLDivElement>,
@@ -484,18 +505,21 @@ export default function OrderDetailPage({
               order={order}
               orderItems={orderItems!}
               businessInfo={businessInfo}
+              receiptInfo={settings}
             />
             <CashTransferReceiptTemplate
               ref={cashTransferRef}
               order={order}
               orderItems={orderItems!}
               businessInfo={businessInfo}
+              receiptInfo={settings}
             />
             <InternalReceiptTemplate
               ref={internalRef}
               order={order}
               orderItems={orderItems!}
               businessInfo={businessInfo}
+              receiptInfo={settings}
             />
           </>
         )}

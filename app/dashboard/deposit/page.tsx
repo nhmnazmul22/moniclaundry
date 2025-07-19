@@ -51,6 +51,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBranch } from "@/contexts/branch-context";
 import { toast } from "@/hooks/use-toast";
 import { addNotification } from "@/lib/api";
+import api from "@/lib/config/axios";
 import { cn } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
 import { fetchBranches } from "@/store/BranchSlice";
@@ -71,7 +72,12 @@ import {
   cancelTransaction,
   fetchTransactions,
 } from "@/store/transactionsSlice";
-import { Branches, DepositType, NotificationType } from "@/types";
+import {
+  Branches,
+  BusinessSetting,
+  DepositType,
+  NotificationType,
+} from "@/types";
 import { format } from "date-fns";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -92,6 +98,7 @@ export default function DepositManagement() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [branch, setBranch] = useState<Branches | undefined>(undefined);
   const dispatch = useDispatch<AppDispatch>();
+  const [settings, setSettings] = useState<BusinessSetting>();
 
   // Redux state
   const customers = useSelector((state: RootState) => state.customerReducer);
@@ -114,6 +121,18 @@ export default function DepositManagement() {
   >(null);
   const depositRef = useRef<Record<string, HTMLDivElement | null>>({});
 
+  const fetchSettings = async () => {
+    try {
+      const res = await api.get("/api/setting");
+      if (res.status === 200) {
+        setSettings(res.data.data);
+      }
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+    }
+  };
+
   // Fetch all data on component mount
   useEffect(() => {
     if (branchId) {
@@ -124,13 +143,16 @@ export default function DepositManagement() {
     }
   }, [dispatch, branchId]);
 
-
   useEffect(() => {
     if (branchId) {
       const branch = branches?.filter((b) => b._id === branchId);
       setBranch(branch![0]);
     }
   }, [branches, branchId]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   // Generate Receipt
   const generatePDF = async (
@@ -741,6 +763,7 @@ export default function DepositManagement() {
                             }}
                             customer={customer}
                             businessInfo={businessInfo}
+                            receiptInfo={settings}
                           />
                         </>
                       )}

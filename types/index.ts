@@ -376,7 +376,6 @@ export interface BusinessSetting {
   original_receipt_customer_service: string;
   original_receipt_hashtag: string;
   original_receipt_additional_info: string;
-
   payment_receipt_header: string;
   payment_receipt_show_logo: boolean;
   payment_receipt_show_transaction_details: boolean;
@@ -387,7 +386,6 @@ export interface BusinessSetting {
   payment_receipt_customer_service: string;
   payment_receipt_hashtag: string;
   payment_receipt_free_text: string;
-
   internal_print_header: string;
   internal_print_show_logo: boolean;
   internal_print_show_prices: boolean;
