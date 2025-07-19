@@ -384,33 +384,6 @@ export default function SettingsPage() {
                 <TabsContent value="original_receipt">
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <Label htmlFor="receiptHeader">Header Struk</Label>
-                      <Input
-                        id="receiptHeader"
-                        value={settings?.original_receipt_header}
-                        onChange={(e) =>
-                          updateSetting(
-                            "original_receipt_header",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="receiptFooter">Footer Struk</Label>
-                      <Input
-                        id="receiptFooter"
-                        value={settings?.original_receipt_footer}
-                        onChange={(e) =>
-                          updateSetting(
-                            "original_receipt_footer",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-
-                    <div className="space-y-2">
                       <Label htmlFor="original_receipt_customer_service">
                         Customer Service
                       </Label>
@@ -576,21 +549,6 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="payment_receipt_kasir_name">
-                        Kasir Name
-                      </Label>
-                      <Input
-                        id="payment_receipt_kasir_name"
-                        value={settings?.payment_receipt_kasir_name}
-                        onChange={(e) =>
-                          updateSetting(
-                            "payment_receipt_kasir_name",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
                       <Label htmlFor="payment_receipt_terms_condition_1">
                         Receipt Condition 1
                       </Label>
@@ -635,21 +593,6 @@ export default function SettingsPage() {
                         }
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="payment_receipt_free_text">
-                        Receipt Free Text
-                      </Label>
-                      <Input
-                        id="payment_receipt_free_text"
-                        value={settings?.payment_receipt_free_text}
-                        onChange={(e) =>
-                          updateSetting(
-                            "payment_receipt_free_text",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
 
                     <div className="flex flex-wrap justify-start gap-5 items-center">
                       <div className="flex items-center space-x-2">
@@ -681,45 +624,6 @@ export default function SettingsPage() {
                           Tampilkan Transaction Details
                         </Label>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="payment_receipt_show_kasir_name"
-                          checked={settings?.payment_receipt_show_kasir_name}
-                          onCheckedChange={(checked) =>
-                            updateSetting(
-                              "payment_receipt_show_kasir_name",
-                              checked
-                            )
-                          }
-                        />
-                        <Label htmlFor="payment_receipt_show_kasir_name">
-                          Tampilkan Kasir Name
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="show_estimated_completion"
-                          checked={settings?.show_estimated_completion}
-                          onCheckedChange={(checked) =>
-                            updateSetting("show_estimated_completion", checked)
-                          }
-                        />
-                        <Label htmlFor="show_estimated_completion">
-                          Tampilkan Customer Deposit
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="show_customer_deposit"
-                          checked={settings?.show_customer_deposit}
-                          onCheckedChange={(checked) =>
-                            updateSetting("show_customer_deposit", checked)
-                          }
-                        />
-                        <Label htmlFor="show_customer_deposit">
-                          Tampilkan Customer Deposit
-                        </Label>
-                      </div>
                     </div>
 
                     <div className="flex justify-end">
@@ -746,21 +650,6 @@ export default function SettingsPage() {
                         }
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="internal_print_free_text">
-                        Receipt Free Text
-                      </Label>
-                      <Input
-                        id="internal_print_free_text"
-                        value={settings?.internal_print_free_text}
-                        onChange={(e) =>
-                          updateSetting(
-                            "internal_print_free_text",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
 
                     <div className="flex flex-wrap justify-start gap-5 items-center">
                       <div className="flex items-center space-x-2">
@@ -773,57 +662,6 @@ export default function SettingsPage() {
                         />
                         <Label htmlFor="internal_print_show_logo">
                           Tampilkan Logo
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="internal_print_show_prices"
-                          checked={settings?.internal_print_show_prices}
-                          onCheckedChange={(checked) =>
-                            updateSetting("internal_print_show_prices", checked)
-                          }
-                        />
-                        <Label htmlFor="payment_receipt_show_transaction_details">
-                          Tampilkan Prices
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="internal_print_show_payment_info"
-                          checked={settings?.internal_print_show_payment_info}
-                          onCheckedChange={(checked) =>
-                            updateSetting(
-                              "internal_print_show_payment_info",
-                              checked
-                            )
-                          }
-                        />
-                        <Label htmlFor="internal_print_show_payment_info">
-                          Tampilkan Payment Info
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="show_estimated_completion"
-                          checked={settings?.show_estimated_completion}
-                          onCheckedChange={(checked) =>
-                            updateSetting("show_estimated_completion", checked)
-                          }
-                        />
-                        <Label htmlFor="show_estimated_completion">
-                          Tampilkan Estimated Completion
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="show_customer_deposit"
-                          checked={settings?.show_customer_deposit}
-                          onCheckedChange={(checked) =>
-                            updateSetting("show_customer_deposit", checked)
-                          }
-                        />
-                        <Label htmlFor="show_customer_deposit">
-                          Tampilkan Customer Deposit
                         </Label>
                       </div>
                     </div>

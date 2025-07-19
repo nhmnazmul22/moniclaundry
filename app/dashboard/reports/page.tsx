@@ -40,7 +40,7 @@ import { fetchCustomers } from "@/store/CustomerSlice";
 import { fetchExpenses } from "@/store/ExpensesSlice";
 import { fetchOrders } from "@/store/orderSlice";
 import { fetchPayments } from "@/store/PaymentSlice";
-import { endOfMonth, format, startOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { AlertTriangle, CalendarDays, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";

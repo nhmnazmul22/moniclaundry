@@ -2,7 +2,7 @@ export interface User {
   _id?: string;
   email: string;
   full_name: string;
-  role: "owner" | "admin" | "kurir" | "kasir";
+  role: "owner" | "admin" | "kurir" | "kasir" | "";
   phone?: string;
   address?: string;
   avatar_url?: string;

@@ -14,7 +14,7 @@ const initialState: UsersState = {
     email: "",
     phone: "",
     full_name: "",
-    role: "owner",
+    role: "",
     is_active: true,
     current_branch_id: [],
   },

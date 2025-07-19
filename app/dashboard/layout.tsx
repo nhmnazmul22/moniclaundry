@@ -47,24 +47,33 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-const navigation = (userProfile: any) => [
-  { name: "Dashboar", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Order", href: "/dashboard/orders", icon: ShoppingCart },
-  { name: "Layanan", href: "/dashboard/services", icon: Shirt },
-  { name: "Customer", href: "/dashboard/customers", icon: Users },
-  { name: "Pengeluaran", href: "/dashboard/expenses", icon: Package },
-  { name: "Antar Jemput", href: "/dashboard/deliveries", icon: Truck },
-  { name: "Laporan", href: "/dashboard/reports", icon: BarChart3 },
-  { name: "Deposit", href: "/dashboard/deposit", icon: CreditCard },
-  // Only show Staff menu and setting for Owner role
-  ...(userProfile?.role === "owner"
-    ? [
-        { name: "Staff", href: "/dashboard/staff", icon: UserCheck },
-        { name: "Settings", href: "/dashboard/settings", icon: Settings },
-      ]
-    : []),
-  ,
-];
+const navigation = (userProfile: any) => {
+  const navigationArray = [
+    { name: "Dashboar", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Order", href: "/dashboard/orders", icon: ShoppingCart },
+    { name: "Layanan", href: "/dashboard/services", icon: Shirt },
+    { name: "Customer", href: "/dashboard/customers", icon: Users },
+    { name: "Pengeluaran", href: "/dashboard/expenses", icon: Package },
+    { name: "Antar Jemput", href: "/dashboard/deliveries", icon: Truck },
+    { name: "Laporan", href: "/dashboard/reports", icon: BarChart3 },
+    { name: "Deposit", href: "/dashboard/deposit", icon: CreditCard },
+  ];
+
+  if (userProfile.role === "owner") {
+    navigationArray.push({
+      name: "Staff",
+      href: "/dashboard/staff",
+      icon: UserCheck,
+    });
+    navigationArray.push({
+      name: "Settings",
+      href: "/dashboard/settings",
+      icon: Settings,
+    });
+  }
+
+  return navigationArray;
+};
 
 export default function DashboardLayout({
   children,
@@ -270,12 +279,14 @@ export default function DashboardLayout({
                       <span>Profile</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </Link>
-                  </DropdownMenuItem>
+                  {user?.role === "owner" && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/settings">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Settings</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => signOut({ callbackUrl: "/login" })}
@@ -305,6 +316,7 @@ function SidebarContent({
   pathname: string;
   userProfile: any;
 }) {
+  console.log(userProfile);
   return (
     <>
       {/* Logo */}
@@ -325,29 +337,30 @@ function SidebarContent({
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
           <li>
             <ul role="list" className="-mx-2 space-y-1">
-              {navItems.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      pathname === item.href
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:text-blue-700 hover:bg-blue-50",
-                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-                    )}
-                  >
-                    <item.icon
+              {userProfile &&
+                navItems.map((item) => (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
                       className={cn(
                         pathname === item.href
-                          ? "text-blue-700"
-                          : "text-gray-400 group-hover:text-blue-700",
-                        "h-6 w-6 shrink-0"
+                          ? "bg-blue-50 text-blue-700"
+                          : "text-gray-700 hover:text-blue-700 hover:bg-blue-50",
+                        "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
                       )}
-                    />
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
+                    >
+                      <item.icon
+                        className={cn(
+                          pathname === item.href
+                            ? "text-blue-700"
+                            : "text-gray-400 group-hover:text-blue-700",
+                          "h-6 w-6 shrink-0"
+                        )}
+                      />
+                      {item.name}
+                    </Link>
+                  </li>
+                ))}
             </ul>
           </li>
         </ul>
