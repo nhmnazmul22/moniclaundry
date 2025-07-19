@@ -35,7 +35,7 @@ export const authOptions: AuthOptions = {
           if (isPasswordCorrect && user.is_active) {
             return {
               id: user._id,
-              name: user.name,
+              name: user.full_name,
               email: user.email,
               role: user.role,
               is_active: user.is_active,

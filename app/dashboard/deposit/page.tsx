@@ -1,5 +1,6 @@
 "use client";
 
+import { DepositReceiptTemplate } from "@/components/receipt-template";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,6 +53,7 @@ import { toast } from "@/hooks/use-toast";
 import { addNotification } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
+import { fetchBranches } from "@/store/BranchSlice";
 import {
   fetchCustomers,
   purchaseDeposit,
@@ -69,8 +71,10 @@ import {
   cancelTransaction,
   fetchTransactions,
 } from "@/store/transactionsSlice";
-import { NotificationType } from "@/types";
+import { Branches, DepositType, NotificationType } from "@/types";
 import { format } from "date-fns";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   AlertTriangle,
   CalendarIcon,
@@ -80,12 +84,13 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 export default function DepositManagement() {
   const { currentBranchId: branchId } = useBranch();
-
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [branch, setBranch] = useState<Branches | undefined>(undefined);
   const dispatch = useDispatch<AppDispatch>();
 
   // Redux state
@@ -93,7 +98,9 @@ export default function DepositManagement() {
   const depositTypes = useSelector((state: RootState) => state.depositTypes);
   const transactions = useSelector((state: RootState) => state.transactions);
   const dashboard = useSelector((state: RootState) => state.depositReport);
-
+  const { items: branches } = useSelector(
+    (state: RootState) => state.branchReducer
+  );
   // Local state
   const [newDepositType, setNewDepositType] = useState({
     name: "",
@@ -105,6 +112,7 @@ export default function DepositManagement() {
   const [openDialogCustomerId, setOpenDialogCustomerId] = useState<
     string | null
   >(null);
+  const depositRef = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Fetch all data on component mount
   useEffect(() => {
@@ -115,6 +123,101 @@ export default function DepositManagement() {
       dispatch(fetchDepositReportData(branchId));
     }
   }, [dispatch, branchId]);
+
+
+  useEffect(() => {
+    if (branchId) {
+      const branch = branches?.filter((b) => b._id === branchId);
+      setBranch(branch![0]);
+    }
+  }, [branches, branchId]);
+
+  // Generate Receipt
+  const generatePDF = async (
+    templateRef: HTMLDivElement | null,
+    filename: string,
+    shouldPrint: boolean = false
+  ) => {
+    if (!templateRef) {
+      toast({
+        title: "Error",
+        description: "Gagal menemukan template nota.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPdfLoading(true);
+
+    try {
+      const canvas = await html2canvas(templateRef, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
+
+      const pxToMm = (px: number) => px * 0.264583;
+      const mmToPx = (mm: number) => mm / 0.264583;
+
+      const imgWidthMm = 58;
+      const imgWidthPx = mmToPx(imgWidthMm);
+      const scaleFactor = imgWidthPx / canvas.width;
+      const imgHeightMm = pxToMm(canvas.height * scaleFactor);
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: [imgWidthMm, imgHeightMm],
+      });
+
+      pdf.addImage(
+        canvas.toDataURL("image/png"),
+        "PNG",
+        0,
+        0,
+        imgWidthMm,
+        imgHeightMm
+      );
+
+      if (shouldPrint) {
+        pdf.autoPrint();
+        const printBlob = pdf.output("bloburl");
+        window.open(printBlob);
+      } else {
+        pdf.save(`${filename}.pdf`);
+      }
+
+      toast({
+        title: shouldPrint ? "Cetak" : "Sukses",
+        description: shouldPrint
+          ? `${filename} siap dicetak.`
+          : `${filename} berhasil diunduh.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: `Gagal proses nota: ${err.message}`,
+        variant: "destructive",
+      });
+      console.error("PDF generation error:", err);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const handleDownloadDepositReceipt = async (customerId: string) => {
+    const templateRef = depositRef.current[customerId];
+
+    if (!templateRef) {
+      toast({
+        title: "Error",
+        description: "Gagal menemukan template nota.",
+        variant: "destructive",
+      });
+      return;
+    }
+    await generatePDF(depositRef.current[customerId], "deposit-receipt");
+  };
 
   // Add new deposit type
   const handleAddDepositType = async () => {
@@ -304,6 +407,9 @@ export default function DepositManagement() {
         title: "Successful",
         description: "Deposit purchased successfully",
       });
+      if (!pdfLoading) {
+        handleDownloadDepositReceipt(customerId);
+      }
       setOpenDialogCustomerId(null);
     } catch (error: any) {
       // Send a notification
@@ -403,6 +509,13 @@ export default function DepositManagement() {
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const businessInfo = {
+    name: branch?.name || "Monic Laundry Galaxy",
+    type: branch?.type || "Offline",
+    address: branch?.address || "Jl. Taman Galaxy Raya No 301 E",
+    phone: branch?.phone || "+6287710108075",
   };
 
   const isLoading =
@@ -617,6 +730,21 @@ export default function DepositManagement() {
                         />
                       </DialogContent>
                     </Dialog>
+                    {/* Hidden Receipt Templates for PDF Generation */}
+                    <div className="absolute -left-[9999px] -top-[9999px]">
+                      {customer && (
+                        <>
+                          <DepositReceiptTemplate
+                            key={customer._id}
+                            ref={(el) => {
+                              depositRef.current[customer._id] = el;
+                            }}
+                            customer={customer}
+                            businessInfo={businessInfo}
+                          />
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

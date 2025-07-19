@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const settings = await SettingModel.find({});
+    const settings = await SettingModel.findOne({});
 
     if (!settings) {
       return NextResponse.json(
@@ -34,37 +34,29 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function PUT(req: NextRequest) {
+  await dbConnect();
   try {
-    await dbConnect();
-    const body = await request.json();
+    const body = await req.json();
 
-    // Create new Setting Obj
-    const settings = await SettingModel.create(body);
+    const updated = await SettingModel.findOneAndUpdate(
+      {},
+      { $set: body },
+      { new: true, runValidators: true }
+    );
 
-    if (!settings) {
+    if (!updated) {
       return NextResponse.json(
-        {
-          status: "Failed",
-          message: "Failed to create setting",
-        },
-        { status: 500 }
+        { message: "Business settings not found" },
+        { status: 404 }
       );
     }
 
-    return NextResponse.json(
-      {
-        status: "Successful",
-        data: settings,
-      },
-      { status: 201 }
-    );
+    return NextResponse.json(updated, { status: 200 });
   } catch (error) {
+    console.error("PUT /business-settings error:", error);
     return NextResponse.json(
-      {
-        status: "Failed",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
+      { message: "Internal server error" },
       { status: 500 }
     );
   }

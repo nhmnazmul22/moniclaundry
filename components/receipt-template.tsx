@@ -1,19 +1,28 @@
+"use client";
+import { useBranch } from "@/contexts/branch-context";
+import { toast } from "@/hooks/use-toast";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import type { Order, OrderItem } from "@/types";
+import { AppDispatch, RootState } from "@/store";
+import { fetchDepositTypes } from "@/store/depositTypesSlice";
+import type { Customer, DepositType, Order, OrderItem } from "@/types";
 import { Dot } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { QRCodeCanvas } from "qrcode.react";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 interface BusinessInfo {
   name: string;
   address: string;
   phone: string;
+  type: string;
 }
 
 interface ReceiptTemplateProps {
-  order: Order;
-  orderItems: OrderItem[];
+  order?: Order;
+  orderItems?: OrderItem[];
   businessInfo: BusinessInfo;
+  customer?: Customer;
 }
 
 // Template 1: Cash/Transfer/QRIS/Deposit Payment
@@ -21,6 +30,8 @@ export const CashTransferReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps
 >(({ order, orderItems, businessInfo }, ref) => {
+  const { data: session } = useSession();
+
   return (
     <div ref={ref} className="w-[260px] p-2 bg-white text-[8px] leading-[1.1] ">
       <div className="">
@@ -45,10 +56,10 @@ export const CashTransferReceiptTemplate = React.forwardRef<
             Nota Customer
           </div>
           <div className="text-center font-semibold text-[10px]">
-            {order.customerDetails?.name}
+            {order?.customerDetails?.name}
           </div>
           <div className="text-center font-semibold text-[7px]">
-            Nota : {order.order_number}
+            Nota : {order?.order_number}
           </div>
         </div>
 
@@ -56,11 +67,11 @@ export const CashTransferReceiptTemplate = React.forwardRef<
         <div className="py-1 text-[7px] space-y-1">
           <div className="flex justify-start gap-2">
             <span className="w-[70px]">Transaksi</span>
-            <span>OFFLINE</span>
+            <span className="uppercase">{businessInfo.type}</span>
           </div>
           <div className="flex justify-start gap-2">
             <span className="w-[70px]">Kasir</span>
-            <span>Sri</span>
+            <span>{session?.user.name}</span>
           </div>
         </div>
 
@@ -70,50 +81,53 @@ export const CashTransferReceiptTemplate = React.forwardRef<
 
           <table className="w-full text-left">
             <tbody className="flex flex-col gap-1">
-              {orderItems.map((item) => (
-                <tr key={item._id}>
-                  <td width={"78px"} className="text-[7px]">
-                    {item.serviceDetails?.servicename! || "N/A"}
-                  </td>
-                  <td className="text-left w-[30px]">
-                    {item.quantity}
-                    {item.serviceDetails.type === "Satuan" ? " pcs" : " kg"}
-                  </td>
-                  <td className="text-center w-[20px]">x</td>
-                  {item.serviceDetails.price && (
-                    <td className="text-right w-[40px]">
-                      {formatCurrency(item.serviceDetails.price)
-                        .replace("Rp", "")
-                        .replace(".", ",")}
+              {orderItems &&
+                orderItems.map((item) => (
+                  <tr key={item._id}>
+                    <td width={"78px"}>
+                      {item.serviceDetails?.servicename! || "N/A"}
                     </td>
-                  )}
-                  {item.serviceDetails && item.quantity && (
-                    <td className="text-right w-[40px]">
-                      {formatCurrency(item.quantity * item.serviceDetails.price)
-                        .replace("Rp", "")
-                        .replace(".", ",")}
+                    <td className="text-left w-[30px]">
+                      {item.quantity}
+                      {item.serviceDetails.type === "Satuan" ? " pcs" : " kg"}
                     </td>
-                  )}
-                </tr>
-              ))}
+                    <td className="text-center w-[20px]">x</td>
+                    {item.serviceDetails.price && (
+                      <td className="text-right w-[40px]">
+                        {formatCurrency(item.serviceDetails.price)
+                          .replace("Rp", "")
+                          .replace(".", ",")}
+                      </td>
+                    )}
+                    {item.serviceDetails && item.quantity && (
+                      <td className="text-right w-[40px]">
+                        {formatCurrency(
+                          item.quantity * item.serviceDetails.price
+                        )
+                          .replace("Rp", "")
+                          .replace(".", ",")}
+                      </td>
+                    )}
+                  </tr>
+                ))}
               <tr>
-                <td className="w-[173px]">Total Harga</td>
+                <td className="w-[172px]">Total Harga</td>
                 <td className="text-right font-semibold w-[40px]">
-                  {order.total_amount &&
+                  {order?.total_amount &&
                     formatCurrency(order.total_amount)
                       .replace("Rp", "")
                       .replace(".", ",")}
                 </td>
               </tr>
               <tr>
-                <td className="w-[173px]">Diskon</td>
+                <td className="w-[172px]">Diskon</td>
                 <td className="text-center w-[40px]">-</td>
               </tr>
               <tr className="font-normal">
                 <td colSpan={4} className="w-[78px]"></td>
-                <td className="text-left w-[94px]">Harus dibayar</td>
+                <td className="text-left w-[95px]">Harus dibayar</td>
                 <td className="text-right font-semibold w-[40px]">
-                  {formatCurrency(order.total_amount - order.discount)
+                  {formatCurrency(order?.total_amount! - order?.discount!)
                     .replace("Rp", "")
                     .replace(".", ",")}
                 </td>
@@ -127,24 +141,24 @@ export const CashTransferReceiptTemplate = React.forwardRef<
           <div className="flex justify-start ">
             <span className="w-[78px]">Tanggal Masuk</span>
             <span className="font-bold">
-              {formatDateTime(order.createdAt)}
+              {formatDateTime(order?.createdAt)}
             </span>
           </div>
           <div className="flex justify-start">
             <span className="w-[78px]">Estimasi Selesai</span>
             <span className="font-bold">
-              {formatDateTime(order.estimated_completion)}
+              {formatDateTime(order?.estimated_completion)}
             </span>
           </div>
           <div className="flex justify-start font-bold">
             <span className="w-[78px]">Pembayaran</span>
-            <span className="uppercase">{order.payment_method}</span>
+            <span className="uppercase">{order?.payment_method}</span>
           </div>
           <div className="flex justify-start font-bold">
             <span className="w-[78px]">Status</span>
-            <span className="uppercase">{order.payment_status}</span>
+            <span className="uppercase">{order?.payment_status}</span>
           </div>
-          {order.payment_method === "deposit" && (
+          {order?.payment_method === "deposit" && (
             <>
               <div className="flex justify-start font-bold">
                 <span className="w-[78px]">Nilai Potong Deposit</span>
@@ -166,7 +180,7 @@ export const CashTransferReceiptTemplate = React.forwardRef<
         <div className="flex flex-col gap-1">
           <div className="w-full h-[0.5px] bg-black"></div>
           <p className="text-[7px] italic text-center">
-            {order.notes || "No notes"}
+            {order?.notes || "No notes"}
           </p>
           <div className="w-full h-[0.5px] bg-black"></div>
         </div>
@@ -190,28 +204,18 @@ export const InternalReceiptTemplate = React.forwardRef<
   ReceiptTemplateProps
 >(({ order, orderItems, businessInfo }, ref) => {
   return (
-    <div ref={ref} className="w-[230px] p-2 bg-white text-[8px] leading-[1.1] ">
+    <div ref={ref} className="w-[300px] p-3 bg-white text-[8px] leading-[1.1] ">
       <div className="">
-        {/* Header */}
-        <div className="text-left mb-1">
-          <div className="text-[6px] font-semibold">
-            Bayar Pakai{" "}
-            {order.payment_method &&
-              order.payment_method[0].toUpperCase() +
-                order.payment_method?.slice(1)}
-          </div>
-        </div>
-
         <div className="py-1">
-          <div className="flex items-start gap-1">
-            <div className="flex-1 space-y-0.5">
+          <div className="flex items-start justify-between gap-1">
+            <div className="w-[240px] space-y-0.5">
               <div className="font-semibold text-[8px]">
                 {businessInfo.name || ""}
               </div>
               <div className="text-[7px]">{businessInfo.address || ""}</div>
               <div className="text-[7px]">{businessInfo.phone || ""}</div>
             </div>
-            <div className="w-8 h-8">
+            <div className="w-10 h-10">
               <img src="/pdf-logo.png" alt="Pdf logo" />
             </div>
           </div>
@@ -223,10 +227,10 @@ export const InternalReceiptTemplate = React.forwardRef<
             Nota Customer
           </div>
           <div className="text-center font-semibold text-[10px]">
-            {order.customerDetails?.name}
+            {order?.customerDetails?.name}
           </div>
           <div className="text-center font-semibold text-[7px]">
-            Nota : {order.order_number}
+            Nota : {order?.order_number}
           </div>
         </div>
 
@@ -235,20 +239,23 @@ export const InternalReceiptTemplate = React.forwardRef<
           <div className="font-bold mb-1 opacity-0">TRANSAKSI</div>
           <table className="w-full text-left">
             <tbody>
-              {orderItems.map((item) => (
-                <tr key={item._id}>
-                  <td>{item.serviceDetails?.servicename}</td>
-                  <td className="text-left font-bold">
-                    {item.quantity}
-                    {item.serviceDetails.type === "Satuan" ? "pcs" : "kg"}
-                  </td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                </tr>
-              ))}
+              {orderItems &&
+                orderItems.map((item) => (
+                  <tr key={item._id}>
+                    <td className="w-32 text-left">
+                      {item.serviceDetails?.servicename}
+                    </td>
+                    <td className="text-left font-bold ms-2">
+                      {item.quantity}
+                      {item.serviceDetails.type === "Satuan" ? " pcs" : " kg"}
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -258,25 +265,27 @@ export const InternalReceiptTemplate = React.forwardRef<
           <div className="flex justify-start ">
             <span className="w-28">Tanggal Masuk</span>
             <span className="font-bold ms-2">
-              {formatDateTime(order.createdAt)}
+              {formatDateTime(order?.createdAt)}
             </span>
           </div>
           <div className="flex justify-start">
             <span className="w-28">Estimasi Selesai</span>
             <span className="font-bold ms-2">
-              {formatDateTime(order.estimated_completion)}
+              {formatDateTime(order?.estimated_completion)}
             </span>
           </div>
           <div className="flex justify-start font-bold">
             <span className="w-28">Status</span>
-            <span className="uppercase ms-2">{order.payment_status}</span>
+            <span className="uppercase ms-2">{order?.payment_status}</span>
           </div>
         </div>
 
         <div className="text-left text-[7px] mb-2 mt-3">Catatan</div>
         <div className="flex flex-col gap-1">
           <div className="w-full h-[0.5px] bg-black"></div>
-          <p className="text-[7px] italic text-center">free tex</p>
+          <p className="text-[7px] italic text-center">
+            {order?.notes || "No notes"}
+          </p>
           <div className="w-full h-[0.5px] bg-black"></div>
         </div>
       </div>
@@ -290,17 +299,17 @@ export const ReceiptTemplate = React.forwardRef<
   ReceiptTemplateProps
 >(({ order, orderItems, businessInfo }, ref) => {
   // const totalPaid = order.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
-  const totalPaid = order.total_amount;
-  const change =
-    totalPaid > order.total_amount ? totalPaid - order.total_amount : 0;
-  const paymentMethod = order.payment_method || "N/A";
+  const totalPaid = order?.total_amount;
+  // const change =
+  //   totalPaid > order.total_amount ? totalPaid - order.total_amount : 0;
+  const paymentMethod = order?.payment_method || "N/A";
 
   // QR Code data string (could be plain or a URL)
-  const qrData = `Order: ${order.order_number} | Customer: ${
-    order.customerDetails?.name || "N/A"
-  } | Date: ${new Date(order.createdAt!).toLocaleDateString(
+  const qrData = `Order: ${order?.order_number} | Customer: ${
+    order?.customerDetails?.name || "N/A"
+  } | Date: ${new Date(order?.createdAt!).toLocaleDateString(
     "id-ID"
-  )} | Status: ${order.order_status}`;
+  )} | Status: ${order?.order_status}`;
 
   return (
     <div
@@ -319,7 +328,7 @@ export const ReceiptTemplate = React.forwardRef<
       <div className="border-t border-b border-dashed py-2 mb-2">
         <div className="flex justify-between">
           <span>Kode struk</span>
-          <span>{order.order_number}</span>
+          <span>{order?.order_number}</span>
         </div>
         <div className="flex justify-between">
           <span>Kasir</span>
@@ -327,12 +336,12 @@ export const ReceiptTemplate = React.forwardRef<
         </div>
         <div className="flex justify-between">
           <span>Terima</span>
-          <span>{formatDateTime(order.createdAt)}</span>
+          <span>{formatDateTime(order?.createdAt)}</span>
         </div>
-        {order.estimated_completion && (
+        {order?.estimated_completion && (
           <div className="flex justify-between">
             <span>Est.Ambil</span>
-            <span>{formatDateTime(order.estimated_completion)}</span>
+            <span>{formatDateTime(order?.estimated_completion)}</span>
           </div>
         )}
       </div>
@@ -340,55 +349,56 @@ export const ReceiptTemplate = React.forwardRef<
       {/* Customer Info */}
       <div className="mb-4 flex flex-col gap-1">
         <span className="font-bold">Untuk Customer:</span>
-        <span>{order.customerDetails?.name || "N/A"}</span>
-        <span>Total Lunas: {formatCurrency(order.total_amount)}</span>
+        <span>{order?.customerDetails?.name || "N/A"}</span>
+        <span>Total Lunas: {formatCurrency(order?.total_amount)}</span>
       </div>
 
       {/* Items */}
       <div className="border-t border-b border-dashed py-2 mb-2">
-        {orderItems.map((item) => (
-          <div key={item._id} className="mb-2 flex flex-col gap-1">
-            <span className="font-bold block">
-              {item?.serviceDetails?.servicename || "N/A"}
-            </span>
-            <span className="block">
-              {item.quantity}
-              {item.serviceDetails.type === "Satuan" ? "pcs" : "kg"} x{" "}
-              {formatCurrency(item.unit_price)}
-            </span>
-            <span className="text-right block">
-              Subtotal: {formatCurrency(item.subtotal)}
-            </span>
-            {item.notes && (
-              <span className="text-xs italic block">
-                Catatan: {item.notes}
+        {orderItems &&
+          orderItems.map((item) => (
+            <div key={item._id} className="mb-2 flex flex-col gap-1">
+              <span className="font-bold block">
+                {item?.serviceDetails?.servicename || "N/A"}
               </span>
-            )}
-          </div>
-        ))}
+              <span className="block">
+                {item.quantity}
+                {item.serviceDetails.type === "Satuan" ? "pcs" : "kg"} x{" "}
+                {formatCurrency(item.unit_price)}
+              </span>
+              <span className="text-right block">
+                Subtotal: {formatCurrency(item.subtotal)}
+              </span>
+              {item.notes && (
+                <span className="text-xs italic block">
+                  Catatan: {item.notes}
+                </span>
+              )}
+            </div>
+          ))}
       </div>
 
       {/* Summary */}
       <div className="mb-4">
         <div className="flex justify-between">
           <span>Total:</span>
-          <span className="font-bold">{formatCurrency(order.subtotal)}</span>
+          <span className="font-bold">{formatCurrency(order?.subtotal)}</span>
         </div>
-        {order.discount > 0 && (
+        {order?.discount! > 0 && (
           <div className="flex justify-between">
             <span>Diskon:</span>
-            <span>{formatCurrency(order.discount)}</span>
+            <span>{formatCurrency(order?.discount)}</span>
           </div>
         )}
-        {order.tax > 0 && (
+        {order?.tax! > 0 && (
           <div className="flex justify-between">
             <span>Pajak:</span>
-            <span>{formatCurrency(order.tax)}</span>
+            <span>{formatCurrency(order?.tax)}</span>
           </div>
         )}
         <div className="flex justify-between font-bold text-base mt-1">
           <span>Grand Total:</span>
-          <span>{formatCurrency(order.total_amount)}</span>
+          <span>{formatCurrency(order?.total_amount)}</span>
         </div>
         <div className="flex justify-between mt-2">
           <span>Pembayaran: </span>
@@ -396,21 +406,23 @@ export const ReceiptTemplate = React.forwardRef<
         </div>
         <div className="flex justify-between">
           <span>Status Bayar:</span>
-          <span>{order.payment_status?.toUpperCase()}</span>
+          <span>{order?.payment_status?.toUpperCase()}</span>
         </div>
-        {totalPaid > 0 && (
+        {totalPaid! > 0 && (
           <div className="flex justify-between">
             <span>Jumlah Bayar:</span>
             <span>{formatCurrency(totalPaid)}</span>
           </div>
         )}
-        <div className="flex justify-between">
-          <span>Sisa Deposit:</span>
-          <span>
-            {order.customerDetails &&
-              formatCurrency(order.customerDetails?.deposit_balance)}
-          </span>
-        </div>
+        {order?.payment_method === "deposit" && (
+          <div className="flex justify-between">
+            <span>Sisa Deposit:</span>
+            <span>
+              {order.customerDetails &&
+                formatCurrency(order.customerDetails?.deposit_balance)}
+            </span>
+          </div>
+        )}
 
         {/* {change > 0 && (
           <div className="flex justify-between">
@@ -461,6 +473,112 @@ export const ReceiptTemplate = React.forwardRef<
   );
 });
 
+// Template 4:
+export const DepositReceiptTemplate = React.forwardRef<
+  HTMLDivElement,
+  ReceiptTemplateProps
+>(({ customer, businessInfo }, ref) => {
+  const { currentBranchId } = useBranch();
+  const dispatch = useDispatch<AppDispatch>();
+  const [depositType, setDepositType] = useState<DepositType | undefined>(
+    undefined
+  );
+  const { items } = useSelector((state: RootState) => state.depositTypes);
+
+  useEffect(() => {
+    if (currentBranchId) {
+      dispatch(fetchDepositTypes(currentBranchId));
+    }
+  }, [dispatch, currentBranchId]);
+
+  useEffect(() => {
+    if (customer) {
+      const depositType = items.find(
+        (depo) => depo._id === customer?.deposit_type_id
+      );
+      setDepositType(depositType);
+    }
+  }, [customer]);
+
+  return (
+    <div ref={ref} className="w-[200px] p-3 bg-white text-[7px] leading-[1.1]">
+      <div className="">
+        <div className="py-1">
+          <div className="flex items-start justify-between gap-1">
+            <div className="w-[160px] space-y-0.5">
+              <div className="font-semibold text-[8px]">
+                {businessInfo.name || ""}
+              </div>
+              <div className="text-[7px]">{businessInfo.address || ""}</div>
+              <div className="text-[7px]">{businessInfo.phone || ""}</div>
+            </div>
+            <div className="w-10 h-10">
+              <img src="/pdf-logo.png" alt="Pdf logo" />
+            </div>
+          </div>
+        </div>
+
+        {/* Customer Section */}
+        <div className="py-1 flex flex-col space-y-0.5 items-center text-center">
+          <div className="text-center font-semibold text-[7px]">
+            Nota Deposit
+          </div>
+          <div className="text-center font-semibold text-[10px]">
+            {customer?.name}
+          </div>
+          <div className="text-center font-semibold text-[7px]">
+            Nota : DP{customer?._id.slice(0, 5).toUpperCase()}
+          </div>
+        </div>
+
+        {/* Items */}
+        <div className="py-1 text-[8px]">
+          <div className="font-bold mb-1 opacity-0">Deposit Info</div>
+          <div className="pb-2 text-[8px] space-y-1">
+            <div className="flex justify-start">
+              <span className="w-20">Deposit Type</span>
+              <span className="font-bold ms-2 text-left w-[135px]">
+                {customer?.deposit_type}
+              </span>
+            </div>
+            <div className="flex justify-start">
+              <span className="w-20">Deposit Purchase Price</span>
+              <span className="font-bold ms-2 text-left w-[135px]">
+                {formatCurrency(depositType?.purchase_price)}
+              </span>
+            </div>
+            <div className="flex justify-start font-bold">
+              <span className="w-20">Deposit Value</span>
+              <span className="uppercase ms-2 text-left w-[135px]">
+                {" "}
+                {formatCurrency(depositType?.deposit_value)}
+              </span>
+            </div>
+            {customer?.has_expiry && customer.expiry_date && (
+              <div className="flex justify-start font-bold">
+                <span className="w-20">Expire Date</span>
+                <span className="uppercase ms-2 text-left w-[135px]">
+                  {formatDateTime(customer?.expiry_date)}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="text-left text-[7px] mb-2 mt-3">Catatan</div>
+        <div className="flex flex-col gap-1">
+          <div className="w-full h-[0.5px] bg-black"></div>
+          <p className="text-[7px] italic text-center">
+            {depositType?.description || "No notes"}
+          </p>
+          <div className="w-full h-[0.5px] bg-black"></div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 CashTransferReceiptTemplate.displayName = "CashTransferReceiptTemplate";
 InternalReceiptTemplate.displayName = "InternalReceiptTemplate";
 ReceiptTemplate.displayName = "ReceiptTemplate";
+DepositReceiptTemplate.displayName = "DepositReceiptTemplate";

@@ -42,12 +42,6 @@ import Link from "next/link";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import EditOrderPage from "./EditOrder";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 
 interface OrderDetailPageType {
   orderId: string;
@@ -294,6 +288,7 @@ export default function OrderDetailPage({
     name:
       selectedBranch(order.current_branch_id || "")?.name ||
       "Monic Laundry Galaxy",
+    type: selectedBranch(order.current_branch_id || "")?.type || "Offline",
     address:
       selectedBranch(order.current_branch_id || "")?.address ||
       "Jl. Taman Galaxy Raya No 301 E",
@@ -331,7 +326,7 @@ export default function OrderDetailPage({
           <Button
             variant="outline"
             disabled={pdfLoading}
-            onClick={handleDownloadCashTransfer}
+            onClick={handleDownloadInternal}
           >
             <Download className="mr-2 h-4 w-4" />
             Internal Receipt

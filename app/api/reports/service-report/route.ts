@@ -252,11 +252,13 @@ export async function GET(request: NextRequest) {
         meterTotal: 0,
       };
 
-      if (type === "Kiloan") {
+      if (type === "Kiloan" || item.order.total_weight > 0) {
         current.kilogramTotal += item.order.total_weight ?? 0;
-      } else if (type === "Satuan") {
-        current.satuanTotal += item.quantity ?? 0;
-      } else if (type === "Meter") {
+      }
+      if (type === "Satuan" || item.order.total_unit > 0) {
+        current.satuanTotal += item.order.total_unit ?? 0;
+      }
+      if (type === "Meter") {
         current.meterTotal += item.quantity ?? 0;
       }
 

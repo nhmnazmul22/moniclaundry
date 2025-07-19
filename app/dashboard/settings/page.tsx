@@ -21,52 +21,34 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import api from "@/lib/config/axios";
+import { BusinessSetting } from "@/types";
+import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useState } from "react";
-
-interface BusinessSettings {
-  business_name: string;
-  business_phone: string;
-  business_email: string;
-  business_website: string;
-  business_address: string;
-  tax_rate: number;
-  tax_enabled: boolean;
-  invoice_prefix: string;
-  currency: string;
-  email_notifications: boolean;
-  sms_notifications: boolean;
-  auto_backup: boolean;
-  backup_frequency: string;
-  receipt_header: string;
-  receipt_footer: string;
-  additional_info: string;
-  show_logo: boolean;
-}
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function SettingsPage() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
-  const [settings, setSettings] = useState<BusinessSettings>({
-    business_name: "Monic Laundry Galaxy",
-    business_phone: "+6287710108075",
-    business_email: "contact@moniclaundry.com",
-    business_website: "www.moniclaundry.com",
-    business_address: "Jl. Taman Galaxy Raya No 301 E",
-    tax_rate: 11,
-    tax_enabled: true,
-    invoice_prefix: "TX",
-    currency: "IDR",
-    email_notifications: true,
-    sms_notifications: false,
-    auto_backup: true,
-    backup_frequency: "daily",
-    receipt_header: "Monic Laundry Galaxy - Bersih, Wangi, Rapi",
-    receipt_footer: "Terima kasih telah menggunakan jasa kami!",
-    additional_info: "CS: +6287710108075",
-    show_logo: true,
-  });
+  const [error, setError] = useState("");
+  const [settings, setSettings] = useState<BusinessSetting>();
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+
+      const res = await api.get("/api/setting");
+      if (res.status === 200) {
+        setSettings(res.data.data);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Only allow Owner to access this page
   if (session?.user && session?.user?.role !== "owner") {
@@ -84,17 +66,22 @@ export default function SettingsPage() {
     );
   }
 
-  const handleSave = async (category: string) => {
+  const handleSave = async () => {
     setLoading(true);
     try {
-      // In a real app, you would save to database
-      // For now, we'll just show success message
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      const updatedSetting = { ...settings };
+      delete updatedSetting.createdAt;
+      delete updatedSetting.updatedAt;
 
-      toast({
-        title: "Sukses",
-        description: `Pengaturan ${category} berhasil disimpan.`,
-      });
+      const res = await api.put("/api/setting", updatedSetting);
+      if (res.status === 200) {
+        toast({
+          title: "Sukses",
+          description: `Pengaturan berhasil disimpan.`,
+        });
+        fetchSettings();
+        return;
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -106,9 +93,42 @@ export default function SettingsPage() {
     }
   };
 
-  const updateSetting = (key: keyof BusinessSettings, value: any) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+  const updateSetting = (key: keyof BusinessSetting, value: any) => {
+    setSettings((prev) => {
+      if (!prev) return prev;
+      return { ...prev, [key]: value };
+    });
   };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  if (loading && !settings) {
+    return (
+      <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        <p>Memuat detail settings...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
+        <p className="text-red-500 text-lg">
+          {error || "Settings tidak ditemukan"}
+        </p>
+        <Link href="/dashboard/settings">
+          <Button>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Kembali ke Settings
+          </Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6">
@@ -136,7 +156,7 @@ export default function SettingsPage() {
                   <Label htmlFor="businessName">Nama Bisnis</Label>
                   <Input
                     id="businessName"
-                    value={settings.business_name}
+                    value={settings?.business_name}
                     onChange={(e) =>
                       updateSetting("business_name", e.target.value)
                     }
@@ -146,7 +166,7 @@ export default function SettingsPage() {
                   <Label htmlFor="businessPhone">Nomor Telepon</Label>
                   <Input
                     id="businessPhone"
-                    value={settings.business_phone}
+                    value={settings?.business_phone}
                     onChange={(e) =>
                       updateSetting("business_phone", e.target.value)
                     }
@@ -157,7 +177,7 @@ export default function SettingsPage() {
                   <Input
                     id="businessEmail"
                     type="email"
-                    value={settings.business_email}
+                    value={settings?.business_email}
                     onChange={(e) =>
                       updateSetting("business_email", e.target.value)
                     }
@@ -167,7 +187,7 @@ export default function SettingsPage() {
                   <Label htmlFor="businessWebsite">Website</Label>
                   <Input
                     id="businessWebsite"
-                    value={settings.business_website}
+                    value={settings?.business_website}
                     onChange={(e) =>
                       updateSetting("business_website", e.target.value)
                     }
@@ -179,7 +199,7 @@ export default function SettingsPage() {
                 <Label htmlFor="businessAddress">Alamat Bisnis</Label>
                 <Input
                   id="businessAddress"
-                  value={settings.business_address}
+                  value={settings?.business_address}
                   onChange={(e) =>
                     updateSetting("business_address", e.target.value)
                   }
@@ -187,7 +207,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={() => handleSave("bisnis")} disabled={loading}>
+                <Button onClick={() => handleSave()} disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Simpan Perubahan
                 </Button>
@@ -207,7 +227,7 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="currency">Mata Uang</Label>
                   <Select
-                    value={settings.currency}
+                    value={settings?.currency}
                     onValueChange={(value) => updateSetting("currency", value)}
                   >
                     <SelectTrigger>
@@ -215,7 +235,6 @@ export default function SettingsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="IDR">Rp (Rupiah)</SelectItem>
-                      <SelectItem value="USD">$ (Dollar)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -224,7 +243,7 @@ export default function SettingsPage() {
                   <Input
                     id="taxRate"
                     type="number"
-                    value={settings.tax_rate}
+                    value={settings?.tax_rate}
                     onChange={(e) =>
                       updateSetting("tax_rate", Number(e.target.value))
                     }
@@ -235,7 +254,7 @@ export default function SettingsPage() {
               <div className="flex items-center space-x-2">
                 <Switch
                   id="taxEnabled"
-                  checked={settings.tax_enabled}
+                  checked={settings?.tax_enabled}
                   onCheckedChange={(checked) =>
                     updateSetting("tax_enabled", checked)
                   }
@@ -249,7 +268,7 @@ export default function SettingsPage() {
                 <Label htmlFor="invoicePrefix">Prefix Nomor Invoice</Label>
                 <Input
                   id="invoicePrefix"
-                  value={settings.invoice_prefix}
+                  value={settings?.invoice_prefix}
                   onChange={(e) =>
                     updateSetting("invoice_prefix", e.target.value)
                   }
@@ -257,10 +276,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex justify-end">
-                <Button
-                  onClick={() => handleSave("keuangan")}
-                  disabled={loading}
-                >
+                <Button onClick={() => handleSave()} disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Simpan Perubahan
                 </Button>
@@ -283,7 +299,7 @@ export default function SettingsPage() {
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="emailNotifications"
-                    checked={settings.email_notifications}
+                    checked={settings?.email_notifications}
                     onCheckedChange={(checked) =>
                       updateSetting("email_notifications", checked)
                     }
@@ -293,7 +309,7 @@ export default function SettingsPage() {
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="smsNotifications"
-                    checked={settings.sms_notifications}
+                    checked={settings?.sms_notifications}
                     onCheckedChange={(checked) =>
                       updateSetting("sms_notifications", checked)
                     }
@@ -309,7 +325,7 @@ export default function SettingsPage() {
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="autoBackup"
-                    checked={settings.auto_backup}
+                    checked={settings?.auto_backup}
                     onCheckedChange={(checked) =>
                       updateSetting("auto_backup", checked)
                     }
@@ -319,7 +335,7 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="backupFrequency">Frekuensi Backup</Label>
                   <Select
-                    value={settings.backup_frequency}
+                    value={settings?.backup_frequency}
                     onValueChange={(value) =>
                       updateSetting("backup_frequency", value)
                     }
@@ -337,7 +353,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={() => handleSave("sistem")} disabled={loading}>
+                <Button onClick={() => handleSave()} disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Simpan Perubahan
                 </Button>
@@ -353,56 +369,476 @@ export default function SettingsPage() {
               <CardDescription>Kustomisasi struk dan nota</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="receiptHeader">Header Struk</Label>
-                <Input
-                  id="receiptHeader"
-                  value={settings.receipt_header}
-                  onChange={(e) =>
-                    updateSetting("receipt_header", e.target.value)
-                  }
-                />
-              </div>
+              <Tabs defaultValue="original_receipt">
+                <TabsList>
+                  <TabsTrigger value="original_receipt">
+                    Original Receipt
+                  </TabsTrigger>
+                  <TabsTrigger value="payment_receipt">
+                    Payment Receipt
+                  </TabsTrigger>
+                  <TabsTrigger value="internal_print">
+                    Internal Receipt
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="original_receipt">
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="receiptHeader">Header Struk</Label>
+                      <Input
+                        id="receiptHeader"
+                        value={settings?.original_receipt_header}
+                        onChange={(e) =>
+                          updateSetting(
+                            "original_receipt_header",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="receiptFooter">Footer Struk</Label>
+                      <Input
+                        id="receiptFooter"
+                        value={settings?.original_receipt_footer}
+                        onChange={(e) =>
+                          updateSetting(
+                            "original_receipt_footer",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="receiptFooter">Footer Struk</Label>
-                <Input
-                  id="receiptFooter"
-                  value={settings.receipt_footer}
-                  onChange={(e) =>
-                    updateSetting("receipt_footer", e.target.value)
-                  }
-                />
-              </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="original_receipt_customer_service">
+                        Customer Service
+                      </Label>
+                      <Input
+                        id="original_receipt_customer_service"
+                        value={settings?.original_receipt_customer_service}
+                        onChange={(e) =>
+                          updateSetting(
+                            "original_receipt_customer_service",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="additionalInfo">Informasi Tambahan</Label>
+                      <Input
+                        id="additionalInfo"
+                        value={settings?.original_receipt_additional_info}
+                        onChange={(e) =>
+                          updateSetting(
+                            "original_receipt_additional_info",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="original_receipt_terms_condition_1">
+                        Receipt Condition 1
+                      </Label>
+                      <Input
+                        id="original_receipt_terms_condition_1"
+                        value={settings?.original_receipt_terms_condition_1}
+                        onChange={(e) =>
+                          updateSetting(
+                            "original_receipt_terms_condition_1",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="original_receipt_terms_condition_2">
+                        Receipt Condition 2
+                      </Label>
+                      <Input
+                        id="original_receipt_terms_condition_2"
+                        value={settings?.original_receipt_terms_condition_2}
+                        onChange={(e) =>
+                          updateSetting(
+                            "original_receipt_terms_condition_2",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="original_receipt_hashtag">
+                        Receipt Hashtags
+                      </Label>
+                      <Input
+                        id="original_receipt_hashtag"
+                        value={settings?.original_receipt_hashtag}
+                        onChange={(e) =>
+                          updateSetting(
+                            "original_receipt_hashtag",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="additionalInfo">Informasi Tambahan</Label>
-                <Input
-                  id="additionalInfo"
-                  value={settings.additional_info}
-                  onChange={(e) =>
-                    updateSetting("additional_info", e.target.value)
-                  }
-                />
-              </div>
+                    <div className="flex justify-start gap-5 items-center">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="showLogo"
+                          checked={settings?.original_receipt_show_logo}
+                          onCheckedChange={(checked) =>
+                            updateSetting("original_receipt_show_logo", checked)
+                          }
+                        />
+                        <Label htmlFor="showLogo">Tampilkan Logo</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="original_receipt_show_qr"
+                          checked={settings?.original_receipt_show_qr}
+                          onCheckedChange={(checked) =>
+                            updateSetting("original_receipt_show_qr", checked)
+                          }
+                        />
+                        <Label htmlFor="original_receipt_show_qr">
+                          Tampilkan QR
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="show_estimated_completion"
+                          checked={settings?.show_estimated_completion}
+                          onCheckedChange={(checked) =>
+                            updateSetting("show_estimated_completion", checked)
+                          }
+                        />
+                        <Label htmlFor="show_estimated_completion">
+                          Tampilkan Estimate Completion
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="show_customer_deposit"
+                          checked={settings?.show_customer_deposit}
+                          onCheckedChange={(checked) =>
+                            updateSetting("show_customer_deposit", checked)
+                          }
+                        />
+                        <Label htmlFor="show_customer_deposit">
+                          Tampilkan Customer Deposit
+                        </Label>
+                      </div>
+                    </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="showLogo"
-                  checked={settings.show_logo}
-                  onCheckedChange={(checked) =>
-                    updateSetting("show_logo", checked)
-                  }
-                />
-                <Label htmlFor="showLogo">Tampilkan Logo</Label>
-              </div>
+                    <div className="flex justify-end">
+                      <Button onClick={() => handleSave()} disabled={loading}>
+                        {loading && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Simpan Perubahan
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="payment_receipt">
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="payment_receipt_header">
+                        Header Struk
+                      </Label>
+                      <Input
+                        id="payment_receipt_header"
+                        value={settings?.payment_receipt_header}
+                        onChange={(e) =>
+                          updateSetting(
+                            "payment_receipt_header",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="payment_receipt_customer_service">
+                        Customer Service
+                      </Label>
+                      <Input
+                        id="payment_receipt_customer_service"
+                        value={settings?.payment_receipt_customer_service}
+                        onChange={(e) =>
+                          updateSetting(
+                            "payment_receipt_customer_service",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="payment_receipt_kasir_name">
+                        Kasir Name
+                      </Label>
+                      <Input
+                        id="payment_receipt_kasir_name"
+                        value={settings?.payment_receipt_kasir_name}
+                        onChange={(e) =>
+                          updateSetting(
+                            "payment_receipt_kasir_name",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="payment_receipt_terms_condition_1">
+                        Receipt Condition 1
+                      </Label>
+                      <Input
+                        id="payment_receipt_terms_condition_1"
+                        value={settings?.payment_receipt_terms_condition_1}
+                        onChange={(e) =>
+                          updateSetting(
+                            "payment_receipt_terms_condition_1",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="payment_receipt_terms_condition_2">
+                        Receipt Condition 2
+                      </Label>
+                      <Input
+                        id="payment_receipt_terms_condition_2"
+                        value={settings?.payment_receipt_terms_condition_2}
+                        onChange={(e) =>
+                          updateSetting(
+                            "payment_receipt_terms_condition_2",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="payment_receipt_hashtag">
+                        Receipt Hashtags
+                      </Label>
+                      <Input
+                        id="payment_receipt_hashtag"
+                        value={settings?.payment_receipt_hashtag}
+                        onChange={(e) =>
+                          updateSetting(
+                            "payment_receipt_hashtag",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="payment_receipt_free_text">
+                        Receipt Free Text
+                      </Label>
+                      <Input
+                        id="payment_receipt_free_text"
+                        value={settings?.payment_receipt_free_text}
+                        onChange={(e) =>
+                          updateSetting(
+                            "payment_receipt_free_text",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
 
-              <div className="flex justify-end">
-                <Button onClick={() => handleSave("struk")} disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Simpan Perubahan
-                </Button>
-              </div>
+                    <div className="flex flex-wrap justify-start gap-5 items-center">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="payment_receipt_show_logo"
+                          checked={settings?.payment_receipt_show_logo}
+                          onCheckedChange={(checked) =>
+                            updateSetting("payment_receipt_show_logo", checked)
+                          }
+                        />
+                        <Label htmlFor="payment_receipt_show_logo">
+                          Tampilkan Logo
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="payment_receipt_show_transaction_details"
+                          checked={
+                            settings?.payment_receipt_show_transaction_details
+                          }
+                          onCheckedChange={(checked) =>
+                            updateSetting(
+                              "payment_receipt_show_transaction_details",
+                              checked
+                            )
+                          }
+                        />
+                        <Label htmlFor="payment_receipt_show_transaction_details">
+                          Tampilkan Transaction Details
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="payment_receipt_show_kasir_name"
+                          checked={settings?.payment_receipt_show_kasir_name}
+                          onCheckedChange={(checked) =>
+                            updateSetting(
+                              "payment_receipt_show_kasir_name",
+                              checked
+                            )
+                          }
+                        />
+                        <Label htmlFor="payment_receipt_show_kasir_name">
+                          Tampilkan Kasir Name
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="show_estimated_completion"
+                          checked={settings?.show_estimated_completion}
+                          onCheckedChange={(checked) =>
+                            updateSetting("show_estimated_completion", checked)
+                          }
+                        />
+                        <Label htmlFor="show_estimated_completion">
+                          Tampilkan Customer Deposit
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="show_customer_deposit"
+                          checked={settings?.show_customer_deposit}
+                          onCheckedChange={(checked) =>
+                            updateSetting("show_customer_deposit", checked)
+                          }
+                        />
+                        <Label htmlFor="show_customer_deposit">
+                          Tampilkan Customer Deposit
+                        </Label>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button onClick={() => handleSave()} disabled={loading}>
+                        {loading && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Simpan Perubahan
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="internal_print">
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="internal_print_header">
+                        Header Struk
+                      </Label>
+                      <Input
+                        id="internal_print_header"
+                        value={settings?.internal_print_header}
+                        onChange={(e) =>
+                          updateSetting("internal_print_header", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="internal_print_free_text">
+                        Receipt Free Text
+                      </Label>
+                      <Input
+                        id="internal_print_free_text"
+                        value={settings?.internal_print_free_text}
+                        onChange={(e) =>
+                          updateSetting(
+                            "internal_print_free_text",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap justify-start gap-5 items-center">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="internal_print_show_logo"
+                          checked={settings?.internal_print_show_logo}
+                          onCheckedChange={(checked) =>
+                            updateSetting("internal_print_show_logo", checked)
+                          }
+                        />
+                        <Label htmlFor="internal_print_show_logo">
+                          Tampilkan Logo
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="internal_print_show_prices"
+                          checked={settings?.internal_print_show_prices}
+                          onCheckedChange={(checked) =>
+                            updateSetting("internal_print_show_prices", checked)
+                          }
+                        />
+                        <Label htmlFor="payment_receipt_show_transaction_details">
+                          Tampilkan Prices
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="internal_print_show_payment_info"
+                          checked={settings?.internal_print_show_payment_info}
+                          onCheckedChange={(checked) =>
+                            updateSetting(
+                              "internal_print_show_payment_info",
+                              checked
+                            )
+                          }
+                        />
+                        <Label htmlFor="internal_print_show_payment_info">
+                          Tampilkan Payment Info
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="show_estimated_completion"
+                          checked={settings?.show_estimated_completion}
+                          onCheckedChange={(checked) =>
+                            updateSetting("show_estimated_completion", checked)
+                          }
+                        />
+                        <Label htmlFor="show_estimated_completion">
+                          Tampilkan Estimated Completion
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="show_customer_deposit"
+                          checked={settings?.show_customer_deposit}
+                          onCheckedChange={(checked) =>
+                            updateSetting("show_customer_deposit", checked)
+                          }
+                        />
+                        <Label htmlFor="show_customer_deposit">
+                          Tampilkan Customer Deposit
+                        </Label>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button onClick={() => handleSave()} disabled={loading}>
+                        {loading && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Simpan Perubahan
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </TabsContent>
