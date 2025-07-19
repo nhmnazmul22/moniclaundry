@@ -233,7 +233,7 @@ export const InternalReceiptTemplate = React.forwardRef<
         {/* Customer Section */}
         <div className="py-1 flex flex-col space-y-0.5 items-center text-center">
           <div className="text-center font-semibold text-[7px]">
-            Nota Customer
+            {receiptInfo?.internal_print_header}
           </div>
           <div className="text-center font-semibold text-[10px]">
             {order?.customerDetails?.name}
@@ -313,6 +313,8 @@ export const ReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps
 >(({ order, orderItems, businessInfo, receiptInfo }, ref) => {
+  const { data: session } = useSession();
+
   // const totalPaid = order.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
   const totalPaid = order?.total_amount;
   // const change =
@@ -347,20 +349,25 @@ export const ReceiptTemplate = React.forwardRef<
           <span>Kode struk</span>
           <span>{order?.order_number}</span>
         </div>
-        <div className="flex justify-between">
-          <span>Kasir</span>
-          <span>Admin</span>
-        </div>
+        {receiptInfo?.payment_receipt_show_kasir_name && (
+          <div className="flex justify-between">
+            <span>Kasir</span>
+            <span>
+              {receiptInfo?.payment_receipt_kasir_name || session?.user.name}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span>Terima</span>
           <span>{formatDateTime(order?.createdAt)}</span>
         </div>
-        {order?.estimated_completion && (
-          <div className="flex justify-between">
-            <span>Est.Ambil</span>
-            <span>{formatDateTime(order?.estimated_completion)}</span>
-          </div>
-        )}
+        {order?.estimated_completion &&
+          receiptInfo?.show_estimated_completion && (
+            <div className="flex justify-between">
+              <span>Est.Ambil</span>
+              <span>{formatDateTime(order?.estimated_completion)}</span>
+            </div>
+          )}
       </div>
 
       {/* Customer Info */}
