@@ -40,10 +40,25 @@ import { fetchCustomers } from "@/store/CustomerSlice";
 import { fetchExpenses } from "@/store/ExpensesSlice";
 import { fetchOrders } from "@/store/orderSlice";
 import { fetchPayments } from "@/store/PaymentSlice";
-import { format } from "date-fns";
+import { endOfMonth, format, startOfMonth } from "date-fns";
 import { AlertTriangle, CalendarDays, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+
+const months = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 export default function ReportsPage() {
   const { currentBranchId } = useBranch();
@@ -112,6 +127,14 @@ export default function ReportsPage() {
     currentBranchId,
   ]);
 
+  const handleMonthSelect = (monthIndex: number) => {
+    const year = new Date().getFullYear();
+    const firstDay = new Date(year, monthIndex, 1);
+    const lastDay = new Date(year, monthIndex + 1, 0);
+    setStartDate(firstDay.toISOString().split("T")[0]);
+    setEndDate(lastDay.toISOString().split("T")[0]);
+  };
+
   useEffect(() => {
     dispatch(fetchOrders(currentBranchId));
     dispatch(fetchPayments(currentBranchId));
@@ -143,7 +166,7 @@ export default function ReportsPage() {
       setStartDate(startDate);
       setEndDate(endDate);
     }
-  }, [dispatch, currentBranchId, filterType, startDate, endDate]);
+  }, [dispatch, currentBranchId, filterType]);
 
   return (
     <div className="space-y-6">
@@ -212,28 +235,50 @@ export default function ReportsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label htmlFor="start-date">Tanggal Mulai</Label>
-                    <Input
-                      id="start-date"
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="mt-1"
-                      disabled={filterType !== "custom"}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="end-date">Tanggal Akhir</Label>
-                    <Input
-                      id="end-date"
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="mt-1"
-                      disabled={filterType !== "custom"}
-                    />
-                  </div>
+
+                  {filterType !== "monthly" && (
+                    <>
+                      <div>
+                        <Label htmlFor="start-date">Tanggal Mulai</Label>
+                        <Input
+                          id="start-date"
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          className="mt-1"
+                          disabled={filterType !== "custom"}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="end-date">Tanggal Akhir</Label>
+                        <Input
+                          id="end-date"
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          className="mt-1"
+                          disabled={filterType !== "custom"}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {filterType === "monthly" && (
+                    <div className="col-span-full">
+                      <Label>Pilih Bulan</Label>
+                      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-2">
+                        {months.map((month, index) => (
+                          <button
+                            key={month}
+                            onClick={() => handleMonthSelect(index)}
+                            className="bg-gray-100 hover:bg-gray-200 text-sm py-2 px-3 rounded"
+                          >
+                            {month}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
