@@ -250,10 +250,10 @@ export const InternalReceiptTemplate = React.forwardRef<
               {orderItems &&
                 orderItems.map((item) => (
                   <tr key={item._id}>
-                    <td className="w-24 text-left">
+                    <td className="w-[100px] text-left">
                       {item.serviceDetails?.servicename}
                     </td>
-                    <td className="text-left font-bold ms-3">
+                    <td className="text-left font-bold">
                       {item.quantity}
                       {item.serviceDetails.type === "Satuan" ? " pcs" : " kg"}
                     </td>
@@ -266,16 +266,16 @@ export const InternalReceiptTemplate = React.forwardRef<
 
         {/* Date and Status */}
         <div className="pb-2 text-[8px] space-y-1">
-          <div className="flex justify-start ">
+          <div className="flex justify-start">
             <span className="w-24">Tanggal Masuk</span>
-            <span className="font-bold ms-2">
+            <span className="font-bold ms-1">
               {formatDateTime(order?.createdAt)}
             </span>
           </div>
           {receiptInfo?.show_estimated_completion && (
             <div className="flex justify-start">
               <span className="w-24">Estimasi Selesai</span>
-              <span className="font-bold ms-2">
+              <span className="font-bold ms-1">
                 {formatDateTime(order?.estimated_completion)}
               </span>
             </div>
@@ -283,7 +283,7 @@ export const InternalReceiptTemplate = React.forwardRef<
           {receiptInfo?.internal_print_show_payment_info && (
             <div className="flex justify-start font-bold">
               <span className="w-24">Status</span>
-              <span className="uppercase ms-2">{order?.payment_status}</span>
+              <span className="uppercase ms-1">{order?.payment_status}</span>
             </div>
           )}
         </div>

@@ -80,16 +80,14 @@ export default function SalesReport({
 
         let headerText1 = "";
 
-        if (
-          startdate.getFullYear() === enddate.getFullYear() &&
-          startdate.getMonth() === enddate.getMonth() &&
-          startdate.getDate() === enddate.getDate()
-        ) {
+        const date1 = new Date(startdate);
+        const date2 = new Date(enddate);
+        const ans = date2.getTime() - date1.getTime();
+        const days = ans / (1000 * 60 * 60 * 24);
+
+        if (days === 0) {
           headerText1 = "Penjualan Hari ini";
-        } else if (
-          startdate.getMonth() === enddate.getMonth() &&
-          startdate.getFullYear() === enddate.getFullYear()
-        ) {
+        } else if (days === 30) {
           headerText1 = "Penjualan Bulan Ini";
         } else {
           headerText1 = `Penjualan Periode (${startDate} to ${endDate})`;
@@ -315,22 +313,10 @@ export default function SalesReport({
         sheet2.getCell("B1").alignment = { horizontal: "center" };
         sheet2.getCell("B1").font = { bold: true, size: 14 };
 
-        // Parse ISO strings
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-
         let headerText = "";
-
-        if (
-          start.getFullYear() === end.getFullYear() &&
-          start.getMonth() === end.getMonth() &&
-          start.getDate() === end.getDate()
-        ) {
+        if (days === 0) {
           headerText = "Penjualan Hari ini";
-        } else if (
-          start.getMonth() === end.getMonth() &&
-          start.getFullYear() === end.getFullYear()
-        ) {
+        } else if (days === 30) {
           headerText = "Penjualan Bulan Ini";
         } else {
           headerText = `Penjualan Periode (${startDate} to ${endDate})`;
@@ -341,11 +327,15 @@ export default function SalesReport({
         const headerCell = sheet2.getCell("B4");
         headerCell.value = headerText;
         headerCell.font = { bold: true };
-        headerCell.alignment = { horizontal: "center" };
+        headerCell.alignment = { horizontal: "left" };
 
         sheet2.getCell("B5").value = "Kategori";
         sheet2.getCell("C5").value = "Group Layanan";
         sheet2.getCell("D5").value = "Jenis Layanan";
+
+        sheet2.getCell("B5").border = borderStyle;
+        sheet2.getCell("C5").border = borderStyle;
+        sheet2.getCell("D5").border = borderStyle;
 
         // Dynamic Jenis Layanan
         const regular = reportData.serviceBreakdown.kiloan.regular || [];
@@ -360,12 +350,6 @@ export default function SalesReport({
           sheet2.getCell(`D${rowIdx}`).value = service;
           rowIdx++;
         });
-
-        for (let r = 4; r < rowIdx; r++) {
-          for (let c = 2; c <= 4; c++) {
-            sheet2.getCell(r, c).border = borderStyle;
-          }
-        }
 
         // Kiloan Summary
         let summaryStart = rowIdx + 2;
@@ -394,14 +378,22 @@ export default function SalesReport({
           sheet2.getCell(`C${row}`).value = label;
           sheet2.getCell(`D${row}`).value = totalKilo;
           sheet2.getCell(`E${row}`).value = totalAmount.toLocaleString();
-          sheet2.getRow(row).eachCell((cell) => (cell.border = borderStyle));
+
+          if (label === "Express") {
+            sheet2.getCell(`F${row}`).value = "Jenis Layanan";
+            sheet2.getCell(`G${row}`).value = "Total Kilo";
+            sheet2.getCell(`H${row}`).value = "Nominal";
+            sheet2.getCell(`F${row}`).border = borderStyle;
+            sheet2.getCell(`G${row}`).border = borderStyle;
+            sheet2.getCell(`H${row}`).border = borderStyle;
+            row++
+          }
 
           data.forEach((i) => {
-            row++;
             sheet2.getCell(`F${row}`).value = i.service;
             sheet2.getCell(`G${row}`).value = i.kilo;
             sheet2.getCell(`H${row}`).value = i.amount.toLocaleString();
-            sheet2.getRow(row).eachCell((cell) => (cell.border = borderStyle));
+            row++;
           });
           row++;
         };
@@ -430,6 +422,7 @@ export default function SalesReport({
           {}
         );
 
+        sheet2.getCell(`B${row}`).value = "Satuan";
         for (const group in groupedItems) {
           const items = groupedItems[group];
           const totalCount = items.reduce(
@@ -441,21 +434,19 @@ export default function SalesReport({
             0
           );
 
-          sheet2.getCell(`B${row}`).value = "Satuan";
           sheet2.getCell(`C${row}`).value = group;
           sheet2.getCell(`D${row}`).value = totalCount;
           sheet2.getCell(`E${row}`).value = totalNominal.toLocaleString();
-          sheet2.getRow(row).eachCell((cell) => (cell.border = borderStyle));
 
           items.forEach((i: any) => {
-            row++;
             sheet2.getCell(`F${row}`).value = i.item;
             sheet2.getCell(`G${row}`).value = i.count;
             sheet2.getCell(`H${row}`).value = i.amount.toLocaleString();
-            sheet2.getRow(row).eachCell((cell) => (cell.border = borderStyle));
           });
           row++;
         }
+
+        sheet2.getCell("A12").border = {};
 
         // Save the file
         const buffer = await workbook.xlsx.writeBuffer();
