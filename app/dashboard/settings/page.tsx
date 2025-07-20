@@ -326,7 +326,7 @@ export default function SettingsPage() {
                       />
                     </div>
 
-                    <div className="flex justify-start gap-5 items-center">
+                    <div className="flex flex-wrap justify-start gap-5 items-center">
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="showLogo"

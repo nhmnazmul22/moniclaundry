@@ -42,6 +42,7 @@ import Link from "next/link";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import EditOrderPage from "./EditOrder";
+import { useBranch } from "@/contexts/branch-context";
 
 interface OrderDetailPageType {
   orderId: string;
@@ -54,6 +55,7 @@ export default function OrderDetailPage({
   setIsViewOrder,
   setOrderId,
 }: OrderDetailPageType) {
+  const { currentBranchId } = useBranch();
   const { data: session } = useSession();
   const dispatch = useDispatch<AppDispatch>();
   const [order, setOrder] = useState<Order | null>(null);
@@ -122,13 +124,12 @@ export default function OrderDetailPage({
     try {
       setLoading(true);
 
-      const res = await api.get("/api/setting");
+      const res = await api.get(`/api/setting?branch_id=${currentBranchId}`);
       if (res.status === 200) {
         setSettings(res.data.data);
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }

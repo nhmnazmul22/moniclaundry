@@ -37,6 +37,18 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandInput,
+  CommandEmpty,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 interface OrderItemForm {
   _id?: string;
@@ -62,6 +74,7 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
   const [hasInitializedOrderItems, setHasInitializedOrderItems] =
     useState(false);
   const [searchTrams, setSearchTrams] = useState<string>("");
+  const [openIndex, setOpenIndex] = useState<number | null>();
 
   const { items: services } = useSelector(
     (state: RootState) => state.serviceReducer
@@ -502,37 +515,63 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1">
                       <Label htmlFor={`service-${index}`}>Layanan</Label>
-                      <Select
-                        value={item.service_id}
-                        onValueChange={(value) =>
-                          handleOrderItemChange(index, "service_id", value)
+                      <Popover
+                        open={openIndex === index}
+                        onOpenChange={() =>
+                          setOpenIndex(openIndex === index ? null : index)
                         }
                       >
-                        <SelectTrigger id={`service-${index}`}>
-                          <SelectValue placeholder="Pilih Layanan" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <div className="mb-2">
-                            <Input
-                              type="text"
-                              name="search_service"
-                              placeholder="Filter by name or type or category"
+                        <PopoverTrigger asChild className="w-full">
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className="w-full justify-between"
+                          >
+                            {item.service_id
+                              ? filteredService?.find(
+                                  (s) => s._id === item.service_id
+                                )?.servicename +
+                                " (" +
+                                formatCurrency(
+                                  filteredService?.find(
+                                    (s) => s._id === item.service_id
+                                  )?.price || 0
+                                ) +
+                                " kg/pcs)"
+                              : "Pilih Layanan"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command>
+                            <CommandInput
+                              placeholder="Cari layanan..."
                               value={searchTrams}
-                              onChange={(e) => setSearchTrams(e.target.value)}
+                              onValueChange={setSearchTrams}
                             />
-                          </div>
-                          {filteredService &&
-                            filteredService.map((service) => (
-                              <SelectItem
-                                key={service._id}
-                                value={service._id!}
-                              >
-                                {service.servicename} (
-                                {formatCurrency(service.price)}/kg)
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                            <CommandEmpty>
+                              Layanan tidak ditemukan.
+                            </CommandEmpty>
+                            <CommandList>
+                              {filteredService?.map((service) => (
+                                <CommandItem
+                                  key={service._id}
+                                  onSelect={() => {
+                                    handleOrderItemChange(
+                                      index,
+                                      "service_id",
+                                      service._id!
+                                    );
+                                    setOpenIndex(null);
+                                  }}
+                                >
+                                  {service.servicename} (
+                                  {formatCurrency(service.price)} kg/pcs)
+                                </CommandItem>
+                              ))}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor={`quantity-${index}`}>

@@ -375,7 +375,7 @@ export interface BusinessSetting {
   payment_receipt_customer_service: string;
   payment_receipt_hashtag: string;
   payment_show_estimated_completion: boolean;
-  original_show_customer_deposit: boolean;
+  payment_show_customer_deposit: boolean;
 
   // Internal
   internal_print_header: string;
