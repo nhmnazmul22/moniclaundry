@@ -354,6 +354,34 @@ export default function ServicesPage() {
     }
   };
 
+  const handleTemplateDownload = () => {
+  try {
+    const downloadFile = (filePath: string, fileName: string) => {
+      const a = document.createElement("a");
+      a.href = filePath;
+      a.download = fileName;
+      document.body.appendChild(a); 
+      a.click();
+      document.body.removeChild(a); 
+    };
+
+    downloadFile("/excel/format-of-satuan-service.xlsx", "format-of-satuan-service.xlsx");
+    downloadFile("/excel/format-of-kilo-service.xlsx", "format-of-kilo-service.xlsx");
+
+    toast({
+      title: "Success",
+      description: "Template download success",
+    });
+  } catch (err: any) {
+    console.error(err);
+    toast({
+      title: "Failed",
+      description: "Template download failed",
+      variant: "destructive",
+    });
+  }
+};
+
   useEffect(() => {
     if (selectedService) {
       setServiceForm({
@@ -382,6 +410,16 @@ export default function ServicesPage() {
           Services Management
         </h1>
         <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            variant="outline"
+            size={"sm"}
+            onClick={handleTemplateDownload}
+            className="w-full sm:w-auto"
+            disabled={isSubmitting}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Download Templates
+          </Button>
           <Button
             variant="outline"
             size={"sm"}

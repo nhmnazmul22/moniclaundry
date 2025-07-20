@@ -61,6 +61,7 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
   const [orderItems, setOrderItems] = useState<OrderItemForm[]>([]);
   const [hasInitializedOrderItems, setHasInitializedOrderItems] =
     useState(false);
+  const [searchTrams, setSearchTrams] = useState<string>("");
 
   const { items: services } = useSelector(
     (state: RootState) => state.serviceReducer
@@ -370,6 +371,18 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
     }
   };
 
+  const filteredService = services?.filter((s) => {
+    if (searchTrams) {
+      return (
+        s.servicename?.toLowerCase().includes(searchTrams.toLowerCase()) ||
+        s.type?.toLowerCase().includes(searchTrams.toLowerCase()) ||
+        s.category?.toLowerCase().includes(searchTrams.toLowerCase())
+      );
+    } else {
+      return true;
+    }
+  });
+
   if (loading) {
     return (
       <div className="space-y-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
@@ -499,8 +512,17 @@ export default function EditOrderPage({ orderId }: EditOrderPageType) {
                           <SelectValue placeholder="Pilih Layanan" />
                         </SelectTrigger>
                         <SelectContent>
-                          {services &&
-                            services.map((service) => (
+                          <div className="mb-2">
+                            <Input
+                              type="text"
+                              name="search_service"
+                              placeholder="Filter by name or type or category"
+                              value={searchTrams}
+                              onChange={(e) => setSearchTrams(e.target.value)}
+                            />
+                          </div>
+                          {filteredService &&
+                            filteredService.map((service) => (
                               <SelectItem
                                 key={service._id}
                                 value={service._id!}

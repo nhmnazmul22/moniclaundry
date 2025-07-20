@@ -53,6 +53,7 @@ export default function NewOrderPage() {
   const [branchId, setBranchId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [estimated_completion, setEstimated_completion] = useState();
+  const [searchTrams, setSearchTrams] = useState<string>("");
   const { items: branches } = useSelector(
     (state: RootState) => state.branchReducer
   );
@@ -383,6 +384,18 @@ export default function NewOrderPage() {
     router.push("/dashboard/orders");
   };
 
+  const filteredService = services?.filter((s) => {
+    if (searchTrams) {
+      return (
+        s.servicename?.toLowerCase().includes(searchTrams.toLowerCase()) ||
+        s.type?.toLowerCase().includes(searchTrams.toLowerCase()) ||
+        s.category?.toLowerCase().includes(searchTrams.toLowerCase())
+      );
+    } else {
+      return true;
+    }
+  });
+
   return (
     <div className="space-y-6">
       <Card>
@@ -443,8 +456,17 @@ export default function NewOrderPage() {
                         <SelectValue placeholder="Pilih Layanan" />
                       </SelectTrigger>
                       <SelectContent>
-                        {services &&
-                          services.map((service) => (
+                        <div className="mb-2">
+                          <Input
+                            type="text"
+                            name="search_service"
+                            placeholder="Filter by name or type or category"
+                            value={searchTrams}
+                            onChange={(e) => setSearchTrams(e.target.value)}
+                          />
+                        </div>
+                        {filteredService &&
+                          filteredService.map((service) => (
                             <SelectItem key={service._id} value={service._id!}>
                               {service.servicename} (
                               {formatCurrency(service.price)} kg/pcs)

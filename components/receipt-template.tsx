@@ -31,7 +31,7 @@ interface ReceiptTemplateProps {
   receiptInfo?: BusinessSetting;
 }
 
-// Template 1: Cash/Transfer/QRIS/Deposit Payment
+// Template 1: Payment Receipt
 export const CashTransferReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps
@@ -204,7 +204,7 @@ export const CashTransferReceiptTemplate = React.forwardRef<
   );
 });
 
-// Template 2: Internal Print
+// Template 2: Internal Receipt
 export const InternalReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps
@@ -286,6 +286,24 @@ export const InternalReceiptTemplate = React.forwardRef<
               <span className="uppercase ms-1">{order?.payment_status}</span>
             </div>
           )}
+          {order?.total_amount! > 0 && (
+            <div className="flex justify-start">
+              <span className="w-24">Jumlah Bayar:</span>
+              <span className="ms-1">
+                {formatCurrency(order?.total_amount)}
+              </span>
+            </div>
+          )}
+          {order?.payment_method === "deposit" &&
+            receiptInfo?.show_customer_deposit && (
+              <div className="flex justify-start">
+                <span className="w-24">Sisa Deposit:</span>
+                <span className="ms-1">
+                  {order.customerDetails &&
+                    formatCurrency(order.customerDetails?.deposit_balance)}
+                </span>
+              </div>
+            )}
         </div>
 
         <div className="text-left text-[7px] mb-2 mt-3">Catatan</div>
@@ -303,7 +321,7 @@ export const InternalReceiptTemplate = React.forwardRef<
   );
 });
 
-// Template 3:
+// Template 3: Original Receipt
 export const ReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps
@@ -344,12 +362,10 @@ export const ReceiptTemplate = React.forwardRef<
           <span>Kode struk</span>
           <span>{order?.order_number}</span>
         </div>
-        {receiptInfo?.payment_receipt_show_kasir_name && (
+        {session?.user.name && (
           <div className="flex justify-between">
             <span>Kasir</span>
-            <span>
-              {receiptInfo?.payment_receipt_kasir_name || session?.user.name}
-            </span>
+            <span>{session?.user.name}</span>
           </div>
         )}
         <div className="flex justify-between">
@@ -496,7 +512,7 @@ export const ReceiptTemplate = React.forwardRef<
   );
 });
 
-// Template 4:
+// Template 4: Deposit Receipt
 export const DepositReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps

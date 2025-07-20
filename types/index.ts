@@ -357,45 +357,35 @@ export interface BusinessSetting {
   business_website: string;
   business_address: string;
 
-  tax_rate: number;
-  tax_enabled: boolean;
-  invoice_prefix: string;
-  currency: string;
-
-  email_notifications: boolean;
-  sms_notifications: boolean;
-  auto_backup: boolean;
-  backup_frequency: "daily" | "weekly" | "monthly";
-
-  original_receipt_header: string;
-  original_receipt_footer: string;
+  // Original
   original_receipt_show_logo: boolean;
   original_receipt_show_qr: boolean;
   original_receipt_terms_condition_1: string;
   original_receipt_terms_condition_2: string;
   original_receipt_customer_service: string;
   original_receipt_hashtag: string;
-  original_receipt_additional_info: string;
+  original_show_estimated_completion: boolean;
+  original_show_customer_deposit: boolean;
+
+  // Payment
   payment_receipt_header: string;
   payment_receipt_show_logo: boolean;
-  payment_receipt_show_transaction_details: boolean;
-  payment_receipt_show_kasir_name: boolean;
-  payment_receipt_kasir_name: string;
   payment_receipt_terms_condition_1: string;
   payment_receipt_terms_condition_2: string;
   payment_receipt_customer_service: string;
   payment_receipt_hashtag: string;
-  payment_receipt_free_text: string;
+  payment_show_estimated_completion: boolean;
+  original_show_customer_deposit: boolean;
+
+  // Internal
   internal_print_header: string;
   internal_print_show_logo: boolean;
   internal_print_show_prices: boolean;
   internal_print_show_payment_info: boolean;
-  internal_print_free_text: string;
+  internal_show_estimated_completion: boolean;
+  internal_show_customer_deposit: boolean;
 
-  show_estimated_completion: boolean;
-  show_customer_deposit: boolean;
-
-  date_format: string;
+  current_branch_id?: string;
   createdAt: Date;
   updatedAt: Date;
 }

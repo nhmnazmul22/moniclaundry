@@ -20,25 +20,34 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useBranch } from "@/contexts/branch-context";
 import { toast } from "@/hooks/use-toast";
 import api from "@/lib/config/axios";
-import { BusinessSetting } from "@/types";
+import { AppDispatch, RootState } from "@/store";
+import { fetchBranches } from "@/store/BranchSlice";
+import { Branches, BusinessSetting } from "@/types";
 import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function SettingsPage() {
+  const { currentBranchId } = useBranch();
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [settings, setSettings] = useState<BusinessSetting>();
+  const [branch, setBranch] = useState<Branches>();
+
+  const { items } = useSelector((state: RootState) => state.branchReducer);
 
   const fetchSettings = async () => {
     try {
       setLoading(true);
+      if (!currentBranchId) return;
 
-      const res = await api.get("/api/setting");
+      const res = await api.get(`/api/setting?branch_id=${currentBranchId}`);
       if (res.status === 200) {
         setSettings(res.data.data);
       }
@@ -72,8 +81,12 @@ export default function SettingsPage() {
       const updatedSetting = { ...settings };
       delete updatedSetting.createdAt;
       delete updatedSetting.updatedAt;
+      if (!currentBranchId) return;
 
-      const res = await api.put("/api/setting", updatedSetting);
+      const res = await api.put(
+        `/api/setting?branch_id=${currentBranchId}`,
+        updatedSetting
+      );
       if (res.status === 200) {
         toast({
           title: "Sukses",
@@ -101,8 +114,17 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    if (currentBranchId) {
+      fetchSettings();
+    }
+  }, [currentBranchId]);
+
+  useEffect(() => {
+    if (currentBranchId) {
+      const branch = items?.find((b) => b._id === currentBranchId);
+      setBranch(branch);
+    }
+  }, [currentBranchId, items]);
 
   if (loading && !settings) {
     return (
@@ -132,14 +154,20 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">Pengaturan</h1>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold ">Pengaturan</h1>
+        {branch && (
+          <p className="text-md md:text-lg">
+            {branch?.name} -{" "}
+            {branch?.type[0].toUpperCase() + branch?.type.slice(1)}
+          </p>
+        )}
+      </div>
 
       <Tabs defaultValue="business">
         <TabsList className="mb-6">
           <TabsTrigger value="business">Bisnis</TabsTrigger>
-          <TabsTrigger value="financial">Keuangan</TabsTrigger>
-          <TabsTrigger value="system">Sistem</TabsTrigger>
-          <TabsTrigger value="receipt">Struk</TabsTrigger>
+          <TabsTrigger value="receipt">Receipt</TabsTrigger>
         </TabsList>
 
         <TabsContent value="business">
@@ -216,152 +244,6 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="financial">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pengaturan Keuangan</CardTitle>
-              <CardDescription>Konfigurasi pajak dan mata uang</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Mata Uang</Label>
-                  <Select
-                    value={settings?.currency}
-                    onValueChange={(value) => updateSetting("currency", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="IDR">Rp (Rupiah)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="taxRate">Tarif Pajak (%)</Label>
-                  <Input
-                    id="taxRate"
-                    type="number"
-                    value={settings?.tax_rate}
-                    onChange={(e) =>
-                      updateSetting("tax_rate", Number(e.target.value))
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="taxEnabled"
-                  checked={settings?.tax_enabled}
-                  onCheckedChange={(checked) =>
-                    updateSetting("tax_enabled", checked)
-                  }
-                />
-                <Label htmlFor="taxEnabled">Aktifkan Pajak</Label>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <Label htmlFor="invoicePrefix">Prefix Nomor Invoice</Label>
-                <Input
-                  id="invoicePrefix"
-                  value={settings?.invoice_prefix}
-                  onChange={(e) =>
-                    updateSetting("invoice_prefix", e.target.value)
-                  }
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={() => handleSave()} disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Simpan Perubahan
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="system">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pengaturan Sistem</CardTitle>
-              <CardDescription>
-                Konfigurasi notifikasi dan backup
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Notifikasi</h3>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="emailNotifications"
-                    checked={settings?.email_notifications}
-                    onCheckedChange={(checked) =>
-                      updateSetting("email_notifications", checked)
-                    }
-                  />
-                  <Label htmlFor="emailNotifications">Notifikasi Email</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="smsNotifications"
-                    checked={settings?.sms_notifications}
-                    onCheckedChange={(checked) =>
-                      updateSetting("sms_notifications", checked)
-                    }
-                  />
-                  <Label htmlFor="smsNotifications">Notifikasi SMS</Label>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Backup Data</h3>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="autoBackup"
-                    checked={settings?.auto_backup}
-                    onCheckedChange={(checked) =>
-                      updateSetting("auto_backup", checked)
-                    }
-                  />
-                  <Label htmlFor="autoBackup">Backup Otomatis</Label>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="backupFrequency">Frekuensi Backup</Label>
-                  <Select
-                    value={settings?.backup_frequency}
-                    onValueChange={(value) =>
-                      updateSetting("backup_frequency", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Harian</SelectItem>
-                      <SelectItem value="weekly">Mingguan</SelectItem>
-                      <SelectItem value="monthly">Bulanan</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={() => handleSave()} disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Simpan Perubahan
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="receipt">
           <Card>
             <CardHeader>
@@ -374,9 +256,9 @@ export default function SettingsPage() {
                   <TabsTrigger value="original_receipt">
                     Original Receipt
                   </TabsTrigger>
-                  <TabsTrigger value="payment_receipt">
+                  {/* <TabsTrigger value="payment_receipt">
                     Payment Receipt
-                  </TabsTrigger>
+                  </TabsTrigger> */}
                   <TabsTrigger value="internal_print">
                     Internal Receipt
                   </TabsTrigger>
@@ -393,19 +275,6 @@ export default function SettingsPage() {
                         onChange={(e) =>
                           updateSetting(
                             "original_receipt_customer_service",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="additionalInfo">Informasi Tambahan</Label>
-                      <Input
-                        id="additionalInfo"
-                        value={settings?.original_receipt_additional_info}
-                        onChange={(e) =>
-                          updateSetting(
-                            "original_receipt_additional_info",
                             e.target.value
                           )
                         }
@@ -482,25 +351,31 @@ export default function SettingsPage() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <Switch
-                          id="show_estimated_completion"
-                          checked={settings?.show_estimated_completion}
+                          id="original_show_estimated_completion"
+                          checked={settings?.original_show_estimated_completion}
                           onCheckedChange={(checked) =>
-                            updateSetting("show_estimated_completion", checked)
+                            updateSetting(
+                              "original_show_estimated_completion",
+                              checked
+                            )
                           }
                         />
-                        <Label htmlFor="show_estimated_completion">
+                        <Label htmlFor="original_show_estimated_completion">
                           Tampilkan Estimate Completion
                         </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Switch
-                          id="show_customer_deposit"
-                          checked={settings?.show_customer_deposit}
+                          id="original_show_customer_deposit"
+                          checked={settings?.original_show_customer_deposit}
                           onCheckedChange={(checked) =>
-                            updateSetting("show_customer_deposit", checked)
+                            updateSetting(
+                              "original_show_customer_deposit",
+                              checked
+                            )
                           }
                         />
-                        <Label htmlFor="show_customer_deposit">
+                        <Label htmlFor="original_show_customer_deposit">
                           Tampilkan Customer Deposit
                         </Label>
                       </div>
@@ -516,7 +391,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </TabsContent>
-                <TabsContent value="payment_receipt">
+                {/* <TabsContent value="payment_receipt">
                   <div className="space-y-6">
                     <div className="space-y-2">
                       <Label htmlFor="payment_receipt_header">
@@ -635,7 +510,7 @@ export default function SettingsPage() {
                       </Button>
                     </div>
                   </div>
-                </TabsContent>
+                </TabsContent> */}
                 <TabsContent value="internal_print">
                   <div className="space-y-6">
                     <div className="space-y-2">
@@ -662,6 +537,36 @@ export default function SettingsPage() {
                         />
                         <Label htmlFor="internal_print_show_logo">
                           Tampilkan Logo
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="internal_show_estimated_completion"
+                          checked={settings?.internal_show_estimated_completion}
+                          onCheckedChange={(checked) =>
+                            updateSetting(
+                              "internal_show_estimated_completion",
+                              checked
+                            )
+                          }
+                        />
+                        <Label htmlFor="internal_show_estimated_completion">
+                          Tampilkan Estimate Completion
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="internal_show_customer_deposit"
+                          checked={settings?.internal_show_customer_deposit}
+                          onCheckedChange={(checked) =>
+                            updateSetting(
+                              "internal_show_customer_deposit",
+                              checked
+                            )
+                          }
+                        />
+                        <Label htmlFor="internal_show_customer_deposit">
+                          Tampilkan Customer Deposit
                         </Label>
                       </div>
                     </div>

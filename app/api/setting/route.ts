@@ -1,10 +1,26 @@
 import { dbConnect } from "@/lib/config/db";
 import SettingModel from "@/lib/models/SettingModel";
+import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const settings = await SettingModel.findOne({});
+    const { searchParams } = new URL(request.url);
+    const branchIdParam = searchParams.get("branch_id");
+
+    if (!branchIdParam) {
+      return NextResponse.json(
+        {
+          status: "Failed",
+          message: "Branch id not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    const settings = await SettingModel.findOne({
+      current_branch_id: new mongoose.Types.ObjectId(branchIdParam),
+    });
 
     if (!settings) {
       return NextResponse.json(
@@ -34,13 +50,25 @@ export async function GET() {
   }
 }
 
-export async function PUT(req: NextRequest) {
+export async function PUT(request: NextRequest) {
   await dbConnect();
   try {
-    const body = await req.json();
+    const body = await request.json();
+    const { searchParams } = new URL(request.url);
+    const branchIdParam = searchParams.get("branch_id");
+
+    if (!branchIdParam) {
+      return NextResponse.json(
+        {
+          status: "Failed",
+          message: "Branch id not found",
+        },
+        { status: 404 }
+      );
+    }
 
     const updated = await SettingModel.findOneAndUpdate(
-      {},
+      { current_branch_id: new mongoose.Types.ObjectId(branchIdParam) },
       { $set: body },
       { new: true, runValidators: true }
     );
