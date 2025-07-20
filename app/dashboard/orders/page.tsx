@@ -1,5 +1,6 @@
 "use client";
 
+import DynamicPagination from "@/components/dynamicPagination";
 import NewOrderPage from "@/components/NewOrder";
 import OrderDetailPage from "@/components/OrderDetails";
 import { Badge } from "@/components/ui/badge";
@@ -47,13 +48,16 @@ export default function OrdersPage() {
   const { items: orders, loading: ordersLoading } = useSelector(
     (state: RootState) => state.orderReducer
   );
+  const { currentItems } = useSelector(
+    (state: RootState) => state.paginationReducer
+  );
 
   useEffect(() => {
     dispatch(fetchOrders(currentBranchId));
   }, [currentBranchId]);
 
   // 1. First filter by status
-  const statusFilteredOrders = orders?.filter((order) => {
+  const statusFilteredOrders = currentItems?.filter((order) => {
     return statusFilter === "all" || order.order_status === statusFilter;
   });
 
@@ -342,6 +346,11 @@ export default function OrdersPage() {
           </Table>
         </CardContent>
       </Card>
+      {orders && (
+        <div key={currentBranchId} className="mt-5">
+          <DynamicPagination data={orders} />
+        </div>
+      )}
     </div>
   );
 }

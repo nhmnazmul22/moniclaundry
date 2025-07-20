@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBranch } from "@/contexts/branch-context";
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";;
 
 interface Expense {
   _id: string;
@@ -164,7 +164,11 @@ export function ExpenseTable({ refreshTrigger }: ExpenseTableProps) {
                       {formatDate(expense.date || expense.createdAt)}
                     </TableCell>
                     <TableCell>
-                      <Badge className={`${getCategoryColor(expense.category)} max-sm:text-center!`}>
+                      <Badge
+                        className={`${getCategoryColor(
+                          expense.category
+                        )} max-sm:text-center!`}
+                      >
                         {expense.category}
                       </Badge>
                     </TableCell>

@@ -1,5 +1,6 @@
 "use client";
 
+import DynamicPagination from "@/components/dynamicPagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -69,13 +70,16 @@ export default function CustomersPage() {
   const { items: branches } = useSelector(
     (state: RootState) => state.branchReducer
   );
+  const { currentItems } = useSelector(
+    (state: RootState) => state.paginationReducer
+  );
 
   useEffect(() => {
     dispatch(fetchCustomers(currentBranchId));
   }, [currentBranchId]);
 
   // 2. Then filter by search term
-  const filteredCustomer = customers?.filter((customer) => {
+  const filteredCustomer = currentItems?.filter((customer) => {
     const search = searchTerm.toLowerCase();
     if (searchTerm) {
       return (
@@ -466,6 +470,12 @@ export default function CustomersPage() {
           )}
         </CardContent>
       </Card>
+
+      {customers && (
+        <div key={currentBranchId} className="mt-5">
+          <DynamicPagination data={customers} />
+        </div>
+      )}
 
       {/* View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>

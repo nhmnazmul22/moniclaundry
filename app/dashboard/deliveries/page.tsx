@@ -1,5 +1,6 @@
 "use client";
 
+import DynamicPagination from "@/components/dynamicPagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,6 +89,9 @@ export default function DeliveriesPage() {
   );
   const { items: ordersData } = useSelector(
     (state: RootState) => state.orderReducer
+  );
+  const { currentItems } = useSelector(
+    (state: RootState) => state.paginationReducer
   );
 
   useEffect(() => {
@@ -354,7 +358,7 @@ export default function DeliveriesPage() {
   };
 
   // 1. First filter by status
-  const statusFilteredDelivery = deliveries?.filter((delivery) => {
+  const statusFilteredDelivery = currentItems?.filter((delivery) => {
     return statusFilter === "all" || delivery.status === statusFilter;
   });
 
@@ -751,6 +755,11 @@ export default function DeliveriesPage() {
         </CardContent>
       </Card>
 
+      {deliveries && (
+        <div key={currentBranchId} className="mt-5">
+          <DynamicPagination data={deliveries} />
+        </div>
+      )}
       {/* View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-2xl">

@@ -266,7 +266,7 @@ export default function ReportsPage() {
                   {filterType === "monthly" && (
                     <div className="col-span-full">
                       <Label>Pilih Bulan</Label>
-                      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-2">
                         {months.map((month, index) => (
                           <button
                             key={month}

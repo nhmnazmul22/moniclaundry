@@ -16,12 +16,16 @@ import { useDispatch } from "react-redux";
 
 type DynamicPaginationType = {
   data: any[];
+  itemsPage?: number;
 };
 
-const DynamicPagination: React.FC<DynamicPaginationType> = ({ data }) => {
+const DynamicPagination: React.FC<DynamicPaginationType> = ({
+  data,
+  itemsPage,
+}) => {
   const dispatch = useDispatch<AppDispatch>();
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = itemsPage || 10;
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = data?.slice(indexOfFirstItem, indexOfLastItem);

@@ -63,9 +63,7 @@ export default function StaffPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<"owner" | "admin" | "kurir" | "kasir">(
-    "kurir"
-  );
+  const [role, setRole] = useState<string>("kurir");
   const [password, setPassword] = useState("");
   const [isActive, setIsActive] = useState(true);
 
