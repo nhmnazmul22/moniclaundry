@@ -30,7 +30,7 @@ export async function importServices(
     }
     const services: Service[] = rawExcel.map((row: any) => ({
       type: row.__EMPTY || "Satuan",
-      category: row.__EMPTY_1 || row["Laundry Kiloan"] || "No Category",
+      category: row.__EMPTY_1 || "No Category",
       servicename: row.__EMPTY_2 || "No Service Name",
       price: Number(row.__EMPTY_3) || Number("00.00"),
       current_branch_id: branchIds,
@@ -47,7 +47,7 @@ export async function importServices(
     }
 
     return {
-      success: true,
+      success: false,
       message: "Services parsed failed",
       count: services.length,
     };

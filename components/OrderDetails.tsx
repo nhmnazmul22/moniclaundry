@@ -75,9 +75,6 @@ export default function OrderDetailPage({
   const cashTransferRef = useRef<HTMLDivElement>(
     null
   ) as React.RefObject<HTMLDivElement>;
-  const depositRef = useRef<HTMLDivElement>(
-    null
-  ) as React.RefObject<HTMLDivElement>;
   const internalRef = useRef<HTMLDivElement>(
     null
   ) as React.RefObject<HTMLDivElement>;
@@ -223,7 +220,7 @@ export default function OrderDetailPage({
   };
 
   const handleDownloadCashTransfer = async () => {
-    await generatePDF(cashTransferRef, "nota-cash-transfer");
+    await generatePDF(cashTransferRef, "nota-cash-transfer", true);
   };
 
   const handleDownloadInternal = async () => {
@@ -339,7 +336,7 @@ export default function OrderDetailPage({
         <div className="flex sm:space-x-2 max-sm:order-2 max-sm:flex-col gap-2">
           <Button
             variant="outline"
-            onClick={handlePrintReceipt}
+            onClick={handleDownloadCashTransfer}
             disabled={pdfLoading}
           >
             <Printer className="mr-2 h-4 w-4" />

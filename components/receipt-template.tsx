@@ -35,11 +35,17 @@ interface ReceiptTemplateProps {
 export const CashTransferReceiptTemplate = React.forwardRef<
   HTMLDivElement,
   ReceiptTemplateProps
->(({ order, orderItems, businessInfo }, ref) => {
+>(({ order, orderItems, businessInfo, receiptInfo }, ref) => {
   const { data: session } = useSession();
+  // QR Code data string (could be plain or a URL)
+  const qrData = `Order: ${order?.order_number} | Customer: ${
+    order?.customerDetails?.name || "N/A"
+  } | Date: ${new Date(order?.createdAt!).toLocaleDateString(
+    "id-ID"
+  )} | Status: ${order?.order_status}`;
 
   return (
-    <div ref={ref} className="w-[260px] p-2 bg-white text-[8px] leading-[1.1] ">
+    <div ref={ref} className="w-[260px] p-3 bg-white text-[8px] leading-[1.1] ">
       <div className="">
         <div className="py-1">
           <div className="flex items-start gap-1">
@@ -50,9 +56,11 @@ export const CashTransferReceiptTemplate = React.forwardRef<
               <div className="text-[7px]">{businessInfo.address || ""}</div>
               <div className="text-[7px]">{businessInfo.phone || ""}</div>
             </div>
-            <div className="w-8 h-8">
-              <img src="/pdf-logo.png" alt="Pdf logo" />
-            </div>
+            {receiptInfo?.original_receipt_show_logo && (
+              <div className="w-8 h-8">
+                <img src="/pdf-logo.png" alt="Pdf logo" />
+              </div>
+            )}
           </div>
         </div>
 
@@ -117,8 +125,8 @@ export const CashTransferReceiptTemplate = React.forwardRef<
                   </tr>
                 ))}
               <tr>
-                <td className="w-[172px]">Total Harga</td>
-                <td className="text-right font-semibold w-[40px]">
+                <td className="w-[168px]">Total Harga</td>
+                <td className="text-right w-[40px]">
                   {order?.total_amount &&
                     formatCurrency(order.total_amount)
                       .replace("Rp", "")
@@ -126,13 +134,13 @@ export const CashTransferReceiptTemplate = React.forwardRef<
                 </td>
               </tr>
               <tr>
-                <td className="w-[172px]">Diskon</td>
+                <td className="w-[168px]">Diskon</td>
                 <td className="text-center w-[40px]">-</td>
               </tr>
               <tr className="font-normal">
                 <td colSpan={4} className="w-[78px]"></td>
-                <td className="text-left w-[95px]">Harus dibayar</td>
-                <td className="text-right font-semibold w-[40px]">
+                <td className="text-left w-[90px]">Harus dibayar</td>
+                <td className="text-right w-[40px]">
                   {formatCurrency(order?.total_amount! - order?.discount!)
                     .replace("Rp", "")
                     .replace(".", ",")}
@@ -164,22 +172,23 @@ export const CashTransferReceiptTemplate = React.forwardRef<
             <span className="w-[78px]">Status</span>
             <span className="uppercase">{order?.payment_status}</span>
           </div>
-          {order?.payment_method === "deposit" && (
-            <>
-              <div className="flex justify-start font-bold">
-                <span className="w-[78px]">Nilai Potong Deposit</span>
-                <span className="uppercase">
-                  {formatCurrency(order.total_amount)}
-                </span>
-              </div>
-              <div className="flex justify-start font-bold">
-                <span className="w-[78px]">Sisa Deposit</span>
-                <span className="uppercase">
-                  {formatCurrency(order.customerDetails?.deposit_balance)}
-                </span>
-              </div>
-            </>
-          )}
+          {order?.payment_method === "deposit" &&
+            receiptInfo?.original_show_customer_deposit && (
+              <>
+                <div className="flex justify-start font-bold">
+                  <span className="w-[78px]">Nilai Potong Deposit</span>
+                  <span className="uppercase">
+                    {formatCurrency(order.total_amount)}
+                  </span>
+                </div>
+                <div className="flex justify-start font-bold">
+                  <span className="w-[78px]">Sisa Deposit</span>
+                  <span className="uppercase">
+                    {formatCurrency(order.customerDetails?.deposit_balance)}
+                  </span>
+                </div>
+              </>
+            )}
         </div>
 
         <div className="text-left text-[7px] mb-2 mt-5">Catatan</div>
@@ -195,10 +204,26 @@ export const CashTransferReceiptTemplate = React.forwardRef<
         <div className="mt-5 text-[6px] leading-[1.1] mb-3">
           <div className="font-bold">
             Customer Service :
-            <span className="text-black font-bold">0811-9876-771</span>
+            <span className="text-black font-bold">
+              {receiptInfo?.original_receipt_customer_service ||
+                "0811-9876-771"}
+            </span>
           </div>
-          <div className="font-bold text-[6.5px]">#laundryapasajabisa</div>
+          <div className="font-bold text-[6.5px]">
+            {receiptInfo?.original_receipt_hashtag || "#laundryapasajabisa"}
+          </div>
         </div>
+
+        {/* QR Code */}
+        {receiptInfo?.original_receipt_show_qr && (
+          <div className="flex flex-col items-center mt-5">
+            <QRCodeCanvas value={qrData} size={100} level="H" />
+            <div className="text-[8px] text-center w-[220px] break-words mt-2">
+              <p className="font-bold">QR Data:</p>
+              <p>{qrData}</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -272,7 +297,7 @@ export const InternalReceiptTemplate = React.forwardRef<
               {formatDateTime(order?.createdAt)}
             </span>
           </div>
-          {receiptInfo?.show_estimated_completion && (
+          {receiptInfo?.internal_show_estimated_completion && (
             <div className="flex justify-start">
               <span className="w-24">Estimasi Selesai</span>
               <span className="font-bold ms-1">
@@ -295,7 +320,7 @@ export const InternalReceiptTemplate = React.forwardRef<
             </div>
           )}
           {order?.payment_method === "deposit" &&
-            receiptInfo?.show_customer_deposit && (
+            receiptInfo?.internal_show_estimated_completion && (
               <div className="flex justify-start">
                 <span className="w-24">Sisa Deposit:</span>
                 <span className="ms-1">
@@ -310,9 +335,7 @@ export const InternalReceiptTemplate = React.forwardRef<
         <div className="flex flex-col gap-1">
           <div className="w-full h-[0.5px] bg-black"></div>
           <p className="text-[7px] italic text-center">
-            {order?.notes ||
-              receiptInfo?.internal_print_free_text ||
-              "No notes"}
+            {order?.notes || "No notes"}
           </p>
           <div className="w-full h-[0.5px] bg-black"></div>
         </div>
@@ -373,7 +396,7 @@ export const ReceiptTemplate = React.forwardRef<
           <span>{formatDateTime(order?.createdAt)}</span>
         </div>
         {order?.estimated_completion &&
-          receiptInfo?.show_estimated_completion && (
+          receiptInfo?.original_show_estimated_completion && (
             <div className="flex justify-between">
               <span>Est.Ambil</span>
               <span>{formatDateTime(order?.estimated_completion)}</span>
@@ -450,7 +473,7 @@ export const ReceiptTemplate = React.forwardRef<
           </div>
         )}
         {order?.payment_method === "deposit" &&
-          receiptInfo?.show_customer_deposit && (
+          receiptInfo?.original_show_customer_deposit && (
             <div className="flex justify-between">
               <span>Sisa Deposit:</span>
               <span>

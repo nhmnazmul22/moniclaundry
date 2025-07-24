@@ -182,12 +182,7 @@ export default function DeliveriesPage() {
   };
 
   const handleUpdateDelivery = async () => {
-    if (
-      !selectedDelivery ||
-      !selectedOrder ||
-      !selectedKurir ||
-      !scheduledTime
-    ) {
+    if (!selectedDelivery || !selectedKurir || !scheduledTime) {
       toast({
         title: "Error",
         description: "Mohon lengkapi semua field yang diperlukan.",
@@ -197,17 +192,19 @@ export default function DeliveriesPage() {
     }
 
     try {
-      const updatedDelivery = {
-        order_id: selectedOrder,
+      const updatedDelivery: any = {
         kurir_id: selectedKurir,
         status: deliveryStatus,
         delivery_type: deliveryType,
         scheduled_time: new Date(scheduledTime).toISOString(),
-        delivery_fee: deliveryType === "delivery" ? deliveryFee : 0,
         notes: `${
           deliveryType === "delivery" ? "Pengiriman" : "Pickup"
         } diupdate`,
       };
+
+      if (deliveryType === "delivery") {
+        updatedDelivery.order_id = selectedOrder;
+      }
 
       const res = await api.put(
         `/api/deliveries/${selectedDelivery._id}`,
@@ -288,7 +285,7 @@ export default function DeliveriesPage() {
   };
 
   const handleCreateDelivery = async () => {
-    if (!selectedOrder || !selectedKurir || !scheduledTime) {
+    if (!selectedKurir || !scheduledTime) {
       toast({
         title: "Error",
         description: "Mohon lengkapi semua field yang diperlukan.",
@@ -298,19 +295,21 @@ export default function DeliveriesPage() {
     }
 
     try {
-      const newDelivery = {
-        order_id: selectedOrder,
+      const newDelivery: any = {
         kurir_id: selectedKurir,
         delivery_type: deliveryType,
         scheduled_time: new Date(scheduledTime).toISOString(),
         status: deliveryStatus || "scheduled",
         customer: deliveryType === "delivery" ? customer : null,
-        delivery_fee: deliveryType === "delivery" ? deliveryFee : 0,
         notes: `${
           deliveryType === "delivery" ? "Pengiriman" : "Pickup"
         } dijadwalkan`,
         current_branch_id: branchId,
       };
+
+      if (deliveryType === "delivery") {
+        newDelivery.order_id = selectedOrder;
+      }
 
       const res = await api.post("/api/deliveries", newDelivery);
 
@@ -427,23 +426,28 @@ export default function DeliveriesPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="order" className="text-right">
-                  Order
-                </Label>
-                <Select onValueChange={setSelectedOrder} value={selectedOrder}>
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Pilih Order" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {orderList.map((order) => (
-                      <SelectItem key={order._id} value={order._id}>
-                        {order.order_number} - {order.customerDetails?.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {deliveryType === "delivery" && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="order" className="text-right">
+                    Order
+                  </Label>
+                  <Select
+                    onValueChange={setSelectedOrder}
+                    value={selectedOrder}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Pilih Order" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {orderList.map((order) => (
+                        <SelectItem key={order._id} value={order._id}>
+                          {order.order_number} - {order.customerDetails?.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="kurir" className="text-right">
                   Kurir
@@ -514,25 +518,6 @@ export default function DeliveriesPage() {
                   className="col-span-3"
                 />
               </div>
-
-              {deliveryType === "delivery" && (
-                <>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="deliveryFee" className="text-right">
-                      Ongkir
-                    </Label>
-                    <Input
-                      id="deliveryFee"
-                      type="number"
-                      value={deliveryFee}
-                      onChange={(e) =>
-                        setDeliveryFee(Number.parseInt(e.target.value))
-                      }
-                      className="col-span-3"
-                    />
-                  </div>
-                </>
-              )}
             </div>
             <DialogFooter>
               <Button

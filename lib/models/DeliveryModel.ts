@@ -36,7 +36,7 @@ const CustomerSchema: Schema<Customer> = new mongoose.Schema(
 
 const DeliveryScheduleSchema: Schema<DeliverySchedule> = new mongoose.Schema(
   {
-    order_id: { type: mongoose.Types.ObjectId, required: true },
+    order_id: { type: mongoose.Types.ObjectId },
     kurir_id: { type: mongoose.Types.ObjectId, required: true },
     delivery_type: { type: String, enum: ["pickup", "delivery"] },
     scheduled_time: { type: Date, required: true },

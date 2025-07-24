@@ -9,7 +9,6 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-
   const isPublicFile =
     pathname.startsWith("/_next/") || pathname === "/favicon.ico";
 
@@ -27,5 +26,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next|favicon.ico|login).*)"],
+  matcher: ["/((?!_next|favicon.ico|login|logo.jpg).*)"],
 };

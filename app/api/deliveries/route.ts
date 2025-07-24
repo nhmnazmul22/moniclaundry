@@ -35,10 +35,16 @@ export async function GET(request: NextRequest) {
           },
         },
         {
-          $unwind: "$orderDetails",
+          $unwind: {
+            path: "$orderDetails",
+            preserveNullAndEmptyArrays: true,
+          },
         },
         {
-          $unwind: "$kurirDetails",
+          $unwind: {
+            path: "$kurirDetails",
+            preserveNullAndEmptyArrays: true, 
+          },
         },
         { $sort: { createdAt: -1 } },
       ]);
@@ -77,9 +83,9 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const body = await request.json();
 
-    const { order_id, kurir_id, scheduled_time, current_branch_id } = body;
+    const { kurir_id, scheduled_time, current_branch_id } = body;
 
-    if (!order_id || !kurir_id || !scheduled_time || !current_branch_id) {
+    if (!kurir_id || !scheduled_time || !current_branch_id) {
       return NextResponse.json(
         {
           status: "Failed",

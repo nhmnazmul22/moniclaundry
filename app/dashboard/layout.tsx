@@ -41,6 +41,7 @@ import {
   X,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type React from "react";
@@ -321,8 +322,8 @@ function SidebarContent({
       {/* Logo */}
       <div className="flex h-16 shrink-0 items-center">
         <div className="flex items-center space-x-2">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <Shirt className="h-6 w-6 text-white" />
+          <div className="">
+            <Image src="/logo.jpg" alt="Monic Laundry" width={45} height={45} />
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">Monic Laundry</h1>

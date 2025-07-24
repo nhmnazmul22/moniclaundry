@@ -42,9 +42,8 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
-    const serviceData = body.slice(4);
+    const serviceData = body;
     const filteredService = serviceData.filter((value: any) => value.price > 0);
-
     const service = await ServiceModel.create(filteredService);
 
     if (!service) {

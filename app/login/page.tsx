@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Shirt } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -68,9 +69,14 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="bg-blue-600 p-3 rounded-full">
-              <Shirt className="h-8 w-8 text-white" />
+          <div className="flex justify-center mb-2">
+            <div className="">
+              <Image
+                src="/logo.jpg"
+                alt="Monic Laundry"
+                width={80}
+                height={80}
+              />
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">
