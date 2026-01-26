@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Monic Laundry POS</string>
+    <string name="title_activity_main">Monic Laundry POS</string>
+    <string name="package_name">com.moniclaundry.pos</string>
+    <string name="custom_url_scheme">com.moniclaundry.pos</string>
+</resources>
